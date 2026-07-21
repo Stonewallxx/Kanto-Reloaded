@@ -1,0 +1,329 @@
+[BUG REPORT]
+Game Title: kurayinfinitefusion
+KIF Version: 0.20.7
+Kanto Reloaded Version: 1.0.1
+Timestamp: 2026-07-21 17:30:35 -0400
+Platform: Windows
+Ruby Platform: x64-mingw32
+Ruby Version: 3.1.3
+Debug Mode: On
+
+[ENABLED MODS]
+- GhostBase_PlayerHousing | GhostBase Player Housing | 1.0.0
+- input_x_list_fix | Input X List Fix | 1.0.0
+- kanto_reloaded | Kanto Reloaded | 1.0.1
+- kr_trainer_control_inspector | Trainer Control Inspector | 0.2.0
+
+[KR STATE]
+Save Schema: 1
+Registered Settings: 97
+Overworld Menu Commands: 21
+Battle Menu Commands: 2
+Current Scene: Scene_Intro
+Resolution: 512x384
+
+[LOG COUNTS]
+DEBUG: 198
+INFO: 88
+WARNING: 0
+ERROR: 9
+CRITICAL: 0
+FATAL: 0
+
+[RECENT LOG]
+[2026-07-21 14:55:00] [INFO] [framework] Platform: Windows | Capabilities: gameplay, mod_manager, manual_mods, settings, save_data, data_patches, filesystem, json, mouse, clipboard, open_url
+[2026-07-21 14:55:00] [DEBUG] [hooks] Installed hook save_protection_source on SaveData.singleton#read_from_file (public)
+[2026-07-21 14:55:00] [INFO] [save_data] Save migration protection ready
+[2026-07-21 14:55:00] [INFO] [save_data] Registered KantoReloaded save bucket
+[2026-07-21 14:55:00] [INFO] [framework] Settings registry ready
+[2026-07-21 14:55:00] [INFO] [framework] MSM compatibility ready
+[2026-07-21 14:55:00] [INFO] [framework] Bug report service ready
+[2026-07-21 14:55:00] [DEBUG] [hooks] Installed hook global_small_text on Object#pbSetSystemFont (private)
+[2026-07-21 14:55:00] [DEBUG] [hooks] Installed hook menu_frame_default on MessageConfig.singleton#pbDefaultSystemFrame (public)
+[2026-07-21 14:55:00] [DEBUG] [hooks] Installed hook speech_follows_menu_default on MessageConfig.singleton#pbDefaultSpeechFrame (public)
+[2026-07-21 14:55:00] [DEBUG] [hooks] Installed hook menu_frame_set on MessageConfig.singleton#pbSetSystemFrame (public)
+[2026-07-21 14:55:00] [DEBUG] [hooks] Installed hook speech_follows_menu_set on MessageConfig.singleton#pbSetSpeechFrame (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook kif_options_add_on on PokemonOption_Scene#pbAddOnOptions (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook kif_options_window on PokemonOption_Scene#initOptionsWindow (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook kif_options_start on PokemonOption_Scene#pbStartScene (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook kif_options_update on PokemonOption_Scene#pbUpdate (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook kif_populate_kurayoptsc_5 on KurayOptSc_5#pbGetOptions (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook kif_populate_kurayoptsc_6 on KurayOptSc_6#pbGetOptions (public)
+[2026-07-21 14:55:01] [INFO] [ui] Installed guarded KIF options integration
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook data_patches_load_all on GameData.singleton#load_all (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook data_patch_outfits_update_global_clothes_list on Object#update_global_clothes_list (private)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook data_patch_outfits_update_global_hats_list on Object#update_global_hats_list (private)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook data_patch_outfits_update_global_hairstyles_list on Object#update_global_hairstyles_list (private)
+[2026-07-21 14:55:01] [INFO] [mods] Installed KantoReloaded outfit data patch bridge
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook data_patch_item_name on GameData::Item#name (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook data_patch_item_name_plural on GameData::Item#name_plural (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook data_patch_item_description on GameData::Item#description (public)
+[2026-07-21 14:55:01] [INFO] [mods] Installed KantoReloaded item data patch bridge
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook data_patch_move_name on GameData::Move#name (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook data_patch_move_description on GameData::Move#description (public)
+[2026-07-21 14:55:01] [INFO] [mods] Installed KantoReloaded move data patch bridge
+[2026-07-21 14:55:01] [INFO] [mods] Installed KantoReloaded ability API
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook data_patch_ability_name on GameData::Ability#name (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook data_patch_ability_description on GameData::Ability#description (public)
+[2026-07-21 14:55:01] [INFO] [mods] Installed KantoReloaded ability data patch bridge
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook data_patch_species_name on GameData::Species#name (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook data_patch_species_form_name on GameData::Species#form_name (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook data_patch_species_category on GameData::Species#category (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook data_patch_species_pokedex_entry on GameData::Species#pokedex_entry (public)
+[2026-07-21 14:55:01] [INFO] [mods] Installed KantoReloaded species data patch bridge
+[2026-07-21 14:55:01] [INFO] [mods] Installed KantoReloaded trainer data patch bridge
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook data_patch_encounter_setup on PokemonEncounters#setup (public)
+[2026-07-21 14:55:01] [DEBUG] [mods] Installed KantoReloaded encounter setup cache bridge
+[2026-07-21 14:55:01] [INFO] [mods] Installed KantoReloaded encounter data patch bridge
+[2026-07-21 14:55:01] [INFO] [mods] Installed KantoReloaded trainer type data patch bridge
+[2026-07-21 14:55:01] [INFO] [modules] Installed Overworld Menu module
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Overworld Menu entry quick_items priority=5
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Overworld Menu entry quick_save priority=1
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Overworld Menu entry repel_counter priority=10
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Overworld Menu entry time_changer priority=20
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Overworld Menu entry om_features priority=999
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook battle_menu_context_vanilla on PokeBattle_Scene#pbCommandMenu (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook battle_menu_input_vanilla on PokeBattle_Scene#pbUpdate (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook battle_menu_context_ebdx on PokeBattle_SceneEBDX#pbCommandMenu (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook battle_menu_input_ebdx on PokeBattle_SceneEBDX#pbUpdate (public)
+[2026-07-21 14:55:01] [INFO] [modules] Installed Battle Menu module
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Overworld Menu entry healing_overworld_moves priority=24
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook healing_overworld_has_handler on HiddenMoveHandlers.singleton#hasHandler (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook healing_overworld_can_use on HiddenMoveHandlers.singleton#triggerCanUseMove (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook healing_overworld_use on HiddenMoveHandlers.singleton#triggerUseMove (public)
+[2026-07-21 14:55:01] [INFO] [modules] Installed Healing Overworld Moves module (hooks ready)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook tm_vault_tutor_net_registration on Object#pbTutorNetAdd (private)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook tm_vault_pause_label on PokemonPauseMenu_Scene#pbShowCommands (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook tm_vault_clear_pause_request on PokemonPauseMenu_Scene#pbHideMenu (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook tm_vault_pause_redirect on PokemonTutorNetScreen#pbStartScreen (public)
+[2026-07-21 14:55:01] [INFO] [modules] Installed TM Vault Tutor.net compatibility
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Overworld Menu entry poke_vial priority=7
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook poke_vial_pause_menu on PokemonPauseMenu_Scene#pbShowCommands (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook poke_vial_recover_all on Interpreter#command_314 (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook poke_vial_center_refill on Trainer#heal_party (public)
+[2026-07-21 14:55:01] [INFO] [modules] Installed PokeVial module (hooks ready)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook autosort_bag_after_store on PokemonBag#pbStoreItem (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook autosort_bag_scene_context on PokemonBag_Scene#pbStartScene (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook autosort_bag_manual_input on Window_PokemonBag#update (public)
+[2026-07-21 14:55:01] [INFO] [modules] Installed Autosort Bag module (ready)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook reloaded_shop_pause_label on PokemonPauseMenu_Scene#pbShowCommands (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook reloaded_shop_buy_screen on PokemonMartScreen#pbBuyScreen (public)
+[2026-07-21 14:55:01] [INFO] [modules] Reloaded Shop installed settings=true hooks=true
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook critical_ev_gain_observe on PokeBattle_Battle#pbGainEVsOne (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook critical_ev_gain_award on PokeBattle_Battle#pbEndOfBattle (public)
+[2026-07-21 14:55:01] [INFO] [critical_ev_gain] Critical EV Gain integration ready
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook trainer_control_identity on GameData::Trainer#to_trainer (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook trainer_control_identity on GameData::TrainerModern#to_trainer (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook trainer_memory_participant on PokeBattle_Battler#pbInitialize (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook trainer_memory_successful_move on PokeBattle_Battler#pbUseMove (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook trainer_control_battle_context on Object#pbTrainerBattleCore (private)
+[2026-07-21 14:55:01] [INFO] [trainer_control] Trainer Control ready
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Battle Menu command quick_throw priority=1
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Battle Menu command select_quick_throw_ball priority=2
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook quality_of_life_quick_throw_item_menu on PokeBattle_Battle#pbItemMenu (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook quality_of_life_quick_throw_remember_ball on PokeBattle_Battle#pbRegisterItem (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook quality_of_life_quick_throw_target_validation on PokeBattle_Battle#pbOpposingBattlerCount (public)
+[2026-07-21 14:55:01] [INFO] [modules] Installed Quick Throw module
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Overworld Menu entry infinite_repel priority=11
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook quality_of_life_infinite_repel on Object#isRepelActive (private)
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Overworld Menu entry instant_hatch priority=12
+[2026-07-21 14:55:01] [INFO] [modules] Installed Instant Hatch module (step event ready)
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Overworld Menu entry egg_manager priority=24
+[2026-07-21 14:55:01] [INFO] [modules] Installed Egg Manager module
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Overworld Menu entry auto_hook_fishing priority=19
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook quality_of_life_auto_hook_fishing on Object#pbWaitForInput (private)
+[2026-07-21 14:55:01] [INFO] [modules] Installed Auto Hook Fishing module (hook ready)
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Overworld Menu entry infinite_safari_steps priority=20
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook quality_of_life_infinite_safari_steps on SafariState#steps= (public)
+[2026-07-21 14:55:01] [INFO] [modules] Installed Infinite Safari Steps module (hook ready)
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Overworld Menu entry level_up_move_learning priority=21
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook quality_of_life_level_up_move_learning_global on Object#pbLearnMove (private)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook quality_of_life_level_up_move_learning_context on Object#pbChangeLevel (private)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook quality_of_life_level_up_move_learning_evolution_context on PokemonEvolutionScene#pbEvolution (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook quality_of_life_level_up_move_learning_battle on PokeBattle_Battle#pbLearnMove (public)
+[2026-07-21 14:55:01] [INFO] [modules] Installed Level-Up Move Learning module (hooks ready)
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Overworld Menu entry always_obey priority=13
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook quality_of_life_always_obey_check on PokeBattle_Battler#pbObedienceCheck? (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook quality_of_life_always_obey_disobey on PokeBattle_Battler#pbDisobey (public)
+[2026-07-21 14:55:01] [INFO] [modules] Installed Always Obey module (hooks ready)
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Overworld Menu entry rematch_money priority=14
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook quality_of_life_rematch_money on PokeBattle_Battle#pbGainMoney (public)
+[2026-07-21 14:55:01] [INFO] [modules] Installed Rematch Money module (hook ready)
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Overworld Menu entry infinite_money priority=15
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook quality_of_life_infinite_money on Player#money= (public)
+[2026-07-21 14:55:01] [INFO] [modules] Installed Infinite Money module (hook ready)
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Overworld Menu entry upgraded_pp priority=16
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook quality_of_life_upgraded_pp_learn_move on Pokemon#learn_move (public)
+[2026-07-21 14:55:01] [INFO] [modules] Installed Upgraded PP module (integration ready)
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Overworld Menu entry infinite_pp priority=17
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook quality_of_life_infinite_pp on PokeBattle_Battler#pbSetPP (public)
+[2026-07-21 14:55:01] [INFO] [modules] Installed Infinite PP module (integration ready)
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Overworld Menu entry nature_selector priority=18
+[2026-07-21 14:55:01] [INFO] [modules] Installed Nature Selector module
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook quality_of_life_level_locking_level on Pokemon#level= (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook quality_of_life_level_locking_exp on Pokemon#exp= (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook quality_of_life_level_locking_change_level on Object#pbChangeLevel (private)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook quality_of_life_level_locking_exp_calculation on GameData::GrowthRate#add_exp (public)
+[2026-07-21 14:55:01] [DEBUG] [hooks] Installed hook quality_of_life_level_locking_battle on PokeBattle_Battle#pbGainExpOne (public)
+[2026-07-21 14:55:01] [INFO] [modules] Installed Level Locking module (hooks ready)
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Overworld Menu entry level_lock_manager priority=22
+[2026-07-21 14:55:01] [INFO] [modules] Installed Level Lock Manager module
+[2026-07-21 14:55:01] [DEBUG] [modules] Registered Overworld Menu entry super_candy priority=23
+[2026-07-21 14:55:01] [INFO] [modules] Installed Super Candy module
+[2026-07-21 14:55:01] [INFO] [bootstrap] Kanto Reloaded 1.0.0 loaded
+[2026-07-21 14:55:02] [INFO] [summary] data_patch_targets=17 data_patches_found=0 data_patches_applied=0 data_patch_warnings=0 data_patch_errors=0
+[2026-07-21 14:55:02] [INFO] [mods] Data patches: 0/0 applied, 0 warning(s), 0 error(s)
+[2026-07-21 14:55:02] [INFO] [mods] Rebuilt data patches after GameData.load_all
+[2026-07-21 17:29:01] [INFO] [framework] Platform: Windows | Capabilities: gameplay, mod_manager, manual_mods, settings, save_data, data_patches, filesystem, json, mouse, clipboard, open_url
+[2026-07-21 17:29:01] [ERROR] [settings] Could not load global settings (KantoReloadedSettings.json): Errno::ENOENT: No such file or directory @ rb_file_s_rename - (/User/AppData/Roaming/kurayinfinitefusion/KantoReloadedSettings.json.tmp, /User/AppData/Roaming/kurayinfinitefusion/KantoReloadedSettings.json)
+[2026-07-21 17:29:01] [ERROR] [settings]   /KantoReloaded/Core/Foundation/GlobalSettings.rb:170:in `rename'
+[2026-07-21 17:29:01] [ERROR] [settings]   /KantoReloaded/Core/Foundation/GlobalSettings.rb:170:in `recover_interrupted_write'
+[2026-07-21 17:29:01] [ERROR] [settings]   /KantoReloaded/Core/Foundation/GlobalSettings.rb:22:in `boot'
+[2026-07-21 17:29:01] [ERROR] [settings]   /KantoReloaded/Core/Foundation/GlobalSettings.rb:207:in `<top (required)>'
+[2026-07-21 17:29:01] [ERROR] [settings]   /KantoReloaded/Bootstrap.rb:44:in `load'
+[2026-07-21 17:29:01] [ERROR] [settings]   /KantoReloaded/Bootstrap.rb:44:in `load_file'
+[2026-07-21 17:29:01] [ERROR] [settings]   /KantoReloaded/Bootstrap.rb:25:in `block in boot'
+[2026-07-21 17:29:01] [ERROR] [settings]   /KantoReloaded/Bootstrap.rb:25:in `each'
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook save_protection_source on SaveData.singleton#read_from_file (public)
+[2026-07-21 17:29:01] [INFO] [save_data] Save migration protection ready
+[2026-07-21 17:29:01] [INFO] [save_data] Registered KantoReloaded save bucket
+[2026-07-21 17:29:01] [INFO] [framework] Settings registry ready
+[2026-07-21 17:29:01] [INFO] [framework] MSM compatibility ready
+[2026-07-21 17:29:01] [INFO] [framework] Bug report service ready
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook global_small_text on Object#pbSetSystemFont (private)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook menu_frame_default on MessageConfig.singleton#pbDefaultSystemFrame (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook speech_follows_menu_default on MessageConfig.singleton#pbDefaultSpeechFrame (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook menu_frame_set on MessageConfig.singleton#pbSetSystemFrame (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook speech_follows_menu_set on MessageConfig.singleton#pbSetSpeechFrame (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook kif_options_add_on on PokemonOption_Scene#pbAddOnOptions (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook kif_options_window on PokemonOption_Scene#initOptionsWindow (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook kif_options_start on PokemonOption_Scene#pbStartScene (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook kif_options_update on PokemonOption_Scene#pbUpdate (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook kif_populate_kurayoptsc_5 on KurayOptSc_5#pbGetOptions (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook kif_populate_kurayoptsc_6 on KurayOptSc_6#pbGetOptions (public)
+[2026-07-21 17:29:01] [INFO] [ui] Installed guarded KIF options integration
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook data_patches_load_all on GameData.singleton#load_all (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook data_patch_outfits_update_global_clothes_list on Object#update_global_clothes_list (private)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook data_patch_outfits_update_global_hats_list on Object#update_global_hats_list (private)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook data_patch_outfits_update_global_hairstyles_list on Object#update_global_hairstyles_list (private)
+[2026-07-21 17:29:01] [INFO] [mods] Installed KantoReloaded outfit data patch bridge
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook data_patch_item_name on GameData::Item#name (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook data_patch_item_name_plural on GameData::Item#name_plural (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook data_patch_item_description on GameData::Item#description (public)
+[2026-07-21 17:29:01] [INFO] [mods] Installed KantoReloaded item data patch bridge
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook data_patch_move_name on GameData::Move#name (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook data_patch_move_description on GameData::Move#description (public)
+[2026-07-21 17:29:01] [INFO] [mods] Installed KantoReloaded move data patch bridge
+[2026-07-21 17:29:01] [INFO] [mods] Installed KantoReloaded ability API
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook data_patch_ability_name on GameData::Ability#name (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook data_patch_ability_description on GameData::Ability#description (public)
+[2026-07-21 17:29:01] [INFO] [mods] Installed KantoReloaded ability data patch bridge
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook data_patch_species_name on GameData::Species#name (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook data_patch_species_form_name on GameData::Species#form_name (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook data_patch_species_category on GameData::Species#category (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook data_patch_species_pokedex_entry on GameData::Species#pokedex_entry (public)
+[2026-07-21 17:29:01] [INFO] [mods] Installed KantoReloaded species data patch bridge
+[2026-07-21 17:29:01] [INFO] [mods] Installed KantoReloaded trainer data patch bridge
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook data_patch_encounter_setup on PokemonEncounters#setup (public)
+[2026-07-21 17:29:01] [DEBUG] [mods] Installed KantoReloaded encounter setup cache bridge
+[2026-07-21 17:29:01] [INFO] [mods] Installed KantoReloaded encounter data patch bridge
+[2026-07-21 17:29:01] [INFO] [mods] Installed KantoReloaded trainer type data patch bridge
+[2026-07-21 17:29:01] [INFO] [modules] Installed Overworld Menu module
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Overworld Menu entry quick_items priority=5
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Overworld Menu entry quick_save priority=1
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Overworld Menu entry repel_counter priority=10
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Overworld Menu entry time_changer priority=20
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Overworld Menu entry om_features priority=999
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook battle_menu_context_vanilla on PokeBattle_Scene#pbCommandMenu (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook battle_menu_input_vanilla on PokeBattle_Scene#pbUpdate (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook battle_menu_context_ebdx on PokeBattle_SceneEBDX#pbCommandMenu (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook battle_menu_input_ebdx on PokeBattle_SceneEBDX#pbUpdate (public)
+[2026-07-21 17:29:01] [INFO] [modules] Installed Battle Menu module
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Overworld Menu entry healing_overworld_moves priority=24
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook healing_overworld_has_handler on HiddenMoveHandlers.singleton#hasHandler (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook healing_overworld_can_use on HiddenMoveHandlers.singleton#triggerCanUseMove (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook healing_overworld_use on HiddenMoveHandlers.singleton#triggerUseMove (public)
+[2026-07-21 17:29:01] [INFO] [modules] Installed Healing Overworld Moves module (hooks ready)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook tm_vault_tutor_net_registration on Object#pbTutorNetAdd (private)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook tm_vault_pause_label on PokemonPauseMenu_Scene#pbShowCommands (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook tm_vault_clear_pause_request on PokemonPauseMenu_Scene#pbHideMenu (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook tm_vault_pause_redirect on PokemonTutorNetScreen#pbStartScreen (public)
+[2026-07-21 17:29:01] [INFO] [modules] Installed TM Vault Tutor.net compatibility
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Overworld Menu entry poke_vial priority=7
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook poke_vial_pause_menu on PokemonPauseMenu_Scene#pbShowCommands (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook poke_vial_recover_all on Interpreter#command_314 (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook poke_vial_center_refill on Trainer#heal_party (public)
+[2026-07-21 17:29:01] [INFO] [modules] Installed PokeVial module (hooks ready)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook autosort_bag_after_store on PokemonBag#pbStoreItem (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook autosort_bag_scene_context on PokemonBag_Scene#pbStartScene (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook autosort_bag_manual_input on Window_PokemonBag#update (public)
+[2026-07-21 17:29:01] [INFO] [modules] Installed Autosort Bag module (ready)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook reloaded_shop_pause_label on PokemonPauseMenu_Scene#pbShowCommands (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook reloaded_shop_buy_screen on PokemonMartScreen#pbBuyScreen (public)
+[2026-07-21 17:29:01] [INFO] [modules] Reloaded Shop installed settings=true hooks=true
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook critical_ev_gain_observe on PokeBattle_Battle#pbGainEVsOne (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook critical_ev_gain_award on PokeBattle_Battle#pbEndOfBattle (public)
+[2026-07-21 17:29:01] [INFO] [critical_ev_gain] Critical EV Gain integration ready
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook trainer_control_identity on GameData::Trainer#to_trainer (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook trainer_control_identity on GameData::TrainerModern#to_trainer (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook trainer_memory_participant on PokeBattle_Battler#pbInitialize (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook trainer_memory_successful_move on PokeBattle_Battler#pbUseMove (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook trainer_control_battle_context on Object#pbTrainerBattleCore (private)
+[2026-07-21 17:29:01] [INFO] [trainer_control] Trainer Control ready
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Battle Menu command quick_throw priority=1
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Battle Menu command select_quick_throw_ball priority=2
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook quality_of_life_quick_throw_item_menu on PokeBattle_Battle#pbItemMenu (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook quality_of_life_quick_throw_remember_ball on PokeBattle_Battle#pbRegisterItem (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook quality_of_life_quick_throw_target_validation on PokeBattle_Battle#pbOpposingBattlerCount (public)
+[2026-07-21 17:29:01] [INFO] [modules] Installed Quick Throw module
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Overworld Menu entry infinite_repel priority=11
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook quality_of_life_infinite_repel on Object#isRepelActive (private)
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Overworld Menu entry instant_hatch priority=12
+[2026-07-21 17:29:01] [INFO] [modules] Installed Instant Hatch module (step event ready)
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Overworld Menu entry egg_manager priority=24
+[2026-07-21 17:29:01] [INFO] [modules] Installed Egg Manager module
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Overworld Menu entry auto_hook_fishing priority=19
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook quality_of_life_auto_hook_fishing on Object#pbWaitForInput (private)
+[2026-07-21 17:29:01] [INFO] [modules] Installed Auto Hook Fishing module (hook ready)
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Overworld Menu entry infinite_safari_steps priority=20
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook quality_of_life_infinite_safari_steps on SafariState#steps= (public)
+[2026-07-21 17:29:01] [INFO] [modules] Installed Infinite Safari Steps module (hook ready)
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Overworld Menu entry level_up_move_learning priority=21
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook quality_of_life_level_up_move_learning_global on Object#pbLearnMove (private)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook quality_of_life_level_up_move_learning_context on Object#pbChangeLevel (private)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook quality_of_life_level_up_move_learning_evolution_context on PokemonEvolutionScene#pbEvolution (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook quality_of_life_level_up_move_learning_battle on PokeBattle_Battle#pbLearnMove (public)
+[2026-07-21 17:29:01] [INFO] [modules] Installed Level-Up Move Learning module (hooks ready)
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Overworld Menu entry always_obey priority=13
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook quality_of_life_always_obey_check on PokeBattle_Battler#pbObedienceCheck? (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook quality_of_life_always_obey_disobey on PokeBattle_Battler#pbDisobey (public)
+[2026-07-21 17:29:01] [INFO] [modules] Installed Always Obey module (hooks ready)
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Overworld Menu entry rematch_money priority=14
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook quality_of_life_rematch_money on PokeBattle_Battle#pbGainMoney (public)
+[2026-07-21 17:29:01] [INFO] [modules] Installed Rematch Money module (hook ready)
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Overworld Menu entry infinite_money priority=15
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook quality_of_life_infinite_money on Player#money= (public)
+[2026-07-21 17:29:01] [INFO] [modules] Installed Infinite Money module (hook ready)
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Overworld Menu entry upgraded_pp priority=16
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook quality_of_life_upgraded_pp_learn_move on Pokemon#learn_move (public)
+[2026-07-21 17:29:01] [INFO] [modules] Installed Upgraded PP module (integration ready)
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Overworld Menu entry infinite_pp priority=17
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook quality_of_life_infinite_pp on PokeBattle_Battler#pbSetPP (public)
+[2026-07-21 17:29:01] [INFO] [modules] Installed Infinite PP module (integration ready)
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Overworld Menu entry nature_selector priority=18
+[2026-07-21 17:29:01] [INFO] [modules] Installed Nature Selector module
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook quality_of_life_level_locking_level on Pokemon#level= (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook quality_of_life_level_locking_exp on Pokemon#exp= (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook quality_of_life_level_locking_change_level on Object#pbChangeLevel (private)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook quality_of_life_level_locking_exp_calculation on GameData::GrowthRate#add_exp (public)
+[2026-07-21 17:29:01] [DEBUG] [hooks] Installed hook quality_of_life_level_locking_battle on PokeBattle_Battle#pbGainExpOne (public)
+[2026-07-21 17:29:01] [INFO] [modules] Installed Level Locking module (hooks ready)
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Overworld Menu entry level_lock_manager priority=22
+[2026-07-21 17:29:01] [INFO] [modules] Installed Level Lock Manager module
+[2026-07-21 17:29:01] [DEBUG] [modules] Registered Overworld Menu entry super_candy priority=23
+[2026-07-21 17:29:01] [INFO] [modules] Installed Super Candy module
+[2026-07-21 17:29:01] [INFO] [bootstrap] Kanto Reloaded 1.0.1 loaded
+[2026-07-21 17:29:03] [INFO] [summary] data_patch_targets=17 data_patches_found=0 data_patches_applied=0 data_patch_warnings=0 data_patch_errors=0
+[2026-07-21 17:29:03] [INFO] [mods] Data patches: 0/0 applied, 0 warning(s), 0 error(s)
+[2026-07-21 17:29:03] [INFO] [mods] Rebuilt data patches after GameData.load_all
+[/BUG REPORT]
