@@ -1,7 +1,8 @@
 # Kanto Reloaded Bug Reports
 
-Kanto Reloaded provides a `File A Bug Report` action inside the About section
-of KR settings.
+Kanto Reloaded provides a standalone `File A Bug Report` action at the bottom
+of KR settings. About contains the framework version, author, and a direct
+`Discord Link` action.
 
 ## Workflow
 

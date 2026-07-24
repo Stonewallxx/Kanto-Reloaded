@@ -174,13 +174,15 @@ module KantoReloaded
             Graphics.update
             Input.update
 
+            if trigger?(:BACK) || InputRouter.input_triggered?(:MOUSERIGHT)
+              pbPlayCancelSE rescue nil
+              return nil
+            end
+
             mouse_result = update_mouse
             return mouse_result unless mouse_result == :continue
 
-            if trigger?(:BACK)
-              pbPlayCancelSE rescue nil
-              return nil
-            elsif repeat?(:LEFT)
+            if repeat?(:LEFT)
               move_selection(-1)
             elsif repeat?(:RIGHT)
               move_selection(1)
@@ -197,12 +199,6 @@ module KantoReloaded
         end
 
         def update_mouse
-          right_click = InputRouter.input_triggered?(:MOUSERIGHT)
-          if right_click
-            pbPlayCancelSE rescue nil
-            return nil
-          end
-
           position = InputRouter.active_position
           return :continue unless position
           local_x = position[0].to_i - @sprite.x

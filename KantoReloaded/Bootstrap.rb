@@ -4,16 +4,22 @@
 
 module KantoReloaded
   ROOT = File.expand_path(File.dirname(__FILE__)) unless const_defined?(:ROOT, false)
+  VERSION_FALLBACK = "0.0.0" unless const_defined?(:VERSION_FALLBACK, false)
 
   class << self
     def version
-      if defined?(::ModManager) && ::ModManager.respond_to?(:get_mod)
-        info = ::ModManager.get_mod("kanto_reloaded")
-        return info.version.to_s if info && info.respond_to?(:version)
-      end
-      "0.15.0"
+      path = File.join(KantoReloaded::ROOT, "mod.json")
+      return VERSION_FALLBACK unless File.file?(path)
+      raw = File.binread(path)
+      manifest = if defined?(KantoReloaded::Platform) && KantoReloaded::Platform.respond_to?(:parse_json)
+                   KantoReloaded::Platform.parse_json(raw)
+                 elsif defined?(::ModManager::JSON) && ::ModManager::JSON.respond_to?(:parse)
+                   ::ModManager::JSON.parse(raw)
+                 end
+      value = manifest.is_a?(Hash) ? manifest["version"].to_s.strip : ""
+      value.empty? ? VERSION_FALLBACK : value
     rescue
-      "0.15.0"
+      VERSION_FALLBACK
     end
   end
 

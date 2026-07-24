@@ -26,8 +26,10 @@ module KantoReloaded
 
         def upgrade_move(move)
           return false unless enabled? && move
-          return false unless move.respond_to?(:ppup=) && move.respond_to?(:pp=)
+          return false unless move.respond_to?(:ppup) && move.respond_to?(:ppup=)
+          return false unless move.respond_to?(:pp) && move.respond_to?(:pp=)
           return false unless move.respond_to?(:total_pp) && move.total_pp.to_i > 1
+          return false if move.ppup.to_i >= MAX_PP_UPS
           move.ppup = MAX_PP_UPS
           move.pp = move.total_pp
           true

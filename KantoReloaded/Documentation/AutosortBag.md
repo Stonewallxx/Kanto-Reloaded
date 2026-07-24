@@ -11,7 +11,8 @@ Open `Options > Kanto Reloaded > Quality of Life > Autosort Bag`.
 - **Sorting Lists** opens the custom list, separator, and favorite editor.
 - **Export Configuration** writes settings, policies, lists, and favorites to
   `Exports/AutosortBag_lists.txt`.
-- **Import Configuration** reads that text file after confirmation.
+- **Import Configuration** first reads that text file from `Exports`. If it is
+  absent, KR also checks the KantoReloaded folder and the legacy Mods folder.
 - **Sort All Pockets Now** immediately applies every active pocket policy.
 - **Autosort New Items** controls automatic post-receipt sorting.
 - **Always Move Recent** independently moves every received item to the first
@@ -108,4 +109,6 @@ REPEL
 
 `*` marks a favorite and `-- NAME --` creates an editor separator. Invalid
 settings, items, and items assigned to the wrong pocket are ignored. Older
-list-only exports remain importable.
+list-only exports remain importable, including their documented hyphen, star,
+and numbered list prefixes. A legacy star prefix is treated as a bullet because
+that export format stored favorites separately.

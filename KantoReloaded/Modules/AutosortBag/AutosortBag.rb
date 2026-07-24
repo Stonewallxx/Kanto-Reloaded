@@ -473,10 +473,13 @@ module KantoReloaded
       end
 
       def import_lists
-        path = export_path
-        return [false, _INTL("{1} was not found.", EXPORT_FILE)] unless
-          File.exist?(path)
+        path = import_path
+        return [
+          false,
+          _INTL("{1} was not found in KantoReloaded/Exports or the legacy Mods folder.", EXPORT_FILE)
+        ] unless path
         text = decode_text(File.binread(path))
+        legacy_format = legacy_text_export?(text)
         parsed_lists = {}
         parsed_favorites = {}
         parsed_settings = {}
@@ -515,8 +518,13 @@ module KantoReloaded
 
           line.split(/[;,]/).each do |token|
             value = token.to_s.strip
-            favorite = value.start_with?("*")
-            value = value[1..-1].to_s.strip if favorite
+            value = value.sub(/\s+(?:#|\/\/).*\z/, "").strip
+            favorite = !legacy_format && value.start_with?("*")
+            if legacy_format
+              value = value.sub(/\A(?:[-*]|\d+[.:)])\s+/, "").strip
+            elsif favorite
+              value = value[1..-1].to_s.strip
+            end
             item = normalize_item_id(value)
             unless item && item_in_pocket?(item, current)
               ignored += 1
@@ -542,7 +550,11 @@ module KantoReloaded
         end
         apply_all
         suffix = ignored > 0 ? _INTL(" {1} invalid entries were ignored.", ignored) : ""
-        [true, _INTL("Autosort configuration imported.") + suffix]
+        source = import_source_label(path)
+        KantoReloaded::Log.info(
+          "Imported Autosort Bag configuration from #{source}", :modules
+        ) if defined?(KantoReloaded::Log)
+        [true, _INTL("Autosort configuration imported from {1}.", source) + suffix]
       rescue StandardError => e
         log_exception("Autosort configuration import failed", e)
         [false, _INTL("Autosort configuration import failed.")]
@@ -1183,6 +1195,35 @@ module KantoReloaded
 
       def export_path
         File.join(KantoReloaded::ROOT, "Exports", EXPORT_FILE)
+      end
+
+      def import_path
+        import_paths.find { |path| File.file?(path) }
+      rescue StandardError
+        nil
+      end
+
+      def import_paths
+        [
+          export_path,
+          File.join(KantoReloaded::ROOT, EXPORT_FILE),
+          File.join(File.dirname(KantoReloaded::ROOT), EXPORT_FILE)
+        ].uniq
+      end
+
+      def import_source_label(path)
+        return "KantoReloaded/Exports/#{EXPORT_FILE}" if path == export_path
+        local_path = File.join(KantoReloaded::ROOT, EXPORT_FILE)
+        return "KantoReloaded/#{EXPORT_FILE}" if path == local_path
+        "Mods/#{EXPORT_FILE}"
+      end
+
+      def legacy_text_export?(text)
+        value = text.to_s
+        value.include?("# AutosortBag export format") &&
+          !value.include?("# Kanto Reloaded Autosort Bag")
+      rescue StandardError
+        false
       end
 
       def ensure_export_directory

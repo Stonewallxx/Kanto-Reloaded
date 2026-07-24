@@ -68,6 +68,45 @@ module KantoReloaded
         bitmap.fill_rect(x + width - 2, y + radius, 2, height - radius * 2, border)
       end
 
+      def rounded_stretch_blt(bitmap, destination, source_bitmap, source,
+                              radius, opacity = 255)
+        return unless bitmap && source_bitmap && destination && source
+        width = destination.width.to_i
+        height = destination.height.to_i
+        return if width <= 0 || height <= 0
+        radius = [[radius.to_i, width / 2, height / 2].min, 0].max
+        height.times do |row|
+          inset = rounded_row_inset(row, height, radius)
+          row_width = width - inset * 2
+          next if row_width <= 0
+          source_left = (source.width * inset.to_f / width).floor
+          source_right = (source.width * (width - inset).to_f / width).ceil
+          source_top = (source.height * row.to_f / height).floor
+          source_bottom = (source.height * (row + 1).to_f / height).ceil
+          source_width = [source_right - source_left, 1].max
+          source_height = [source_bottom - source_top, 1].max
+          bitmap.stretch_blt(
+            Rect.new(destination.x + inset, destination.y + row,
+                     row_width, 1),
+            source_bitmap,
+            Rect.new(source.x + source_left, source.y + source_top,
+                     source_width, source_height),
+            opacity
+          )
+        end
+      end
+
+      def rounded_row_inset(row, height, radius)
+        return 0 if radius <= 0
+        edge_row = [row, height - row - 1].min
+        return 0 if edge_row >= radius
+        distance = radius - edge_row - 0.5
+        inset = radius - Math.sqrt(radius * radius - distance * distance)
+        inset < 0.5 ? 0 : inset.ceil
+      rescue
+        0
+      end
+
       def quarter_circle(bitmap, center_x, center_y, radius, color, corner)
         (0..radius).each do |dx|
           (0..radius).each do |dy|
@@ -133,7 +172,7 @@ module KantoReloaded
     module InputRouter
       MOUSE_BUTTONS = [:MOUSELEFT, :MOUSERIGHT, :MOUSEMIDDLE].freeze
       KEYBOARD_BUTTONS = [:UP, :DOWN, :LEFT, :RIGHT, :USE, :BACK, :ACTION, :SPECIAL,
-                          :JUMPUP, :JUMPDOWN, :AUX1, :AUX2].freeze
+                          :JUMPUP, :JUMPDOWN, :AUX1, :AUX2, :L, :R].freeze
 
       class << self
         attr_reader :last_method
@@ -171,7 +210,14 @@ module KantoReloaded
         end
 
         def wheel_delta
-          return Input.scroll_v.to_i if defined?(Input) && Input.respond_to?(:scroll_v)
+          if defined?(Input) && Input.respond_to?(:mouse_wheel)
+            delta = Input.mouse_wheel.to_i
+            return delta unless delta == 0
+          end
+          if defined?(Input) && Input.respond_to?(:scroll_v)
+            delta = Input.scroll_v.to_i
+            return delta unless delta == 0
+          end
           return -1 if input_repeated?(:SCROLLUP)
           return 1 if input_repeated?(:SCROLLDOWN)
           0
@@ -302,7 +348,11 @@ module KantoReloaded
         end
 
         def confirm(text, options = {})
-          default_yes = !!options[:default]
+          default_yes = if options.has_key?(:default)
+                          !!options[:default]
+                        else
+                          !options[:serious]
+                        end
           rows = [
             { :label => options[:yes_label] || _INTL("Yes"), :value => true },
             { :label => options[:no_label] || _INTL("No"), :value => false }
@@ -342,6 +392,15 @@ module KantoReloaded
           Modal.drain_input
         end
 
+        def progress(text, options = {}, &block)
+          return yield(nil) unless graphics_available?
+          Modal.with_modal do
+            ProgressOverlay.new(text, options).main(&block)
+          end
+        ensure
+          Modal.drain_input
+        end
+
         def open(kind, title, rows, options = {})
           return fallback(kind, title, rows) unless graphics_available?
           Modal.with_modal { PopupScene.new(kind, title, rows, options).main }
@@ -371,6 +430,107 @@ module KantoReloaded
           kind == :choice ? -1 : nil
         rescue
           kind == :choice ? -1 : nil
+        end
+      end
+
+      class ProgressOverlay
+        SPINNER_OFFSETS = [
+          [0, -10], [7, -7], [10, 0], [7, 7],
+          [0, 10], [-7, 7], [-10, 0], [-7, -7]
+        ].freeze
+
+        def initialize(text, options)
+          @text = text.to_s
+          @options = options.is_a?(Hash) ? options : {}
+          theme_key = (@options[:theme] || :hr).to_sym rescue :hr
+          @theme = THEMES[theme_key] || THEMES[:hr]
+          @frame = -1
+        end
+
+        def main
+          setup
+          pulse
+          yield self
+        ensure
+          dispose
+        end
+
+        def pulse(text = nil)
+          @text = text.to_s unless text.nil?
+          3.times do
+            @frame = (@frame + 1) % SPINNER_OFFSETS.length
+            draw
+            Graphics.update
+            Input.update
+          end
+          true
+        rescue
+          false
+        end
+
+        private
+
+        def setup
+          @width = [[(@options[:width] || 286).to_i, MIN_W].max, MAX_W].min
+          @height = 78
+          @viewport = Viewport.new(0, 0, SCREEN_W, SCREEN_H)
+          @viewport.z = (@options[:z] || 999_999_999).to_i
+          @dim_sprite = Sprite.new(@viewport)
+          @dim_sprite.bitmap = Bitmap.new(SCREEN_W, SCREEN_H)
+          unless @options[:show_dim] == false
+            @dim_sprite.bitmap.fill_rect(0, 0, SCREEN_W, SCREEN_H, DIM_BG)
+          end
+          @sprite = Sprite.new(@viewport)
+          @sprite.bitmap = Bitmap.new(@width, @height)
+          @sprite.x = (SCREEN_W - @width) / 2
+          @sprite.y = (SCREEN_H - @height) / 2
+          @sprite.z = @viewport.z
+        end
+
+        def draw
+          bitmap = @sprite.bitmap
+          bitmap.clear
+          pbSetSmallFont(bitmap) if defined?(pbSetSmallFont)
+          border = @theme[:border] || PANEL_BORDER
+          background = @theme[:background] || PANEL_BG
+          Draw.rounded_rect(bitmap, 0, 0, @width, @height,
+                            PANEL_RADIUS, border)
+          Draw.rounded_rect(bitmap, 1, 1, @width - 2, @height - 2,
+                            PANEL_RADIUS - 1, background)
+          Draw.plain_text(bitmap, 16, 8, @width - 32, 24, @text,
+                          @theme[:title] || BLUE, 1)
+          draw_spinner(bitmap)
+        end
+
+        def draw_spinner(bitmap)
+          center_x = @width / 2
+          center_y = 51
+          color = @theme[:text] || WHITE
+          SPINNER_OFFSETS.each_with_index do |offset, index|
+            distance = (index - @frame) % SPINNER_OFFSETS.length
+            alpha = [255 - distance * 24, 70].max
+            dot = Draw.with_alpha(color, alpha)
+            Draw.rounded_rect(
+              bitmap, center_x + offset[0] - 2, center_y + offset[1] - 2,
+              5, 5, 2, dot
+            )
+          end
+        end
+
+        def dispose
+          if @dim_sprite
+            @dim_sprite.bitmap.dispose if @dim_sprite.bitmap &&
+              !@dim_sprite.bitmap.disposed?
+            @dim_sprite.dispose unless @dim_sprite.disposed?
+          end
+          if @sprite
+            @sprite.bitmap.dispose if @sprite.bitmap &&
+              !@sprite.bitmap.disposed?
+            @sprite.dispose unless @sprite.disposed?
+          end
+          @viewport.dispose if @viewport && !@viewport.disposed?
+        rescue
+          nil
         end
       end
 
@@ -444,9 +604,13 @@ module KantoReloaded
             Graphics.update
             Input.update
             return nil if close_requested?
+            if cancel_triggered?
+              pbPlayCancelSE rescue nil
+              return choice? ? -1 : nil
+            end
             dynamic_changed = refresh_dynamic_title
             if !choice?
-              return nil if trigger?(:USE) || trigger?(:BACK) || InputRouter.mouse_triggered?
+              return nil if trigger?(:USE) || InputRouter.mouse_triggered?
             else
               mouse_result = update_mouse
               return mouse_result unless mouse_result == :continue
@@ -461,8 +625,6 @@ module KantoReloaded
               elsif trigger?(:USE)
                 row = @rows[@index]
                 return row[:value] if row && row[:enabled] && row[:selectable]
-              elsif trigger?(:BACK)
-                return -1
               end
             end
             draw if dynamic_changed || ((Graphics.frame_count rescue 0) % 4).zero?
@@ -490,6 +652,12 @@ module KantoReloaded
         def close_requested?
           callback = @options[:close_if]
           callback.respond_to?(:call) && callback.call
+        rescue
+          false
+        end
+
+        def cancel_triggered?
+          trigger?(:BACK) || InputRouter.input_triggered?(:MOUSERIGHT)
         rescue
           false
         end
@@ -711,6 +879,10 @@ module KantoReloaded
           loop do
             Graphics.update
             Input.update
+            if trigger?(:BACK)
+              pbPlayCancelSE rescue nil
+              return -1
+            end
             mouse_result = update_mouse
             return mouse_result unless mouse_result == :continue
             if repeat?(:LEFT)
@@ -720,9 +892,6 @@ module KantoReloaded
             elsif trigger?(:USE)
               pbPlayDecisionSE rescue nil
               return current_page[:value]
-            elsif trigger?(:BACK)
-              pbPlayCancelSE rescue nil
-              return -1
             end
             draw if ((Graphics.frame_count rescue 0) % 4).zero?
           end
@@ -959,6 +1128,10 @@ module KantoReloaded
             Graphics.update
             Input.update
             @item_icon.update if @item_icon && !@item_icon.disposed?
+            if trigger?(:BACK)
+              pbPlayCancelSE rescue nil
+              return -1
+            end
             mouse_result = update_mouse
             return mouse_result unless mouse_result == :continue
             if repeat?(:LEFT)
@@ -970,9 +1143,6 @@ module KantoReloaded
               pbPlayBuzzerSE rescue nil
             elsif trigger?(:ACTION)
               perform_action
-            elsif trigger?(:BACK)
-              pbPlayCancelSE rescue nil
-              return -1
             end
           end
         end
@@ -1388,7 +1558,12 @@ module KantoReloaded
       receiver = Object.new
       return false unless receiver.respond_to?(:pbMessage, true)
       labels = [defined?(_INTL) ? _INTL("No") : "No", defined?(_INTL) ? _INTL("Yes") : "Yes"]
-      receiver.__send__(:pbMessage, text.to_s, labels, options[:default] == true ? 1 : 0) == 1
+      default_yes = if options.has_key?(:default)
+                      !!options[:default]
+                    else
+                      !options[:serious]
+                    end
+      receiver.__send__(:pbMessage, text.to_s, labels, default_yes ? 1 : 0) == 1
     rescue StandardError => e
       KantoReloaded::Log.exception("Confirmation display failed", e, channel: :ui) if defined?(KantoReloaded::Log)
       false

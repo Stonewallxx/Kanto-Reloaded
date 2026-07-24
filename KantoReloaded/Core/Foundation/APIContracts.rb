@@ -29,6 +29,8 @@ module KantoReloaded
       :save_manager    => { :classification => :stable, :constant => "KantoReloaded::SaveManager" },
       :tm_vault        => { :classification => :stable, :constant => "KantoReloaded::TMVault" },
       :reloaded_shop   => { :classification => :stable, :constant => "KantoReloaded::ReloadedShop" },
+      :randomizer      => { :classification => :stable, :constant => "KantoReloaded::Randomizer" },
+      :pc_organization => { :classification => :stable, :constant => "KantoReloaded::PCOrganization" },
       :level_locking   => { :classification => :stable, :constant => "KantoReloaded::LevelLocking" },
       :kif_options     => { :classification => :compatibility, :constant => "KantoReloaded::KIFOptionsIntegration" },
       :msm_compatibility => { :classification => :compatibility, :constant => "KantoReloaded::MSMCompatibility" },

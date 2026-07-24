@@ -125,7 +125,10 @@ register an optional Overworld Menu command with `default_enabled: false`.
   newly received or hatched party members, while a guarded `Pokemon#learn_move`
   wrapper upgrades future learned moves without relying on the method's `nil`
   return value. KIF's supported maximum of `3` PP Ups is used instead of the
-  legacy script's out-of-range value of `5`. No map update polling is installed.
+  legacy script's out-of-range value of `5`. The first application upgrades and
+  refills the move to its new maximum. Later callback and battle-start passes
+  detect the completed upgrade and preserve whatever PP remains. No map update
+  polling is installed.
 - Overworld Menu: optional On/Off command, disabled in the page editor by
   default.
 

@@ -34,9 +34,9 @@ module KantoReloaded
         false
       end
 
-      def open_module(module_id)
+      def open_module(module_id, options = {})
         return false unless available?
-        PokemonOptionScreen.new(ModuleScene.new(module_id)).pbStartScreen
+        PokemonOptionScreen.new(ModuleScene.new(module_id, options)).pbStartScreen
         true
       rescue StandardError => e
         KantoReloaded::Log.exception("Could not open settings module #{module_id}", e, channel: :ui) if defined?(KantoReloaded::Log)
@@ -328,7 +328,16 @@ module KantoReloaded
             _INTL("Framework"), proc { "Kanto Reloaded #{KantoReloaded.version}" },
             _INTL("Current Kanto Reloaded framework version.")
           )
+          rows << KantoReloaded::Options::TextDisplayOption.new(
+            _INTL("Author"), proc { "Stonewall" },
+            _INTL("Kanto Reloaded author.")
+          )
           rows << KantoReloaded::Options::ActionButton.new(
+            _INTL("Discord Link"),
+            proc { KantoReloaded::BugReport.open_discord },
+            _INTL("Open the Kanto Reloaded Discord thread.")
+          )
+          rows << KantoReloaded::Options::StandaloneActionButton.new(
             _INTL("File A Bug Report"),
             proc { KantoReloaded::BugReport.file },
             _INTL("Create a sanitized report, upload it, copy its link, and open the bug report thread.")
@@ -468,12 +477,15 @@ module KantoReloaded
       end
 
       class ModuleScene < BaseScene
-        def initialize(module_id)
+        def initialize(module_id, options = {})
           super()
           @module_id = module_id.to_sym
+          data = options.is_a?(Hash) ? options : { :title => options }
+          @module_title = data[:title].to_s.strip
         end
 
         def scene_title
+          return @module_title unless @module_title.empty?
           @module_id.to_s.split(/[_.-]+/).map { |part| part.capitalize }.join(" ")
         end
 
@@ -509,8 +521,8 @@ module KantoReloaded
       SettingsUI.open
     end
 
-    def open_module_settings(module_id)
-      SettingsUI.open_module(module_id)
+    def open_module_settings(module_id, options = {})
+      SettingsUI.open_module(module_id, options)
     end
   end
 end

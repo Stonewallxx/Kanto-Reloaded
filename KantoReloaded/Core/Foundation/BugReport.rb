@@ -34,6 +34,19 @@ module KantoReloaded
         false
       end
 
+      def open_discord
+        if platform_open_url(BUG_REPORT_THREAD_URL)
+          KantoReloaded.toast_success(_INTL("Opened the Kanto Reloaded Discord thread."))
+          return true
+        end
+        KantoReloaded.toast_warning(_INTL("The Kanto Reloaded Discord thread could not be opened."))
+        false
+      rescue StandardError => e
+        log_exception("Open Discord thread failed", e)
+        KantoReloaded.toast_warning(_INTL("The Kanto Reloaded Discord thread could not be opened."))
+        false
+      end
+
       def install
         KantoReloaded::Log.info("Bug report service ready", :framework) if defined?(KantoReloaded::Log)
         true

@@ -214,6 +214,11 @@ module KantoReloaded
         end
 
         def handle_input
+          if Input.trigger?(Input::BACK) ||
+              trigger?(:MOUSERIGHT)
+            pbPlayCancelSE rescue nil
+            return nil
+          end
           mouse_index = update_mouse
           if mouse_index && KantoReloaded::MouseInput.mouse_triggered?
             return selected_id
@@ -237,8 +242,6 @@ module KantoReloaded
             search_items
           elsif Input.trigger?(Input::USE)
             return selected_id
-          elsif Input.trigger?(Input::BACK)
-            return nil
           end
           :continue
         end

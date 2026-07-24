@@ -9,6 +9,7 @@ class integration in `Core/Compatibility/KIFOptionsIntegration.rb`.
 - `KantoReloaded::PopupWindow.confirm(text, options = {})`
 - `KantoReloaded::PopupWindow.choice(title, commands, options = {})`
 - `KantoReloaded::PopupWindow.carousel(title, entries, options = {})`
+- `KantoReloaded::PopupWindow.progress(text, options = {}) { |progress| ... }`
 - `KantoReloaded::NumberPicker.open(title, min:, max:, initial:)`
 - `KantoReloaded.number_picker(title, min:, max:, initial:)`
 - `KantoReloaded::Toast.show(text, options = {})`
@@ -51,7 +52,10 @@ scene APIs remain available for mods that need to open a focused settings page.
 The root scene contains Interface, Gameplay, Quality of Life, Economy,
 Developer / Utility, and About. Developer / Utility appears directly above
 About and contains developer, maintenance, and file-management actions such as
-Save Manager.
+Save Manager. The Framework value in About reads directly from the version in
+Kanto Reloaded's `mod.json`. About also shows the author and a Discord action.
+`File A Bug Report` remains visible as the final standalone root action rather
+than being hidden inside the collapsible About section.
 Legacy MSM-owned categories remain in the separate Mod Settings scene.
 
 The Interface category includes `Global Small Text`. It defaults to On and
@@ -124,7 +128,15 @@ Mouse-wheel direction follows the list: scrolling down advances downward and
 scrolling up moves upward.
 
 Popups own input while open and drain held Confirm, Back, and mouse inputs when
-closing so input does not bleed into the underlying scene.
+closing so input does not bleed into the underlying scene. Back is evaluated
+before Confirm, so overlapping controller mappings always cancel instead of
+activating the highlighted row. Confirmations default to Yes; destructive or
+otherwise serious prompts opt into a No default with `serious: true` or an
+explicit `default: false`.
+
+`PopupWindow.progress` provides a non-interactive animated spinner over the
+current scene. Long-running KR adapters can call `progress.pulse` at defined
+work stages without creating a sequence of dismissible message windows.
 
 `PopupWindow.carousel` provides a compact centered item carousel for shared
 module workflows. Entries can supply `label`, `value`, `item`, `selectable`,

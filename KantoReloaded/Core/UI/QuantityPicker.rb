@@ -114,11 +114,12 @@ module KantoReloaded
             Graphics.update
             Input.update
             draw if pulse_redraw?
-            if Input.trigger?(Input::SPECIAL)
-              show_controls_popup
-            elsif Input.trigger?(Input::BACK)
+            if Input.trigger?(Input::BACK) ||
+                input_triggered?(:MOUSERIGHT)
               pbPlayCancelSE if defined?(pbPlayCancelSE)
               return nil
+            elsif Input.trigger?(Input::SPECIAL)
+              show_controls_popup
             elsif Input.trigger?(Input::USE)
               result = submit
               return result unless result == :continue
@@ -504,11 +505,12 @@ module KantoReloaded
             Graphics.update
             Input.update
             draw if pulse_redraw?
-            if Input.trigger?(Input::SPECIAL)
-              show_confirmation_controls
-            elsif Input.trigger?(Input::BACK)
+            if Input.trigger?(Input::BACK) ||
+                input_triggered?(:MOUSERIGHT)
               pbPlayCancelSE if defined?(pbPlayCancelSE)
               return false
+            elsif Input.trigger?(Input::SPECIAL)
+              show_confirmation_controls
             elsif Input.trigger?(Input::USE)
               pbPlayDecisionSE if defined?(pbPlayDecisionSE)
               return @selected_choice == 0

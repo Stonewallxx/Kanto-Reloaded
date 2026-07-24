@@ -38,14 +38,15 @@ Relearn mode starts with KIF's current
 TM Vault does not modify the party menu or KIF's Move Relearner.
 
 Relearn Moves follows the active TM Vault sorting mode. Egg Moves display a
-small Egg icon immediately to the left of their type icon.
+small Egg icon immediately to the left of their type icon. Type icons use
+rounded corners throughout the move list.
 
 ## Controls
 
 - `C`: Select a move, Pokemon, or filter.
 - `B`: Return to the previous TM Vault state, then close from the main list.
 - `A`: Select or clear a party compatibility filter.
-- `L`: Switch between TM Vault and Relearn Moves.
+- `Y`: Switch between TM Vault and Relearn Moves.
 - `R`: Cycle Name, Type, Category, Recent, and Level Learned sorting.
 - Up/Down: Move one list entry.
 - Left/Right: Jump three list entries.

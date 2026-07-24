@@ -430,7 +430,7 @@ module KantoReloaded
           KantoReloaded::HintText.confirm("Select"),
           KantoReloaded::HintText.back,
           KantoReloaded::HintText.action(filter_label),
-          KantoReloaded::HintText.other(relearn_label, :sort),
+          KantoReloaded::HintText.other(relearn_label, "Y"),
           KantoReloaded::HintText.other("Sort", :quick)
         ]
       end
@@ -494,7 +494,7 @@ module KantoReloaded
           activate_selected_move
         elsif Input.trigger?(Input::ACTION)
           toggle_filter
-        elsif Input.trigger?(Input::L)
+        elsif Input.trigger?(Input::Y)
           toggle_relearn_mode
         elsif Input.trigger?(Input::R)
           cycle_sort
@@ -906,7 +906,9 @@ module KantoReloaded
       def draw_type_icon(bitmap, move, x, y)
         type_data = GameData::Type.get(move.type)
         source = Rect.new(0, type_data.id_number * 28, 64, 28)
-        bitmap.stretch_blt(Rect.new(x, y, 32, 14), TMVault.types_bitmap, source)
+        KantoReloaded::UI::Draw.rounded_stretch_blt(
+          bitmap, Rect.new(x, y, 32, 14), TMVault.types_bitmap, source, 3
+        )
       rescue
         nil
       end

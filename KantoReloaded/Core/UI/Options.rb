@@ -215,6 +215,9 @@ module KantoReloaded
           if defined?(CollapsibleHeader) && option.is_a?(CollapsibleHeader)
             collapsed = option.collapsed
             visible << option
+          elsif option.respond_to?(:outside_collapsible?) && option.outside_collapsible?
+            collapsed = false
+            visible << option
           elsif !collapsed
             visible << option
           end
@@ -612,6 +615,10 @@ module KantoReloaded
         def next(current); current; end
         def prev(current); current; end
         def values; [""]; end
+      end
+
+      class StandaloneActionButton < ActionButton
+        def outside_collapsible?; true; end
       end
 
       class TextDisplayOption < Option
@@ -1042,8 +1049,15 @@ if defined?(Window_PokemonOption)
       base = disabled ? Color.new(144, 150, 158) : @nameBaseColor
       shadow = disabled ? Color.new(54, 58, 64) : @nameShadowColor
       pbDrawShadowText(self.contents, rect.x, rect.y, label_w, rect.height, option.name, base, shadow)
-      pbDrawShadowText(self.contents, rect.x + label_w, rect.y, rect.width - label_w, rect.height,
-                       option.current_text, base, shadow)
+      value = option.current_text
+      value_width = [
+        self.contents.text_size(value).width + 4,
+        rect.width - label_w
+      ].min
+      pbDrawShadowText(
+        self.contents, centered_value_x(value, rect, label_w), rect.y,
+        value_width, rect.height, value, base, shadow
+      )
     end
 
     def draw_enum(option, index, rect)
