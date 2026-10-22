@@ -1,0 +1,14 @@
+{
+  "name": "Kanto Reloaded",
+  "id": "KantoReloaded",
+  "version": "2.0.0",
+  "author": "Stonewall",
+  "requires_kif": ">=0.21.52",
+  "description": "An overhaul for KIF Beta: controls, menus, PC, battle tools and more. Every feature can be switched on or off.",
+  "tags": ["Gameplay", "UI", "QoL"],
+  "dependencies": [],
+  "incompatible": [],
+  "locks": {"cody_battleinfo": 0, "savebackups": 0},
+  "modules": {"auto_battle": "off"},
+  "scripts": ["Bootstrap.rb"]
+}

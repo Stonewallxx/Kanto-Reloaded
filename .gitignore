@@ -1,0 +1,8 @@
+*.tmp
+# what the mod writes for itself (never shipped)
+/Settings/
+/Logging/
+/Bug Reports/
+# game art the design mockups draw with (kept locally, not shipped)
+/Tools/Designs/**/art/
+/Tools/Designs/**/backdrop.png

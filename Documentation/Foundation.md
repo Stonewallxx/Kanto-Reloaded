@@ -1,0 +1,356 @@
+# Foundation
+
+The foundation is what every Kanto Reloaded feature is built on. It lives in `Core/`. KIF Beta loads the mod through `mod.json`, which lists only `Bootstrap.rb`; nothing in KIF Beta's own files is edited.
+
+## Loading
+
+`Bootstrap.rb` loads every file listed in `LoadOrder.rb`, in order, then boots the core systems listed in `LoadOrder::SYSTEMS`. A file or system that fails is logged and skipped, and the game keeps running. A new file must be added to `LoadOrder.rb`, or it doesn't load.
+
+The `Dev` folder holds tools only for making Kanto Reloaded (the Hook Checker). It is never in a release. When it's there, Bootstrap loads `Dev/Dev.rb` after the other files and boots it last.
+
+Everything lives in `module Reloaded`. Inside it, `Settings` means `Reloaded::Settings`; the game's settings module is written `::Settings`.
+
+## Files
+
+`Reloaded::Paths` keeps what belongs to saves beside KIF Beta's saves, and everything else in the mod's own folder. Nothing is written into the game folder. `Paths.write_atomic` writes through a temporary copy, so a crash never leaves a half-written file.
+
+In the mod folder (`Mods\KantoReloaded`):
+
+| Folder (`Paths`) | What it holds |
+|---|---|
+| `Settings` (`settings_dir`) | `Settings.json` (Global settings, "seen" settings, pins), `Features.json` (each feature's On/Off), `Controls.json` (controls the player rebound; everything else follows F1 or its default), `ControlLayouts.json`, `Whats New.json`, `Session.json` and `Last Crash.json` (Bug Reports), `Pause Menu.json` (Your Row and the Favorite), `Overworld Menu.json` (its pages), `Timing Sessions.json`, `Hook Check.json` and `Hook Check Version.json` (Developer: the Hook Check runs at the Main Menu only when KIF's version or Kanto Reloaded's hooks changed since the last check) |
+| `Logging` (`logs_dir`) | `Kanto Reloaded.log` (this session's; `.old.log` is the last one), Save Checks, `TimingProfile.txt`, Hook Check and Style Check reports |
+| `Bug Reports` (`bug_reports_dir`) | The bug reports made |
+
+In the save folder (`%APPDATA%\KIF\Kanto Reloaded`, `Paths.data_dir`), save things only:
+
+| File | What it holds |
+|---|---|
+| `Saves\<save>.kr` | Backup copy of each save's Kanto Reloaded data |
+| `Save Notes.json` | Each save's note and color tag |
+| `Save Previews.json` | What the save lists show, until the save changes |
+| `Set Aside\` | What the Save Checker set aside to make a save loadable |
+
+KIF's mod catalog never touches files a mod writes into its own folder, so updating Kanto Reloaded keeps them. The Release Builder leaves the three folders out. The first start after the change moves the old files from the save folder over (`Paths.migrate`); when both places have a file, the newer one is kept.
+
+## JSON
+
+`Reloaded::JSON.parse` and `Reloaded::JSON.generate(value, pretty)` read and write strict JSON. Never use PIF's `::JSON`: its `parse` runs the text as Ruby code.
+
+## Log
+
+```ruby
+Reloaded::Log.info("Message", :channel)
+Reloaded::Log.exception("What failed", error, :channel)
+```
+
+Warnings and errors also go to KIF's session log, and exceptions to KIF's crash log, so a KIF Beta bug report shows them.
+
+**What the game runs on** (`Core/Foundation/Runtime.rb`): right after "booted", one line says what the game is running on, so any player's log (a Bug Report's too) shows what their game can do. On Windows, Linux or Steam Deck through Wine, or a phone (JoiPlay, Kirin), which reimplement the engine and may lack parts of it. It names the Ruby version and platform and the system the engine reports, and whether these are there: Windows calls (the Recycle Bin, the controller fix), Wine, the raw keyboard (Reloaded Controls), the controller functions, the mouse or touch position (clicks in Kanto Reloaded's screens), the clipboard (share codes, copying on a phone), and PIF's own Device option (PC / Mobile). It also says whether it's a phone, known by the signs the old Kanto Reloaded used (Ruby's platform saying android, Android's own environment variables, JoiPlay's marker; `Reloaded::Runtime.phone?` for the rest of the mod), and whether Kanto Reloaded's folder can be written, since its Settings and Logging live there and the old mod's notes say JoiPlay's game folder is read-only (unconfirmed until a phone log says). It changes nothing.
+
+**On a phone, Copy Instead**: a phone can't open File Explorer or a browser, so the buttons that would (Open Folder in the Save Manager, the Save Checker's Report Saved, Bug Reports' Report Made) become **Copy the Path** or **Copy the Link** there. They put the full path or link on the clipboard and say **Copied**, or **Couldn't Copy** with the text to write down if the clipboard isn't there. Screens use `copy_for_phone(text, words)` from `Core/UI/Frame.rb`.
+
+## Events
+
+```ruby
+Reloaded::Events.on(:save_loaded, :my_feature) { |context| ... }
+```
+
+| Event | When |
+|---|---|
+| `:core_booted` | Bootstrap finished |
+| `:system_ready` | The game set up `$PokemonSystem` at startup |
+| `:title_screen` | The title/load screen opened (no save is loaded) |
+| `:save_loaded` | A save loaded, or a new game started (`context[:new_game]`) |
+| `:new_game` | A new game's values were created |
+| `:saving` | Just before Kanto Reloaded's save data is written |
+| `:saved` | The game saved (`context[:path]`) |
+| `:setting_changed` | `{ :key, :value, :old_value }` |
+| `:feature_changed` | `{ :id, :state, :old_state }` |
+| `:game_data_loaded` | The game loaded its data (Data Patches' targets read their base data) |
+| `:data_patches_apply` | Data Patches' targets make the game's data from the patches (theirs only) |
+| `:data_patches_loaded` | Every mod's data patches were applied and checked (`{ :summary, :patches, :errors }`) |
+| `:profiler_session` | The Timing Profiler finished a session (`{ :session }`) |
+
+## Features
+
+Every feature can be switched On or Off. Off leaves the game as it was: the feature's hooks fall straight through to the game's own code, and its settings and menu entries hide.
+
+```ruby
+Reloaded::Features.register(:overworld_menu, :name => "Overworld Menu",
+  :description => "A quick menu on the map.", :default => :on, :page => :overworld_menu)
+Reloaded::Features.on?(:overworld_menu)
+```
+
+`:restart => true` marks a feature that changes game data while the game starts, so a change applies after a restart. A feature that raises an error is switched off for the session and logged once.
+
+`:takes_over => ["F-UI-05_SpeedUp"]` names KIF features ours takes over (KIF 0.21.52's `KIF::Features`, which KIF calls replacing). While ours runs, KIF's acts as if its module were Off: its hooks fall through and its settings hide. KIF's Mods list says Kanto Reloaded replaces it. Switching ours Off, or ours failing, gives KIF's back at once. The feature ids are in `KIF::Features.list`, or in cody's `MOD_REPLACE_API.md`.
+
+Each feature gets an On/Off row on the Features page, and another at the top of its own page (`:page`).
+
+### KIF features Kanto Reloaded turns off
+
+`mod.json` locks these Off while Kanto Reloaded is on (KIF applies them before Kanto Reloaded's scripts load, and undoes them if they fail):
+
+| What | How | Shows as |
+|---|---|---|
+| Auto-Battle and Self-Battle (KIF's **Auto Battle** module) | `"modules": {"auto_battle": "off"}` | KIF Settings > Modules: Auto Battle Off, LOCKED BY Kanto Reloaded; their settings hide |
+| Cody's **Battle Info** | `"locks": {"cody_battleinfo": 0}` | Battle Info Off, LOCKED BY Kanto Reloaded; no Battle Info action in Controls |
+
+`KIF::Locks.release` drops every lock Kanto Reloaded holds, these included.
+
+## Hooks
+
+Kanto Reloaded changes the game's and KIF's code through hooks, never edits. Every hook belongs to a feature and is listed in `Reloaded::Hooks.registry`.
+
+```ruby
+Reloaded::Hooks.around(:pc, "PokemonStorageScreen", :pbStartScreen, :id => :pc_open) do |original, *args|
+  # ...
+  original.call(*args)
+end
+```
+
+- **Feature Off:** while the feature is Off, calls go straight to the original.
+- **Our code fails:** if the hook's own code raises, the feature switches off for the session and the call falls back to the original.
+- **The game's code fails:** errors raised by the original pass through untouched.
+- **Errors on purpose:** `:passes => [IOError]` lets the hook raise those without being switched off (safe saving raises IOError so the game says the save failed).
+- **Class methods** are hooked on the singleton class: `Hooks.around(:x, Game.singleton_class, :set_up_system)`.
+- **The object it was called on:** `original.receiver` (an instance method's `self`), for hooks that need it (`Pokemon#exp=` reading the Pokémon's lock).
+
+For code that runs every frame (input, drawing), use `Hooks.prepend(feature, target, Module)`. Its methods call `super` and check `Reloaded::Features.on?(feature)` themselves; `Hooks.guard(feature, where) { ... }` wraps the risky part. A feature of `nil` is a core hook that can't be switched off.
+
+The registry keeps, for each hook, its target, method, kind and where in Kanto Reloaded it was made (`:where`, "Core/Settings/KIFBridge.rb:87"), and the error that switched one off (`:error`). `Hooks.skipped` lists the hooks skipped at boot and why (target or method not found).
+
+Something of the game's that Kanto Reloaded reads by name without hooking it is declared with `Hooks.needs`, so a check after a game update can say it's gone:
+
+```ruby
+Reloaded::Hooks.needs(:field, :runstyle, :id => :controls_run_toggle)   # a $PokemonSystem field
+Reloaded::Hooks.needs(:kif_option, :cody_battleinfo, :id => :my_split)   # a KIF::Options key
+Reloaded::Hooks.needs(:kif_setting, "Quicksave with S", :id => :my_split) # a KIF setting's name
+```
+
+A setting bound with `Bind.system(:field)` counts too, as do mod.json's locks and modules, every `:takes_over` feature folder, and the splits' files.
+
+## Save data
+
+```ruby
+Reloaded::SaveStore.register(:pc, :version => 2, :migrate => proc { |data, from| data })
+data = Reloaded::SaveStore.section(:pc)   # a Hash in the loaded save; nil at the title
+```
+
+- **Plain data only.** Sections hold only plain Ruby values (Hash, Array, String, Symbol, numbers, true/false/nil, Time), so a save still loads without Kanto Reloaded.
+- **Upgrades.** A section whose stored version is older is upgraded once with `:migrate`, all or nothing: Every pending upgrade runs on a copy and applies only if all of them work. If one fails, none apply, the old data is held in the save and tried again on later loads ([SaveChecker.md](SaveChecker.md)).
+- **Backup copy.** Each save also writes a copy to `Saves\<save>.kr`. The game drops the data of mods that aren't loaded. So a save made with Kanto Reloaded switched off gets its data back from the copy, but only if the copy belongs to the same player.
+
+## Settings
+
+```ruby
+Reloaded::Settings.register_page(:overworld_menu, :group => :general, :name => "Overworld Menu",
+  :icon => :system, :feature => :overworld_menu, :description => "...")
+Reloaded::Settings.register(:"overworld_menu.slots", :page => :overworld_menu,
+  :name => "Quick Slots", :type => :slider, :min => 1, :max => 8, :default => 5,
+  :scope => :global, :description => "...")
+Reloaded::Settings.get(:"overworld_menu.slots")
+```
+
+| Option | Meaning |
+|---|---|
+| `:type` | `:toggle`, `:enum` (`:values`), `:slider` / `:number` (`:min`, `:max`, `:step`, `:unit`), `:text`, `:button` (`:on_press`) |
+| `:scope` | `:global` (all saves, `Settings.json`) or `:save` (the save's "settings" section) |
+| `:long` | an enum that opens its own picker on A (a centred popup) instead of a dropdown: Theme, the frames, the colours |
+| `:swatch` | `:text` or `:cursor`: the picker shows each value's colour |
+| `:descriptions` | one text per value, in order: the dropdown explains the highlighted value with it |
+| `:locked_choices` | proc returning `{ index => reason }` (or `[index, ...]`): values that can't be picked now. The dropdown shows them locked, Left/Right step over them and `set` refuses them |
+| `:bind` | ties the setting to state the game already reads (`Bind.system`, `.switch`, `.variable`, `.custom`, `.direct`) |
+| `:apply` | `proc { |value, restoring| }` when the value changes, and at startup / save load |
+| `:commit` | `proc { |value, old_value| }` once when the settings screen closes, if it changed |
+| `:needs` / `:needs_text` | locked until another setting is on |
+| `:lock` | proc returning a reason when locked; presets respect it |
+| `:soft_lock` | like `:lock` for a dependency on another setting; presets ignore it |
+| `:feature` | shown only while that feature is On (pages pass it to their settings) |
+| `:visible` | proc; hidden when it returns false |
+| `:preset` | false keeps it out of presets and share codes |
+| `:reset` | a `Settings.json` schema version: a value stored by an older file is dropped once, so the setting starts at its default |
+| `:added` | a version: shows "New" until seen (leave it off for the first version) |
+| `:priority` | order on the page |
+
+Save settings are locked at the title screen with "Load a save to change this".
+
+**Developer pages:** Tools for making Kanto Reloaded and mods are pages of the Kanto Reloaded section like any other, last, and shown only while KIF's DEBUG option is on (Settings > Advanced): the Timing Profiler's headings (Timing Profiler, Timing Profiler - Time, Timing Profiler - Report) and Developer Tools (the Hook Check). A page is hidden with `register_page(..., :visible => proc { Reloaded.debug? })`; an open settings screen gains or loses its headings when it rebuilds, so switching DEBUG in Settings shows them at once. A setting on a hidden page isn't built at all, since KIF Settings puts any row no section names in Game > Other. Everything Kanto Reloaded adds stays in its own section.
+
+## Controls
+
+**Reloaded Controls** (Reloaded Systems, On by default) decides what every key and controller button does. Off gives the game's own controls exactly: the engine's F1 bindings and no extra actions. The F1 file is never written.
+
+- **Actions:** everything the player can bind is an action with a keyboard side and a controller side, in an area: Global, Overworld, Menus or Battle. The game's 12 buttons (Confirm, Back, Action, Special, X, Y, Page Left/Right and the directions) are actions too. They start on the player's own F1 layout and follow it, F1 changes included, until rebound.
+- **Feature actions:** a feature that today shares a game button gets its own action that `:follows` that button, so it changes nothing until the player rebinds it.
+- **Extra Actions** (`Core/Controls/ExtraActions.rb`): shortcuts the game has no button for, unbound until the player gives them one (Overworld > Shortcuts): **Run Toggle** (flips PIF's Default Movement), **Bicycle** (on or off the Bicycle or Race Bike) and **Poké Radar**. They work on the map when the Ready Menu could open; a press while walking waits until the player stops, and the items go through the game's own field use. Quick Throw comes with Hoenn Reloaded's battle tools.
+- **Splits** (`Core/Controls/Splits.rb`): KIF Beta's and PIF's features on shared buttons are split this way: Run, Pause Menu, Ready Menu, Quicksave and Skip Cutscene (Overworld), Mega Evolve and Shift (Battle), and Speed-Up, Next Speed and Reset Speed (Global). Battle Info has a split too, left out while its setting is locked Off (as Kanto Reloaded's `mod.json` does). The feature's own code still asks for its button (`Input.trigger?(Input::Y)`); a split answers with the feature's action instead, but only for checks made from the feature's script file (Quicksave.rb's checks of Y are Quicksave's; the Bag's stay Y's). The game loads `Data\Scripts` with only each file's name, so splits name files; at startup the log says if a file no longer checks its button, and that feature then just follows its button. Mods split their own features with `Splits.add`.
+- **The layer** (`Core/Controls/Layer.rb`): once per game step it reads the raw keyboard, controller buttons, sticks and triggers. It answers the game's `Input.press?`, `trigger?`, `repeat?`, `release?`, `dir4` and `dir8` by replacing only the engine's methods. So KIF's wrappers (Auto-Battle's confirm, Cody's Frame Rate key repeat, the speed keys, F8 screenshots) keep working on top. If it fails, it turns itself off for the session.
+- **Feel** (Kanto Reloaded > Controls): Button Style, Swap A and B, Menu Repeat Speed, Hold Time, Trigger Press and Stick Deadzone.
+- **Tap and hold:** an input with a hold action fires its tap actions when it is let go before Hold Time, and its hold actions once held that long.
+- **Typing:** while text is typed, character keys only type. Arrows, Enter, Esc and the controller still work.
+- **The controller check** (`Core/Controls/PadLog.rb`): Kanto Reloaded's log says what the engine sees of a controller, with Reloaded Controls On or Off. It notes whether one is there at start-up and each time one comes or goes, with the name the engine gives it and its buttons and axes, and the first press of each button and first push of each stick or trigger direction (each once). It notes the session's first click or tap and where it landed, which says whether a phone's touches reach the game as clicks. It also lists every device the engine's own SDL sees (`Core/Controls/PadSDL.rb`, reached through Win32API in the running exe), by name and model (vendor:product), and whether it's on the engine's controller list: one that isn't, the game can't use. That's at start-up and whenever the number of devices changes, with SDL's version, and Wine's under Wine or Proton. It's for finding out which controllers the engine reads by itself and which only work through DS4Windows or Steam; Bug Reports carry it with the log.
+- **Newer controller models** (`Core/Controls/ControllerModels.txt`): the engine's SDL (2.0.12) only uses a controller whose model is on its list from 2021. At start-up, 141 newer models from SDL's current list (SDL_GameControllerDB, zlib licence, its Windows entries rewritten the way SDL 2.0.12 names a device) are added to it, so pads like the 8BitDo Ultimate, Ultimate 2C and Pro 3 work by themselves. A model SDL already has is never replaced, so a controller that works now stays as it is. A newly known one that's already plugged in is opened. The log says how many were added. To build the list again from a newer SDL_GameControllerDB: `python -I Tools/Controllers/pad_models.py "<KIF Beta>\InfiniteFusion.exe" <gamecontrollerdb.txt> Core/Controls/ControllerModels.txt --report`. It's the same under Wine and Proton, and `PadSDL.rb` has nothing of Kanto Reloaded's in it, so it can go to KIF Beta.
+- **Never locked out:** the directions, Confirm and Back keep at least one key and one controller input. The Controls screen won't remove the last one, and a side left empty anyway (a hand-edited `Controls.json`) uses the engine's F1 inputs for that side. The engine's own keys (F1, F2, F12) can't be bound.
+
+### The Controls screen
+
+**Change Controls** (Kanto Reloaded > Controls) opens it (`Core/UI/ControlsScreen.rb`). It has the improved KIF Settings' layout:
+
+- **Sidebar:** Global, Overworld, Menus, Battle and Feel. An area with no actions yet is dimmed and skipped.
+- **List:** each action with its Keyboard and Controller columns. Left and Right pick the column, and a dot marks a changed one. An input another action in the area also has is underlined, and the description says what else it does. An empty column reads "Not Bound".
+- **Change:** Remove an input, Add a Key / Add a Button, or Back to Default. Adding asks the player to press it ("Press a Button or Move a Stick"); keeping it held for Hold Time binds it as a Hold. An input another action has asks Swap, Keep Both or Cancel.
+- **Default** puts the selected column back. **Search** finds actions by name.
+- **Layouts** (the R button) has Game's Layout (F1), Pokémon-Style, the player's own layouts, Save as New Layout, Paste Share Code, Reset Section and Reset All to Default. A layout of their own (`Core/Controls/Layouts.rb`, up to 12 in `ControlLayouts.json`, for all saves) holds every action's bindings on both columns and the Feel settings; it can be loaded, saved over, renamed, deleted, or copied as a `KRC1:` share code. Loading one keeps what matches the default following F1, and a pasted code is checked input by input.
+- **Pokémon-Style** (built in, `Layouts::POKEMON_STYLE`) sets only the controller, as in the main Pokémon games: B runs (held), X and Start open the Pause Menu, Y the Ready Menu, holding Select quicksaves, RT speeds up. Every other controller input goes back to the game's layout and the keyboard stays as it is (`Controls.apply_side`). Tapping Select is left free for the Overworld Menu.
+- **Feel** settings step with Left and Right; A (or a click on the value) opens a dropdown of their values, as in KIF Settings.
+
+```ruby
+Reloaded::Controls.register(:my_mod_menu, :name => "My Menu", :area => :overworld,
+  :keys => ["k:63"], :pad => ["hold:p:6"], :description => "Opens My Menu.", :owner => :my_mod)
+Reloaded::Controls.trigger?(:my_mod_menu)   # also press?, repeat?, release?
+```
+
+Inputs are `"k:<SDL scancode>"`, `"p:<controller button>"`, or `"a:<axis>+"` / `"a:<axis>-"` for sticks and triggers, with `"hold:"` in front for a hold. While Reloaded Controls is Off, an action that follows a game button reads that button, and other actions don't fire. `Reloaded::Prompts.name(:C)` names the binding on the device the player used last.
+
+## Fixes
+
+Bugs in PIF or KIF Beta that Kanto Reloaded fixes, in `Core/Fixes/`, with hooks like everything else. A fix that has to replace a whole method is written against that method's source (found with `Reloaded::Paths.script_file`, since the game loads its scripts with only their names). It applies only while the method's fingerprint (`Reloaded::Fixes.source?`) still matches, so a game update never gets an old copy put over a new method. If it doesn't match, the fix stays off and the log says so.
+
+| Fix | What it fixes |
+|---|---|
+| `CommandTextColours.rb` | PIF draws a command row with formatting (the pause menu's icon rows) in the font's default white instead of its window's text colours, so it can't be read on a light frame (Theme Mode Light or Frost, the light RLD frames). Each formatted row now starts with the window's colours. |
+
+The fixes kept in KR Fork Salvage come here as they're turned into hooks.
+
+## Graphics and sounds
+
+Kanto Reloaded's files stay in `Mods\KantoReloaded\Graphics` and `Audio`. When the game loads `Graphics/Pictures/foo` or plays `Audio/SE/bar`, it gets the mod's file, but only for files the mod ships. Nothing is copied into KIF Beta's folders. Fonts are the exception: the engine loads them only from the game's `Fonts` folder at startup.
+
+### Pokémon icons
+
+Every Pokémon or Egg picture in Kanto Reloaded's screens follows KIF Beta's **Big Pokémon Icons** (Graphics; Limited or All: battle sprites instead of the small icons). They all come from `Core/UI/PartyIcons.rb`, never straight from `Graphics/Pokemon/Icons`:
+
+- `icon(pkmn, viewport, z)` and `place`: a Pokémon, as the game's own icon sprite. Big ones are scaled to the small ones' size and centred the same way.
+- `species_bitmap(species)`: a species with no Pokémon behind it (a list of the wild ones here). With Big Pokémon Icons on, the battle sprite the game shows for it (the alt the player picked).
+- `egg_bitmap`: an Egg whose species isn't known yet (the Day Care's). With Big Pokémon Icons on, KIF Beta's Egg battle sprite.
+- `art_rect(bitmap, frame)`: the part of the first frame the Pokémon is in, so a list can fit the Pokémon itself to its box rather than the frame and its margins (Area Encounters). It looks at about 64 x 64 points of the frame, from each edge in.
+
+## Data Patches
+
+Mods change the game's data (items, moves, abilities, species, trainers, encounters, outfits) with JSON files in `Mods/<mod>/DataPatches`, in memory after the game loads its data, never in its files (`Core/DataPatches`). A patch that fails a check is skipped with a reason in plain words; two mods on one entry is a conflict load order decides. **Kanto Reloaded > Data Patches > Patch Viewer** shows each mod's patches, its conflicts and why a patch was rejected; with KIF's DEBUG option on, Y there reloads them without a restart (Hot Reload). The full guide for mod makers is [DataPatches.md](DataPatches.md).
+
+## Saves
+
+Safe saving (every save written to a temporary file, read back, then swapped in), the Save Manager (Active, Backups, Deleted; notes, colour tags, health), the rebuilt Load Screen (Reloaded Load Screen) and What's New. The guide is [Saves.md](Saves.md).
+
+Bug Reports make one file with everything needed to fix a bug (logs, settings, mods, hooks, the Save Check, Recent Steps, a note and a screenshot), and After a Crash offers one before the game closes, naming the mod the crash came from. The guide is [BugReports.md](BugReports.md).
+
+The Save Checker checks a save or backup on a copy: the file, Kanto Reloaded's data and its upgrades, plain values, Missing Content (Keep Aside or Remove) and Mod Data (Make It Loadable), with a report to save. The guide is [SaveChecker.md](SaveChecker.md).
+
+## Timing Profiler
+
+With KIF's DEBUG option on and **Kanto Reloaded > Timing Profiler** On, battles, map loads, menus, saving and loading are timed as you play, each a session; Mod Timings times each mod's hooks on their own (aimed TracePoints, only while it's on). The Report Viewer shows them; the guide is [TimingProfiler.md](TimingProfiler.md).
+
+## Autosave rows
+
+PIF's Autosave setting opened its own "Autosave settings" window when switched On. In KIF Settings (both screens) it is a heading of its own in Game, after Saves (`Core/Settings/AutosaveRows.rb`): **Autosave** (On/Off, no window), and while it's On, **When Healing**, **When Catching Pokémon**, **After Trainer Battles** and **Every X Steps**, plus **Steps Between Saves** (a number) while Every X Steps is On. They use PIF's own switches and variables and its On/Off order, show only in a save, and replace PIF's Autosave row.
+
+## Window frames
+
+Kanto Reloaded > Interface sets the frames around the game's windows (`Core/Interface/WindowFrames.rb`):
+
+- **Theme Mode:** how the Theme frame looks: **Dark** (the default; a dark panel, the Theme's border), **Glass** (see-through), **Light** (a near-white panel tinted by the Theme) or **Frost** (Light, see-through). The map menus (the Pause Menu and the Overworld Menu, with their popups) follow it too, in the Light frames' own look (Matching Frames, his pick 2026-10-21): the Theme's dark ink for words, deeper green, gold and red statuses, pale badges, a fainter cursor, and the Pause Menu washes the map pale instead of darkening it. Glass and Frost make their panels see-through. Full screens (KIF Settings, the Save Manager, Edit Pages...) keep the Theme's dark colours. `Reloaded::Palette.map_menu` gives the map menus' colours, `menu_alpha` a panel's see-through amount.
+- **Global Frame:** menus and every other window. **Theme** (the default) draws it in the Theme's colours, in the Theme Mode. The other choices are RLD Clear, PIF Clear and PIF Opaque (PIF's own two), and the 30 RLD frames, light and dark, from the old Kanto Reloaded and Hoenn Reloaded.
+- **Speech Frame:** text boxes. **Theme** (the default) uses the Global Frame; the others are PIF's speech frames, RLD Clear and the RLD frames. It also takes the place of PIF's own Speech Frame row in KIF Settings > Graphics > Text, as the same setting. A PIF speech frame picked here is copied to PIF's own setting, so it stays if Kanto Reloaded is removed.
+
+Both pickers show each frame. The frames are the mod's files in `Graphics/Windowskins`: `Theme <theme>` (Dark) and `Theme <mode> <theme>` for each Theme, drawn by `python Tools/Frames/make_theme_frames.py` from `Palette.rb`'s colours (run it after changing a theme), plus `RLD Choice <n>`, `RLD Choice <n>a` (dark) and `RLD Transparent` (RLD Clear). PIF gives dark frames white text by itself, and sizes a frame's edges from its picture, so any of them works as a text box.
+
+Values line up on one column per heading, which moves left for the widest value, so long frame names would push other Interface rows onto two lines; the preview checks every Kanto Reloaded row stays on one line.
+
+KIF Settings places rows by name: a Kanto Reloaded setting with one of KIF's names (Speech Frame) shows in KIF's place for it too, as the same row, with its own description.
+
+## The settings screen
+
+Kanto Reloaded's settings live in KIF Settings. `KIFBridge` adds a Kanto Reloaded section, first in the sidebar, with one heading per page and every setting as one of KIF's own rows. The section follows features switching On and Off each time the screen rebuilds.
+
+**Reloaded Settings** picks the screen that Options opens. It is the first row of **Reloaded Systems**, the first heading of the Kanto Reloaded section, which holds the toggles between Kanto Reloaded's version of a system and the game's own. It is On by default:
+
+- **On:** the improved KIF Settings (`Core/UI/SettingsScreen.rb`). It is a subclass of KIF's `KifSettingsScreen`, so it has the same sections, rows, modules, mods, search and defaults. It draws and handles input Kanto Reloaded's way: the theme and colour settings, the pulsing cursor, choices between arrows that step with Left and Right and open a dropdown with A, values (with OPEN, badges and slider numbers) lined up on one column per heading, smaller hints and descriptions, and presets with share codes in the title bar (or R). Search works as KIF's does.
+
+**The mouse** works in Kanto Reloaded's own screens and popups, never on the map (`Core/UI/Pointer.rb`):
+
+- **Hover:** moving the mouse over a section, a row (in Controls, an action's column), or a popup's row or button picks it. It only follows the mouse when the mouse moves, so a resting mouse never fights the controller.
+- **Click:** one click does the thing: opens a section's list, presses a row (as A), opens a choice's dropdown when it's on the value, steps a value when it's on the value's left or right side, opens the editor of the Controls column under it, or chooses a popup's row or button. A click on a hint does what the hint says (Default, Sections, Close...): a screen's `hint_pairs` give each clickable hint a third part, the method it runs.
+- **Wheel:** over a list it scrolls the view and the cursor goes to the row under the mouse; over the sections it moves between them; in a number popup, up adds.
+- **Right click:** goes back.
+- **Lit:** the Search, Presets and Layouts boxes and the hints light up under the mouse (not a box that can't be used).
+
+Screens note where they drew what can be clicked ("hits") as they paint; `Frame#pointer_hover` handles the title bar and the hint line for every screen.
+- **Off:** KIF Settings as KIF Beta ships it. Only Kanto Reloaded's own choices change: A on one opens its dropdown.
+
+If the improved screen fails, it logs the error and opens KIF Settings as it ships (`KIFBridge.vanilla`).
+
+### Option Dropdowns
+
+A on a choice (or a click on its value) opens a dropdown of its values (`Core/UI/Dropdown.rb`); Left and Right still step through them. It works on every choice in the improved KIF Settings, on the Controls screen's Feel settings, and on Kanto Reloaded's rows in KIF Settings as it ships (`Core/Settings/KIFDropdowns.rb`). KIF's own rows there stay as KIF ships them.
+
+- **Where:** under the value; above it when there's no room below; when neither side has room, under it moved up just enough, over the value. Up to 5 rows show; a longer list scrolls, with arrows and a scrollbar. While it's open, values it would cut through aren't drawn, so no half-covered text shows at its edges.
+- **What it shows:** the current value marked NOW, the highlight in Cursor Color, locked values dimmed with a padlock. The description box names the highlighted value and explains it: KIF's per-value descriptions, a Kanto Reloaded setting's `:descriptions`, else the setting's own description. A locked value says why first.
+- **Buttons:** Up and Down move (a held direction stops at the ends, a fresh press goes round), Left and Right move a page, A picks, B closes. The hint line reads Choose, Pick, Close.
+- **Mouse:** hovering highlights a value, a click picks it, a click on an arrow scrolls, the wheel scrolls, and a click outside or a right click closes it.
+- **Not dropdowns:** settings with their own picker (`:long`: Theme, Global Frame, Speech Frame and the colours) keep it, KIF's tab rows step, sliders and numbers open the number popup.
+
+A screen with its own loop uses `Frame#run_dropdown(dropdown)`, draws it with `paint_dropdown`, shows `dropdown_hints`, and explains `@dropdown.index` in its description box while `@dropdown` is set. `Dropdown.run(dropdown, bitmap, colours)` runs one for a screen that has no loop to share.
+
+The screen is built from these parts, which later Kanto Reloaded screens reuse:
+
+| Part | What it does |
+|---|---|
+| `Palette` | Theme, Header Color, Settings Color and Cursor Color, as `Palette.current` |
+| `Prompts` | Button names for hints: controller names while a controller is in use, otherwise the player's keys (Button Prompts) |
+| `Pixel` | Text in KIF's pixel fonts, centred on the capitals; the smaller text of hints and descriptions; badges, headings, hints and the cursor |
+| `ButtonIcons` | Inputs drawn as icons: keycaps, and Xbox, PlayStation or Nintendo buttons, sticks, triggers and the d-pad (Button Style) |
+| `SplitScreen` | The Patch Viewer's and the Timing Profiler's layout: the sidebar of entries, the list of headings and rows, the description box with badges and scrolling |
+| `Frame` | What every settings-like screen shares: the layers, the pulsing cursor, the centred hint line that scrolls when it's too long, the title-bar boxes with their buttons beside them, the description box, and running a dropdown |
+| `Dialogs` | Popups: `menu` (rows can lead with an input's icon), `picker`, `confirm`, `notice`, `ask` and `number` |
+| `Dropdown` | A choice's values, dropped down from its value (Option Dropdowns) |
+| `TextEntry` | Typing into a field, as KIF Settings' search does: the keyboard types straight in, and a controller's A opens the game's naming screen |
+| `Presets` | KIF's 12 preset slots, with Kanto Reloaded's per-save settings, share codes, Rename and Delete |
+| `ShareCodes` | Share codes (a prefix such as `KIF1:` or `KRC1:`, then Base64 JSON, read without eval) and the clipboard |
+
+## Tests and preview
+
+`ruby Tools/Tests/run_all.rb "<KIF Beta>"` runs every test and preview, each with what its own Usage line asks for, in new folders of its own in the system's temp folder. Add part of a name to run only some (`run_all.rb "<KIF Beta>" overworld pause`).
+
+No test or preview ever clears a folder. Each takes its work folder through `KRWork.claim` (`Tools/Tests/work_folder.rb`): the folder must be new, or completely empty (a preview's may hold its `metrics.json`), or the run stops before a single file is touched. Give each run a new folder; never the game's folder, the mod's, or any folder with work in it.
+
+| Tool | What it does |
+|---|---|
+| `ruby Tools/Tests/run_all.rb "<KIF Beta>" [part of a name ...]` | Every test and preview below, each in a new folder of its own; one line per suite, and the run's folder at the end |
+| `ruby Tools/Tests/foundation_test.rb "<KIF Beta>" <empty temp folder>` | Runs the foundation's offline checks |
+| `ruby Tools/Tests/controls_test.rb "<KIF Beta>" <empty temp folder>` | Runs Reloaded Controls under a fake engine with KIF's input wrappers and its F1 bindings |
+| `ruby Tools/StyleCheck/style_check.rb [<mod folder>] [--fix]` | The Style Checker: player-facing text against the house rules, with Fix It for Me (see [StyleChecker.md](StyleChecker.md)) |
+| `ruby Tools/Tests/style_check_test.rb <empty temp folder>` | Checks the Style Checker on a made-up mod |
+| `ruby Tools/Tests/data_patches_test.rb "<KIF Beta>" <empty temp folder>` | Data Patches on KIF Beta's real data and .dat files: two made-up mods patch every target, then Hot Reload; the Patch Viewer's words and the Patch Checker too |
+| `ruby Tools/Tests/patch_viewer_preview.rb "<KIF Beta>" <work dir with metrics.json>` | Drives the Patch Viewer on the preview's stand-ins (browsing, Details, Load Order, Search, the mouse, Hot Reload); `Tools/UIPreview/render.py` draws it |
+| `ruby Tools/Tests/saves_test.rb "<KIF Beta>" <empty temp folder>` | Safe saving, the save library (previews, health, backups, the Backup Cap, the Deleted tab, notes) and What's New, on real save files |
+| `ruby Tools/Tests/saves_preview.rb "<KIF Beta>" <work dir with metrics.json>` | Drives the Save Manager, the Load Screen and What's New on the preview's stand-ins |
+| `ruby Tools/Tests/save_check_test.rb "<KIF Beta>" <empty temp folder>` | The Save Checker on KIF Beta's real data and saves written as PIF writes them: the checks, Keep Aside and Remove, Keep Aside's return, Make It Loadable, the reader's stand-ins, all-or-nothing upgrades, the report and the Tools script |
+| `ruby Tools/Tests/save_check_preview.rb "<KIF Beta>" <work dir with metrics.json>` | Drives the Save Checker's screens and the ways in from the Save Manager and the Load Screen on the preview's stand-ins |
+| `ruby Tools/Tests/bug_report_test.rb "<KIF Beta>" <empty temp folder>` | Bug Reports: Recent Steps, this session's errors, the zip read back and what's in it, the user name taken out, After a Crash and the next start's offer |
+| `ruby Tools/Tests/bug_report_preview.rb "<KIF Beta>" <work dir with metrics.json>` | Drives Make a Bug Report, Report Made, After a Crash and the next start's offer on the preview's stand-ins |
+| `ruby Tools/SaveChecker/save_check.rb "<KIF Beta>" "<save file>" [report.md]` | The Save Checker outside the game, for mod makers (see [SaveChecker.md](SaveChecker.md)) |
+| `ruby Tools/Tests/profiler_test.rb "<KIF Beta>" <empty temp folder>` | The Timing Profiler on made-up game classes with known work and frame waits: sessions, sections, kept sessions, the report, Mod Timings |
+| `ruby Tools/Tests/quality_of_life_test.rb "<KIF Beta>" <empty temp folder>` | Quality of Life on stand-ins for the game's classes: each toggle On and Off, what a save remembers, level locks, Super Candy and the bug report lines (see [QualityOfLife.md](QualityOfLife.md)) |
+| `ruby Tools/Tests/quality_of_life_preview.rb "<KIF Beta>" <work dir with metrics.json>` | Drives the Nature Selector, the Level Lock Manager, Super Candy and the toast on the preview's stand-ins, with Big Pokémon Icons On |
+| `ruby Tools/Tests/profiler_preview.rb "<KIF Beta>" <work dir with metrics.json>` | Drives the Report Viewer, Mod Timings and the profiler's settings headings on the preview's stand-ins |
+| `ruby Tools/PatchChecker/patch_check.rb "<KIF Beta>" "<mod folder>" [more mods]` | The Patch Checker: a mod's DataPatches against KIF Beta's real data, every error and warning by file and patch (see [DataPatches.md](DataPatches.md)) |
+| `Tools/UIPreview` (see the top of `preview.rb`) | Boots KIF's real settings screen and the mod offline, drives the improved KIF Settings and the Controls screen with button presses, keys and controller buttons and checks each step, and renders marked states with the game's real fonts. `UI Metrics.md` holds the measurements it relies on |
+| `python -I Tools/KIFUpdate/kif_update.py <repo> "<KIF Beta>" <old commit> <new commit> <backup dir> [--apply] [--skip=a,b]` | Updates the local KIF Beta from a clone of cody's repo, between two commits. Without `--apply` it only lists each changed file and its state; with it, every file it touches is backed up first, and it refuses if any local file differs from the old commit. `--skip` leaves out his repo-only files (`.gitattributes,publish_release.cmd,push_stable.cmd`) |
+| `ruby Tools/Controllers/kif_controllers_test.rb <KIF-Beta-PRs clone>` | Offline checks of the controller fix in the KIF pull request (`C-SYS-08_Controllers`) on its own, with KIF's log, the engine's input and its SDL stood in |
+| `ruby Tools/Controllers/test_mod_check.rb <unpacked ControllerFix folder> yes\|no` | Checks the Controller Fix test mod, unpacked, with KIF stood in (`yes` when KIF already has the fix) |
+| `Tools/Designs` (see its [README](../Tools/Designs/README.md)) | The mockup scripts behind the Roadmap's designs, drawn on the preview tool |
+
+The game loads neither: `mod.json` only lists `Bootstrap.rb`.

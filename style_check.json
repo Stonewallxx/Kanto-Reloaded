@@ -1,0 +1,120 @@
+{
+  "ignore": [
+    {
+      "rule": "title_case",
+      "file": "Core/Controls/Controls.rb",
+      "text": "Swap A and B"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/DataPatches/Registry.rb",
+      "text": "Remix trainers"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/DataPatches/Registry.rb",
+      "text": "Remix trainer"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/DataPatches/Registry.rb",
+      "text": "Expert trainers"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/DataPatches/Registry.rb",
+      "text": "Expert trainer"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/PatchViewer.rb",
+      "text": "Nothing changed"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/Profiler/Probes.rb",
+      "text": "Co-op"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/Profiler/Report.rb",
+      "text": "Average ms"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/Profiler/Report.rb",
+      "text": "Peak ms"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/Profiler/Report.rb",
+      "text": "Total ms"
+    },
+    {
+      "rule": "double",
+      "file": "Core/Profiler/Report.rb",
+      "text": "Elapsed:     %.3f s (work %.3f s, %d frames)"
+    },
+    {
+      "rule": "double",
+      "file": "Core/Profiler/Report.rb",
+      "text": "Slow Frame:  %.1f ms"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/LoadScreen.rb",
+      "text": "Savefile management"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/SaveCheck/Content.rb",
+      "text": "In the game's data"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/SaveCheckScreen.rb",
+      "text": "NEEDED TO LOAD"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/SaveCheckScreen.rb",
+      "text": "SAFE TO REMOVE"
+    },
+    {
+      "rule": "names",
+      "file": "Core/SaveCheck/ModData.rb",
+      "text": "KantoReloaded"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/BugReport/BugReport.rb",
+      "text": "Kanto Reloaded's Bug Reports folder"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/BugReportScreen.rb",
+      "text": "OFF BY DEFAULT"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/PauseMenuScreen.rb",
+      "text": "GUI menu open",
+      "why": "A sound file's name (PIF's pause menu sound), not text"
+    },
+    {
+      "rule": "names",
+      "file": "Core/QualityOfLife/Hooks.rb",
+      "text": "Pokemon::Move"
+    },
+    {
+      "rule": "names",
+      "file": "Core/QualityOfLife/Hooks.rb",
+      "text": "Pokemon"
+    },
+    {
+      "rule": "names",
+      "file": "Core/QualityOfLife/LevelLocks.rb",
+      "text": "Pokemon"
+    }
+  ]
+}
