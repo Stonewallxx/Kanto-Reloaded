@@ -58,12 +58,19 @@ def backup_file(slot, stamp, tail = "")
   file
 end
 
-# KIF Beta's look for mod updates before the main menu (0.21.68+), stood in
+# KIF Beta's startup checks (0.21.68+), stood in: its look for mod updates
+# and for a newer KIF
 module KIF
   module ModCatalogUI
     def self.startup_check
       $mod_checks = ($mod_checks || 0) + 1
       return true
+    end
+  end
+  module Updater
+    def self.check(manual = false)
+      $kif_checks = ($kif_checks || 0) + 1
+      return false
     end
   end
 end
@@ -75,9 +82,14 @@ check("Kanto Reloaded boots with its saves (#{R::Bootstrap.status}, #{R::Bootstr
 KIF::ModCatalogUI.startup_check
 check("Startup Mod-Check, a Reloaded Systems setting, On at first: KIF's look for mod updates runs ($mod_checks)",
       R::Settings.definition(S::MOD_CHECK)[:page] == :systems && R::Settings.get(S::MOD_CHECK) == true && $mod_checks == 1)
+KIF::Updater.check(false)
+check("...and KIF's look for a newer KIF ($kif_checks)", $kif_checks == 1)
 R::Settings.set(S::MOD_CHECK, false)
 skipped = KIF::ModCatalogUI.startup_check
-check("...Off: it's skipped", skipped == false && $mod_checks == 1)
+KIF::Updater.check(false)
+check("...Off: both are skipped, so nothing comes up ($mod_checks, $kif_checks)", skipped == false && $mod_checks == 1 && $kif_checks == 1)
+KIF::Updater.check(true)
+check("...Options > System > Check for Updates still checks ($kif_checks)", $kif_checks == 2)
 R::Settings.set(S::MOD_CHECK, true)
 check("settings: Reloaded Load Screen (On), the Saves page's Save Manager and Backup Cap (Unlimited)",
       R::Settings.get(S::LOAD_SCREEN) == true && R::Settings.definition(:"saves.manager")[:type] == :button && S.cap.nil?)

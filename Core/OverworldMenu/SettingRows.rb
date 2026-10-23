@@ -227,11 +227,15 @@ module Reloaded
           return false
         end
 
-        # "Set by <mod> while that mod is On." or nil
+        # "Set by <mod> while that mod is On.", "Locked: Toggle Only." (a
+        # Kanto Reloaded setting another one decides now), or nil
         def lock_reason(key)
           r = row(key)
-          by = r && @screen ? @screen.send(:locked_by, r.opt) : nil
-          return by ? _INTL("Set by {1} while that mod is On.", by) : nil
+          return nil unless r
+          by = @screen ? @screen.send(:locked_by, r.opt) : nil
+          return _INTL("Set by {1} while that mod is On.", by) if by
+          kr = r.opt.respond_to?(:kr_key) && r.opt.kr_key ? Reloaded::Settings.lock_reason(r.opt.kr_key) : nil
+          return kr ? _INTL("Locked: {1}.", kr) : nil
         rescue StandardError
           return nil
         end

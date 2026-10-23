@@ -54,7 +54,7 @@ A save's note and color tag are kept in `Kanto Reloaded\Save Notes.json`, by slo
 
 ## The Load Screen
 
-**Startup Mod-Check** (Reloaded Systems, On by default): Before the main menu, KIF Beta (0.21.68+) looks for updates to your mods and offers to open Mods > Updates. Off skips that look; Mods > Updates still checks when you open it.
+**Startup Mod-Check** (Reloaded Systems, On by default): As the load screen starts, KIF Beta looks for a newer KIF and (0.21.68+) for updates to your mods (see The Startup Checks below). Off skips both, so nothing comes up; Options > System > Check for Updates and Mods > Updates still check when you use them.
 
 **Reloaded Load Screen** (Reloaded Systems, On by default) rebuilds PIF's load screen:
 
@@ -64,6 +64,17 @@ A save's note and color tag are kept in `Kanto Reloaded\Save Notes.json`, by slo
 - **On Continue:** Y edits the note, holding Y opens the [Save Checker](SaveChecker.md); holding A lists the save's backups to go back to; a damaged save offers its newest good backup.
 
 PIF's own menu still runs it, so KIF Beta's updater, imports and first-run questions all still happen; only the drawing is Kanto Reloaded's. Savefile management is left out: the Save Manager and holding A do it, and more. Off: The game's own load screen.
+
+### The Startup Checks
+
+As the load screen starts, KIF Beta checks for a newer KIF and, every 12 hours, for updates to your mods, while Startup Mod-Check is On. They run and finish before you can choose anything (his call, 2026-10-23). With Reloaded Load Screen On they wait for the load screen to fade in and run over it, dimmed, instead of on a black screen before it, and they look like Kanto Reloaded's (Roadmap Designs topic Startup Checks; `Core/Saves/UpdateChecks.rb`, `Core/UI/UpdateChecksScreen.rb`):
+
+- **Checking for Updates** (design 1, Header Plate): a row for KIF and one for Mods. Each shows a pill once it's done (1.1.0 Is the Newest, 1.2.0 Is Out, 1.2.0 Skipped, No Answer, Up to Date, 3 Updates, Checked Recently, Off), or what it's on and a gold bar. It goes before KIF's first-start questions. With Updates Off (Options > System) nothing runs and nothing shows.
+- **A new KIF** (design 2, Choice List): the versions (you have, new), then Update Now, What's New, Later and Skip This Version, and what the highlighted one does. B is Later. What's New shows KIF's notes, then comes back to the list.
+- **Mod updates** (design 2, Update All): each mod with its versions (old to new), then Update All (KIF's own installer, from the popup; they work from the next start), Open Updates (Mods > Updates, as KIF's Yes) and Later. B is Later.
+- **KIF's other waits** (its update download, installing mods, Mods > Browse) are a popup with KIF's title, what it's on, a gold bar, and B to cancel where KIF lets you. KIF's messages and questions along the way are Reloaded's popups.
+
+It's all KIF's own code, hooked: the checks, their answers and what they do are unchanged, and a question of KIF's this doesn't know stays KIF's. KIF's first-start questions come after them, over the load screen too. Reloaded Load Screen Off: KIF's own look, before the load screen.
 
 ## What's New
 
@@ -110,7 +121,8 @@ Previews read the whole save (PIF has no small header) with PIF's raw reader, wh
 ```text
 ruby Tools/Tests/saves_test.rb "<KIF Beta>" <empty temp folder>
 ruby Tools/Tests/saves_preview.rb "<KIF Beta>" <work dir with metrics.json>
+ruby Tools/Tests/update_checks_preview.rb "<KIF Beta>" <work dir with metrics.json>
 python Tools/UIPreview/render.py "<KIF Beta>\Fonts" <work dir>
 ```
 
-The first checks safe saving (a save that doesn't read back, a crash mid-save), the library (previews and health, backups, restoring, the Backup Cap, the Deleted tab and old Kanto Reloaded's, notes) and What's New, on real save files with stand-in players. The second drives the Save Manager, the Load Screen and What's New, with the game's own icon and trainer files (small icons and big ones).
+The first checks safe saving (a save that doesn't read back, a crash mid-save), the library (previews and health, backups, restoring, the Backup Cap, the Deleted tab and old Kanto Reloaded's, notes) and What's New, on real save files with stand-in players. The second drives the Save Manager, the Load Screen and What's New, with the game's own icon and trainer files (small icons and big ones). The third drives the startup checks on stand-ins that follow KIF's updater and mod catalog: the checks held until the load screen has faded in, Checking for Updates, mod updates (Open Updates, Update All, B), a new KIF (What's New, Later, Skip This Version, Update Now and its download), KIF's first-start questions after them, Updates Off, Startup Mod-Check Off (nothing comes up), and Reloaded Load Screen Off.

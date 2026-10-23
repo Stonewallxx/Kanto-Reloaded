@@ -318,12 +318,14 @@ module Reloaded
         # Toggles
         #----------------------------------------------------------------------
         def toggles
+          # Kanto Reloaded's Speed-Up: it follows the type (Toggle: the speed
+          # now; Hold: Speed-Up (Overworld)); else PIF's, in Toggle only
           om.register(:speed_up, :name => "Speed-Up", :kind => :toggle, :priority => 50,
-            :condition => proc { defined?(SPEEDUP_STAGES) && $PokemonSystem && $PokemonSystem.respond_to?(:speedup) && $PokemonSystem.speedup.to_i == 1 },
+            :condition => proc { kr_speed? || (defined?(SPEEDUP_STAGES) && $PokemonSystem && $PokemonSystem.respond_to?(:speedup) && $PokemonSystem.speedup.to_i == 1) },
             :values => [],
-            :get => proc { $GameSpeed.to_i },
-            :set => proc { |i| $GameSpeed = i },
-            :description => "The game's speed, while Speed-Up is set to Toggle.")
+            :get => proc { kr_speed? ? kr_speed_index : $GameSpeed.to_i },
+            :set => proc { |i| kr_speed? ? kr_set_speed(i) : ($GameSpeed = i) },
+            :description => "The game's speed. Toggle: The speed now. Hold: How fast holding the Speed-Up button goes.")
           om.entry(:speed_up).values = SpeedValues.new
           om.register(:bicycle, :name => "Bicycle", :kind => :toggle, :priority => 55,
             :condition => proc { !bike.nil? },
@@ -331,6 +333,20 @@ module Reloaded
             :get => proc { $PokemonGlobal.bicycle ? true : false },
             :set => proc { |on| on ? pbMountBike : pbDismountBike },
             :description => "On while you ride: A gets on or off, where you can ride, without the Bag.")
+        end
+
+        def kr_speed?
+          return defined?(Reloaded::SpeedUp) && Reloaded::SpeedUp.on?
+        end
+
+        def kr_speed_index
+          su = Reloaded::SpeedUp
+          return su.toggle? ? su.toggled(:overworld) - 1 : su.setting(:overworld).to_i
+        end
+
+        def kr_set_speed(i)
+          su = Reloaded::SpeedUp
+          su.toggle? ? su.set_toggled(i + 1, :overworld) : Reloaded::Settings.set(:"speed_up.overworld", i)
         end
 
         # The Bicycle (or PIF's Race Bike) you have, or nil
@@ -717,13 +733,24 @@ module Reloaded
 
       # Speed-Up's choices follow the game's speeds (KIF's limit can change
       # them): x1, x2, x3...
+      # The Speed-Up row's values: Kanto Reloaded's (Toggle: 1x to Toggle
+      # Limit; Hold: 1x to 10x), else PIF's stages
       class SpeedValues
         def [](i)
+          return "x#{i + 1}" if kr?
           return "x#{(SPEEDUP_STAGES[i] rescue 1)}"
         end
 
         def length
+          su = Reloaded::SpeedUp if kr?
+          return su.toggle? ? su.limit : 10 if su
           return (SPEEDUP_STAGES.length rescue 1)
+        end
+
+        private
+
+        def kr?
+          return defined?(Reloaded::SpeedUp) && Reloaded::SpeedUp.on?
         end
       end
     end

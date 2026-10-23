@@ -29,6 +29,9 @@
 #     one is in use) and scroll when they're too long for the screen
 #   - settings a mod locked (KIF 0.21.52 Experiences) can't be changed and
 #     say which mod set them, as in KIF Settings
+#   - a Kanto Reloaded setting another one decides right now (the other
+#     Speed-Up Type's rows, PokeVial's Max Uses under Progressive Uses) is
+#     dimmed with a padlock, can't be changed, and its description says why
 #   - text centred on its capitals, badges with their text centred
 #
 # KIF Settings' methods read its layout constants where they are written,
@@ -99,6 +102,8 @@ module Reloaded
     # Default (KIF Settings' A): nothing is changed while picking.
     def reset_default(*args)
       return pbPlayBuzzerSE if @pick_mode
+      r = current
+      return pbPlayBuzzerSE if r && kr_lock(r.opt)
       super
     end
 
@@ -166,6 +171,10 @@ module Reloaded
       o = r.opt
       return if KIF::SettingsScreen.button?(o)
       return pbPlayBuzzerSE if lock_name(o)
+      if kr_lock(o)
+        pbPlayBuzzerSE if round || Input.trigger?(dir > 0 ? Input::RIGHT : Input::LEFT)
+        return
+      end
       cur = (o.get rescue nil)
       return if cur.nil?
       nv = step_value(o, cur, dir, round)
@@ -203,7 +212,7 @@ module Reloaded
       return unless r
       o = r.opt
       return super if r.action || KIF::SettingsScreen.button?(o)
-      return pbPlayBuzzerSE if lock_name(o)
+      return pbPlayBuzzerSE if lock_name(o) || kr_lock(o)
       if KIF::SettingsScreen.choices?(o)
         return pick(r) if picker?(o)
         return open_dropdown(r) if dropdown?(r)
@@ -734,7 +743,7 @@ module Reloaded
         end
         unless mode == :tabs
           room = (mode == :button ? chip_left(r) - 8 : VAL_X1) - x      # a button row's name stops before its chip
-          nw = P.text(top, x, y, room, ROW_H - 2, PF.fit(PF::ROW, r.label, room), c[:opt], PF::ROW)
+          nw = P.text(top, x, y, room, ROW_H - 2, PF.fit(PF::ROW, r.label, room), kr_lock(r.opt) ? c[:dim] : c[:opt], PF::ROW)
           if lock_name(r.opt)
             lx = x + nw + 6
             room = mode == :below ? VAL_X1 : (value_kind(r) == :slider ? slider_x0(r) : value_left(r)) - 6
@@ -850,6 +859,15 @@ module Reloaded
       return [m[1], m[2], PF.width(PF::TEXT, m[1]) + COUNT_GAP + PF.width(PF::TINY, m[2])]
     end
 
+    # Why a Kanto Reloaded row can't be changed right now (another setting
+    # decides it), or nil
+    def kr_lock(opt)
+      return nil unless opt && opt.respond_to?(:kr_key) && opt.kr_key
+      return Reloaded::Settings.lock_reason(opt.kr_key)
+    rescue StandardError
+      return nil
+    end
+
     # The mod that locked a row's setting (KIF 0.21.52's Experiences), or nil.
     def lock_name(opt)
       return nil unless opt && respond_to?(:locked_by, true)
@@ -880,6 +898,7 @@ module Reloaded
 
     def paint_value(top, c, r, y, selected, kind)
       o = r.opt
+      locked = kr_lock(o)
       badge = o.respond_to?(:kif_badge) ? o.kif_badge : nil
       cx = column(r) unless kind == :tabs
       case kind
@@ -898,9 +917,10 @@ module Reloaded
         x1 = x0 + SLIDER_W
         kx = x0 + (frac * (x1 - x0)).round
         P.ui.rbox(top, x0, y + 10, x1, y + 14, 2, c[:dark])
-        P.ui.rbox(top, x0, y + 10, kx, y + 14, 2, selected ? c[:selb] : c[:segon])
-        P.ui.rbox(top, kx - 4, y + 6, kx + 4, y + 18, 3, c[:txt])
-        P.text(top, cx - 25, y, 50, ROW_H - 2, v.to_s, c[:opt], nil, 2)
+        P.ui.rbox(top, x0, y + 10, kx, y + 14, 2, locked ? c[:line] : (selected ? c[:selb] : c[:segon]))
+        P.ui.rbox(top, kx - 4, y + 6, kx + 4, y + 18, 3, locked ? c[:dim] : c[:txt])
+        P.text(top, cx - 25, y, 50, ROW_H - 2, v.to_s, locked ? c[:dim] : c[:opt], nil, 2)
+        padlock(top, cx + P.width(PF::TEXT, v.to_s) / 2 + 6, y + 6, c[:dim]) if locked
       when :tabs
         tabs = o.values.map { |v| tab_parts(v) }
         cur = (o.get rescue 0).to_i
@@ -929,10 +949,14 @@ module Reloaded
         wmax = value_box(o)[1]
         v = PF.fit(PF::TEXT, shown_value(o), VALUE_MAX)
         vw = PF.width(PF::TEXT, v)
-        P.text(top, cx - vw / 2, y, vw + 2, ROW_H - 2, v, c[:opt])
-        arrow = selected ? c[:txt] : c[:dim]
-        P.ui.tri(top, cx - vw / 2 - 14, y + 7, :l, arrow, 4)
-        P.ui.tri(top, cx + vw / 2 + 6, y + 7, :r, arrow, 4)
+        P.text(top, cx - vw / 2, y, vw + 2, ROW_H - 2, v, locked ? c[:dim] : c[:opt])
+        if locked
+          padlock(top, cx + vw / 2 + 6, y + 6, c[:dim])
+        else
+          arrow = selected ? c[:txt] : c[:dim]
+          P.ui.tri(top, cx - vw / 2 - 14, y + 7, :l, arrow, 4)
+          P.ui.tri(top, cx + vw / 2 + 6, y + 7, :r, arrow, 4)
+        end
         P.pill(top, cx - wmax / 2 - 20, y + 4, badge[0], badge_fill(badge[1], c), c[:txt]) if badge
       end
     end

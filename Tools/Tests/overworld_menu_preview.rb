@@ -347,7 +347,7 @@ info.insert(info.index("safari_steps") + 1, "quit_safari")
 info.insert(info.index("contest_balls") + 1, "quit_contest")
 OM.add_page("Info")["entries"] = info
 OM.save_layout
-$PokemonSystem.speedup = 1
+S.set(:"speed_up.type", 1)             # Toggle: the row picks the speed now
 OM.met(PkPM.new("Pidgey", :PIDGEY, 3, 10, 10, [:NORMAL]))
 OM.met(PkPM.new("Rattata", :RATTATA, 3, 10, 10, [:NORMAL]))
 on_map("B toggles and info", [
@@ -369,7 +369,7 @@ on_map("B toggles and info", [
   I::DOWN, I::USE,
   at { check("Speed-Up opens its dropdown too (x1, x2, x3), as every choice does", iv(om, :@choice_dd) && overlay_says?("x3")) },
   I::DOWN, I::USE,
-  at { check("...x2 picked", $GameSpeed == 1 && left_says?("x2")) },
+  at { check("...x2 picked: Speed-Up's speed on the map (#{Reloaded::SpeedUp.toggled(:overworld)})", Reloaded::SpeedUp.toggled(:overworld) == 2 && left_says?("x2")) },
   I::DOWN, I::USE,
   at { check("A on Change Controls (a KIF Settings button) opens it, the menu out of sight meanwhile, and back after (#{$log.grep(/CONTROLS/).inspect})",
              $log.include?("CONTROLS OPEN hidden=true") && om.send(:sprites).any?(&:visible) && cur_name == "Change Controls") },

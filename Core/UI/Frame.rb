@@ -370,6 +370,15 @@ module Reloaded
       return [VALUE_CX, VALUE_X1 - 11 - w / 2].min
     end
 
+    # A small padlock, 9 by 10, its top left at x, y: a locked setting's
+    # value (the other Speed-Up Type's rows, say)
+    def padlock(b, x, y, color)
+      b.fill_rect(x + 1, y, 5, 1, color)
+      b.fill_rect(x, y + 1, 1, 3, color)
+      b.fill_rect(x + 6, y + 1, 1, 3, color)
+      b.fill_rect(x - 1, y + 4, 9, 6, color)
+    end
+
     # Something else in the value column (OPEN, a badge), centred on it.
     def column_pill(top, cx, y, label, fill, color)
       w = P.width(P.pf::TINY, label) + 12

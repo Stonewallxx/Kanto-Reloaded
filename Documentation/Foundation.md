@@ -199,13 +199,13 @@ Save settings are locked at the title screen with "Load a save to change this".
 
 **Change Controls** (Kanto Reloaded > Controls) opens it (`Core/UI/ControlsScreen.rb`). It has the improved KIF Settings' layout:
 
-- **Sidebar:** Global, Overworld, Menus, Battle and Feel. An area with no actions yet is dimmed and skipped.
+- **Sidebar:** Global, Overworld, Menus, Battle, Speed-Up and Feel. An area with no actions yet is dimmed and skipped. Speed-Up lists Speed-Up's settings under Game Speed, then its three buttons (Global's Game Speed actions, no longer listed under Global) under a Buttons heading that carries the Keyboard and Controller labels (see [SpeedUp.md](SpeedUp.md)).
 - **List:** each action with its Keyboard and Controller columns. Left and Right pick the column, and a dot marks a changed one. An input another action in the area also has is underlined, and the description says what else it does. An empty column reads "Not Bound".
 - **Change:** Remove an input, Add a Key / Add a Button, or Back to Default. Adding asks the player to press it ("Press a Button or Move a Stick"); keeping it held for Hold Time binds it as a Hold. An input another action has asks Swap, Keep Both or Cancel.
 - **Default** puts the selected column back. **Search** finds actions by name.
 - **Layouts** (the R button) has Game's Layout (F1), Pokémon-Style, the player's own layouts, Save as New Layout, Paste Share Code, Reset Section and Reset All to Default. A layout of their own (`Core/Controls/Layouts.rb`, up to 12 in `ControlLayouts.json`, for all saves) holds every action's bindings on both columns and the Feel settings; it can be loaded, saved over, renamed, deleted, or copied as a `KRC1:` share code. Loading one keeps what matches the default following F1, and a pasted code is checked input by input.
 - **Pokémon-Style** (built in, `Layouts::POKEMON_STYLE`) sets only the controller, as in the main Pokémon games: B runs (held), X and Start open the Pause Menu, Y the Ready Menu, holding Select quicksaves, RT speeds up. Every other controller input goes back to the game's layout and the keyboard stays as it is (`Controls.apply_side`). Tapping Select is left free for the Overworld Menu.
-- **Feel** settings step with Left and Right; A (or a click on the value) opens a dropdown of their values, as in KIF Settings.
+- **Settings** (Feel's, Speed-Up's) step with Left and Right; A (or a click on the value) opens a dropdown of their values, as in KIF Settings. A locked one (the other Speed-Up Type's) is dimmed with a padlock, buzzes, and its description says why. Reset Section resets a section's settings too (the locked ones as well), and Reset All to Default every action, Feel and Speed-Up.
 
 ```ruby
 Reloaded::Controls.register(:my_mod_menu, :name => "My Menu", :area => :overworld,
@@ -279,7 +279,7 @@ Kanto Reloaded's settings live in KIF Settings. `KIFBridge` adds a Kanto Reloade
 
 **Reloaded Settings** picks the screen that Options opens. It is the first row of **Reloaded Systems**, the first heading of the Kanto Reloaded section, which holds the toggles between Kanto Reloaded's version of a system and the game's own. It is On by default:
 
-- **On:** the improved KIF Settings (`Core/UI/SettingsScreen.rb`). It is a subclass of KIF's `KifSettingsScreen`, so it has the same sections, rows, modules, mods, search and defaults. It draws and handles input Kanto Reloaded's way: the theme and colour settings, the pulsing cursor, choices between arrows that step with Left and Right and open a dropdown with A, values (with OPEN, badges and slider numbers) lined up on one column per heading, smaller hints and descriptions, and presets with share codes in the title bar (or R). Search works as KIF's does.
+- **On:** the improved KIF Settings (`Core/UI/SettingsScreen.rb`). It is a subclass of KIF's `KifSettingsScreen`, so it has the same sections, rows, modules, mods, search and defaults. It draws and handles input Kanto Reloaded's way: the theme and colour settings, the pulsing cursor, choices between arrows that step with Left and Right and open a dropdown with A, values (with OPEN, badges and slider numbers) lined up on one column per heading, smaller hints and descriptions, and presets with share codes in the title bar (or R). Search works as KIF's does. A Kanto Reloaded setting another one decides right now (its `:soft_lock`, `:lock` or `:needs`: the other Speed-Up Type's rows, the PokeVial's Max Uses under Progressive Uses) is dimmed with a padlock where its arrows would be; Left, Right, A and the Default button buzz, and its description says why ("Locked: Toggle Only."). The Overworld Menu's setting rows say the same.
 
 **The mouse** works in Kanto Reloaded's own screens and popups, never on the map (`Core/UI/Pointer.rb`):
 
@@ -340,6 +340,7 @@ No test or preview ever clears a folder. Each takes its work folder through `KRW
 | `ruby Tools/Tests/patch_viewer_preview.rb "<KIF Beta>" <work dir with metrics.json>` | Drives the Patch Viewer on the preview's stand-ins (browsing, Details, Load Order, Search, the mouse, Hot Reload); `Tools/UIPreview/render.py` draws it |
 | `ruby Tools/Tests/saves_test.rb "<KIF Beta>" <empty temp folder>` | Safe saving, the save library (previews, health, backups, the Backup Cap, the Deleted tab, notes) and What's New, on real save files |
 | `ruby Tools/Tests/saves_preview.rb "<KIF Beta>" <work dir with metrics.json>` | Drives the Save Manager, the Load Screen and What's New on the preview's stand-ins |
+| `ruby Tools/Tests/update_checks_preview.rb "<KIF Beta>" <work dir with metrics.json>` | Drives KIF's startup checks in Reloaded's look on stand-ins that follow KIF's updater and mod catalog (see [Saves.md](Saves.md)) |
 | `ruby Tools/Tests/save_check_test.rb "<KIF Beta>" <empty temp folder>` | The Save Checker on KIF Beta's real data and saves written as PIF writes them: the checks, Keep Aside and Remove, Keep Aside's return, Make It Loadable, the reader's stand-ins, all-or-nothing upgrades, the report and the Tools script |
 | `ruby Tools/Tests/save_check_preview.rb "<KIF Beta>" <work dir with metrics.json>` | Drives the Save Checker's screens and the ways in from the Save Manager and the Load Screen on the preview's stand-ins |
 | `ruby Tools/Tests/bug_report_test.rb "<KIF Beta>" <empty temp folder>` | Bug Reports: Recent Steps, this session's errors, the zip read back and what's in it, the user name taken out, After a Crash and the next start's offer |
@@ -353,6 +354,8 @@ No test or preview ever clears a folder. Each takes its work folder through `KRW
 | `ruby Tools/Tests/pokevial_preview.rb "<KIF Beta>" <work dir with metrics.json>` | Drives the PokeVial's dialogs, toasts and Low HP glow on the Overworld Menu's preview |
 | `ruby Tools/Tests/healing_moves_test.rb "<KIF Beta>" <empty temp folder>` | Healing Moves on stand-ins for the game's classes: each move's effect, why one can't be used, challenges, Heal Everyone's plan, the field-move hooks and Off (see [HealingMoves.md](HealingMoves.md)) |
 | `ruby Tools/Tests/healing_moves_preview.rb "<KIF Beta>" <work dir with metrics.json>` | Drives Heal with Moves, Pick a Pokémon, the Heal Preview, Heal Everyone and Morning Sun's choice on the Overworld Menu's preview |
+| `ruby Tools/Tests/speed_up_test.rb "<KIF Beta>" <empty temp folder>` | Speed-Up with PIF's own Better Fast-forward over stand-ins for the engine: Hold, Toggle, Burst Speed, Shiny Slowdown, Messages at 1x, the title, Off and a failure (see [SpeedUp.md](SpeedUp.md)) |
+| `ruby Tools/Tests/speed_up_preview.rb "<KIF Beta>" <work dir with metrics.json>` | Drives the Controls screen's Speed-Up section, Search, KIF Settings and the Speed Indicator on the preview's stand-ins |
 | `ruby Tools/Tests/title_versions_preview.rb "<KIF Beta>" <work dir with metrics.json>` | The title screen's versions (PIF, KIF and KR one to a line in the top right) on a stand-in of PIF's title screen |
 | `ruby Tools/Tests/profiler_preview.rb "<KIF Beta>" <work dir with metrics.json>` | Drives the Report Viewer, Mod Timings and the profiler's settings headings on the preview's stand-ins |
 | `ruby Tools/PatchChecker/patch_check.rb "<KIF Beta>" "<mod folder>" [more mods]` | The Patch Checker: a mod's DataPatches against KIF Beta's real data, every error and warning by file and patch (see [DataPatches.md](DataPatches.md)) |

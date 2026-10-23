@@ -220,7 +220,9 @@ class Sprite
 end
 module Graphics
   @fc = 0
-  def self.update; @fc += 1; end
+  # PIF's Better Fast-forward calls the engine's update by this name
+  def self.fast_forward_update; @fc += 1; end
+  def self.update; fast_forward_update; end
   def self.frame_count; @fc; end
   def self.width; 512; end
   def self.height; 384; end
@@ -1245,7 +1247,7 @@ def vanilla_dd; $sprites.reverse.find { |sp| sp.z == 10 && !sp.disposed? && sp.v
 S.set(:"systems.reloaded_settings", false)
 tm = S.get(:"interface.theme_mode")
 drive("J vanilla", [
-  I::RIGHT, *[I::DOWN] * 12,
+  I::RIGHT, down_to("Theme Mode"),
   at { check("KIF Settings as it ships, on Theme Mode (#{row_name})", scr.instance_of?(KifSettingsScreen) && row_name == "Theme Mode") },
   I::USE,
   at { check("A on a Kanto Reloaded choice opens its dropdown", !vanilla_dd.nil? && vanilla_dd.bitmap.ops.length > 5) },

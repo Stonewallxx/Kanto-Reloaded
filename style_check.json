@@ -145,6 +145,41 @@
       "file": "Core/UI/PokeVialScreen.rb",
       "text": "Mart buy item",
       "why": "An audio file's name (Audio/SE, Audio/ME)"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/SpeedUp/SpeedUp.rb",
+      "text": "Speed-up (Battles)"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/SpeedUp/SpeedUp.rb",
+      "text": "Speed-up type"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/SpeedUp/SpeedUp.rb",
+      "text": "Speed-up (Overworld)"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/SpeedUp/SpeedUp.rb",
+      "text": "Messages at 1x"
+    },
+    {
+      "rule": "names",
+      "file": "Core/SpeedUp/SpeedUp.rb",
+      "text": "F-UI-05_SpeedUp"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/Saves/UpdateChecks.rb",
+      "text": "Reading the mod list"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/Saves/UpdateChecks.rb",
+      "text": "UP TO DATE"
     }
   ]
 }

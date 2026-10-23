@@ -6,8 +6,11 @@
 # Controls (Kanto Reloaded > Controls in KIF Settings).
 #
 #   - the sidebar: Global, Overworld, Menus, Battle (areas with no actions
-#     yet are dimmed and skipped) and Feel (the feel settings: Left/Right
-#     step them, A or a click on the value opens a dropdown of the values)
+#     yet are dimmed and skipped), Speed-Up (Speed-Up's settings, then its
+#     buttons under a Buttons heading) and Feel (the feel settings)
+#   - a setting row: Left/Right step it, A or a click on the value opens a
+#     dropdown of the values; a locked one (the other Speed-Up Type's) is
+#     dimmed, with a padlock
 #   - the list: actions under their headings, a Keyboard and a Controller
 #     column; Left/Right picks the column, A edits it, the Default button
 #     puts it back
@@ -49,15 +52,17 @@ module Reloaded
     CAPTURE_STEPS = 200   # how long "Press a Button" waits (5 seconds)
     TILE_TEXT = Color.new(248, 248, 248)
     SEARCH_BOX = [8, 4, 8 + BUTTON_W, 27]
+    SPEED_GROUP = "Game Speed"   # Global's actions the Speed-Up section lists instead
 
     SECTIONS = [[:global, "Global", [96, 160, 232]], [:overworld, "Overworld", [90, 170, 100]],
                 [:menus, "Menus", [130, 140, 155]], [:battle, "Battle", [210, 80, 80]],
-                [:feel, "Feel", [160, 110, 200]]].freeze
+                [:speed_up, "Speed-Up", [230, 180, 60]], [:feel, "Feel", [160, 110, 200]]].freeze
     SECTION_HELP = {
       :global    => "Buttons that work everywhere, like moving and the game's own buttons.",
       :overworld => "Buttons for walking around the map.",
       :menus     => "Buttons for menus and screens.",
       :battle    => "Buttons for battles.",
+      :speed_up  => "How fast the game runs, and the buttons that change it.",
       :feel      => "How the controls feel: Button style, repeat speed, hold time, triggers and sticks."
     }.freeze
 
@@ -117,14 +122,8 @@ module Reloaded
       return SECTIONS[@section][0]
     end
 
-    def feel?
-      return section_id == :feel && !@query
-    end
-
     def empty_section?(i)
-      id = SECTIONS[i][0]
-      return false if id == :feel
-      return C.actions(id).empty?
+      return selectable(items_for(SECTIONS[i][0])).empty?
     end
 
     def matching
@@ -135,11 +134,35 @@ module Reloaded
       end
     end
 
-    # [[:head, label] or [:row, action], ...]: actions under their headings
-    # (headings in the order of their first action)
+    # [[:head, label], [:cols, label] (a heading with the Keyboard and
+    # Controller columns), [:row, action] or [:set, setting key], ...]
     def items
-      return [] if feel?
-      list = @query ? matching : C.actions(section_id)
+      return action_items(matching) if @query
+      return items_for(section_id)
+    end
+
+    def items_for(id)
+      case id
+      when :feel then return setting_items(_INTL("Feel"), feel_keys)
+      when :speed_up
+        out = setting_items(_INTL("Game Speed"), speed_keys)
+        buttons = speed_actions
+        out << [:cols, _INTL("Buttons")] unless buttons.empty?
+        return out + buttons.map { |a| [:row, a] }
+      end
+      list = C.actions(id)
+      list = list.reject { |a| a.group == SPEED_GROUP } if id == :global
+      return action_items(list)
+    end
+
+    def setting_items(head, keys)
+      return [] if keys.empty?
+      return [[:head, head]] + keys.map { |k| [:set, k] }
+    end
+
+    # Actions under their headings (headings in the order of their first
+    # action)
+    def action_items(list)
       groups = list.group_by { |a| [a.area, a.group] }
       order = groups.keys.sort_by { |area, g| [C::AREAS.index(area), groups[[area, g]].map(&:priority).min] }
       out = []
@@ -150,6 +173,11 @@ module Reloaded
       return out
     end
 
+    # The rows the cursor goes to (actions and settings)
+    def selectable(list = items)
+      return list.select { |k, _| k == :row || k == :set }
+    end
+
     def actions_listed
       return items.select { |k, _| k == :row }.map { |_, a| a }
     end
@@ -158,12 +186,35 @@ module Reloaded
       return C::FEEL.select { |k| Reloaded::Settings.definition(k) }
     end
 
-    def count
-      return feel? ? feel_keys.length : actions_listed.length
+    # Speed-Up's settings, while it's On
+    def speed_keys
+      return [] unless defined?(Reloaded::SpeedUp)
+      return Reloaded::SpeedUp::KEYS.select { |k| Reloaded::Settings.visible?(k) }
     end
 
+    def speed_actions
+      return C.actions(:global).select { |a| a.group == SPEED_GROUP }.sort_by { |a| [a.priority, a.name] }
+    end
+
+    def count
+      return selectable.length
+    end
+
+    def current_item
+      list = selectable
+      return list.empty? ? nil : list[@sel % list.length]
+    end
+
+    # The action picked, or nil on a setting
     def current
-      return feel? ? nil : actions_listed[@sel]
+      it = current_item
+      return it && it[0] == :row ? it[1] : nil
+    end
+
+    # The setting picked, or nil on an action
+    def current_key
+      it = current_item
+      return it && it[0] == :set ? it[1] : nil
     end
 
     def side_name(side)
@@ -252,7 +303,7 @@ module Reloaded
     # The hint line's Change: the picked column's editor (a Feel value: a
     # step on).
     def mouse_change
-      feel? ? change_feel(1, true) : edit(current, @side)
+      current_key ? change_setting(1, true) : edit(current, @side)
       return nil
     end
 
@@ -270,7 +321,8 @@ module Reloaded
     # A row (k: its place among the rows) at x: picks it, and the column
     # under the mouse.
     def hover_row(k, x)
-      side = feel? ? @side : (x < PAD_X - 6 ? :keys : :pad)
+      it = selectable[k]
+      side = it && it[0] == :set ? @side : (x < PAD_X - 6 ? :keys : :pad)
       return if @focus == :list && @sel % [count, 1].max == k && @side == side
       @focus = :list
       @sel = k
@@ -291,29 +343,29 @@ module Reloaded
       mouse_open
     end
 
-    # A row: the column's editor; a Feel row: on its value (or its name),
+    # A row: the column's editor; a setting: on its value (or its name),
     # its dropdown; on either side of the value, a step that way.
     def click_row(k, x)
       hover_row(k, x)
-      return edit(current, @side) unless feel?
-      cx = feel_column
-      return feel_dropdown if x < cx - 70
-      half = P.width(PF::TEXT, Reloaded::Settings.display(feel_keys[@sel]).to_s) / 2 + 3
-      return feel_dropdown if (x - cx).abs <= half
-      change_feel(x < cx ? -1 : 1, true)
+      key = current_key
+      return edit(current, @side) unless key
+      cx = @value_cx || VALUE_CX
+      return setting_dropdown if x < cx - 70
+      half = P.width(PF::TEXT, Reloaded::Settings.display(key).to_s) / 2 + 3
+      return setting_dropdown if (x - cx).abs <= half
+      change_setting(x < cx ? -1 : 1, true)
     end
 
     # The wheel over the list: the view scrolls a row, and the cursor goes
     # to the row now under the mouse (or stays in view).
     def wheel_scroll(dir)
-      return if feel?
       list = items
-      rows = list.each_index.select { |i| list[i][0] == :row }
+      rows = list.each_index.select { |i| list[i][0] == :row || list[i][0] == :set }
       return if rows.empty?
       ys = []
       y = 0
-      list.each { |kind, _| ys << y; y += kind == :head ? HEAD_H : ROW_H }
-      y0 = LIST_Y0 + 4 + COLS_H
+      list.each { |kind, _| ys << y; y += head?(kind) ? HEAD_H : ROW_H }
+      y0 = list_top(list)
       avail = LIST_Y1 - 4 - y0
       return if y <= avail
       last = ys.find { |v| y - v <= avail } || 0
@@ -412,15 +464,15 @@ module Reloaded
         refresh
       elsif Input.repeat?(Input::LEFT) || Input.repeat?(Input::RIGHT)
         dir = Input.repeat?(Input::RIGHT) ? 1 : -1
-        if feel?
-          change_feel(dir)
+        if current_key
+          change_setting(dir)
         elsif Input.trigger?(dir > 0 ? Input::RIGHT : Input::LEFT)
           @side = @side == :keys ? :pad : :keys
           pbPlayCursorSE
           refresh
         end
       elsif Input.trigger?(Input::USE)
-        feel? ? feel_dropdown : edit(current, @side)
+        current_key ? setting_dropdown : edit(current, @side)
       elsif Input.trigger?(Input::ACTION)
         reset_current
       elsif Input.trigger?(Input::BACK)
@@ -432,14 +484,29 @@ module Reloaded
       return nil
     end
 
-    # Left/Right on a Feel setting: a toggle flips, a choice steps (a fresh
-    # press goes round at the ends, a held one stops) over the locked ones.
-    def change_feel(dir, round = false)
-      key = feel_keys[@sel]
+    # Left/Right on a setting: a toggle flips, a choice or a number steps (a
+    # fresh press goes round at the ends, a held one stops) over the locked
+    # choices. A locked setting buzzes.
+    def change_setting(dir, round = false)
+      key = current_key
+      return unless key
       d = Reloaded::Settings.definition(key)
       s = Reloaded::Settings
+      fresh = round || Input.trigger?(dir > 0 ? Input::RIGHT : Input::LEFT)
+      if s.locked?(key)
+        pbPlayBuzzerSE if fresh
+        return
+      end
       if d[:type] == :toggle
         return pbPlayBuzzerSE unless s.set(key, !s.get(key))
+      elsif d[:type] == :slider || d[:type] == :number
+        values = number_values(d)
+        i = values.index(s.get(key)).to_i + dir
+        if i < 0 || i >= values.length
+          return unless fresh
+          i %= values.length
+        end
+        return unless s.set(key, values[i])
       else
         n = d[:values].length
         locks = s.locked_choices(key)
@@ -459,39 +526,54 @@ module Reloaded
       refresh
     end
 
-    # A on a Feel setting: the dropdown of its values, under its value.
-    def feel_dropdown
-      key = feel_keys[@sel]
-      anchor = (@feel_boxes || [])[@sel]
-      return change_feel(1, true) unless anchor
+    # A on a setting: the dropdown of its values, under its value.
+    def setting_dropdown
+      key = current_key
+      return unless key
       s = Reloaded::Settings
       return pbPlayBuzzerSE if s.locked?(key)
-      values, cur = feel_choices(key)
+      anchor = (@value_boxes || [])[@sel % [count, 1].max]
+      return change_setting(1, true) unless anchor
+      values, cur = setting_choices(key)
       dd = Reloaded::Dropdown.new(values, cur, anchor, dropdown_bounds(LIST_X0, LIST_Y0, LIST_X1, LIST_Y1),
                                   :locked => s.locked_choices(key).keys)
       choice = run_dropdown(dd)
       return if choice.nil? || choice == cur
-      s.set(key, s.definition(key)[:type] == :toggle ? choice == 1 : choice)
+      d = s.definition(key)
+      value = case d[:type]
+              when :toggle then choice == 1
+              when :slider, :number then number_values(d)[choice]
+              else choice
+              end
+      s.set(key, value)
       refresh
     end
 
-    # A Feel setting's values as shown, and the current one's index (a
-    # toggle: Off, On).
-    def feel_choices(key)
+    # A setting's values as shown, and the current one's index (a toggle:
+    # Off, On).
+    def setting_choices(key)
       s = Reloaded::Settings
-      if s.definition(key)[:type] == :toggle
-        return [[s.display(key, false), s.display(key, true)], s.get(key) ? 1 : 0]
+      d = s.definition(key)
+      return [[s.display(key, false), s.display(key, true)], s.get(key) ? 1 : 0] if d[:type] == :toggle
+      if d[:type] == :slider || d[:type] == :number
+        values = number_values(d)
+        return [values.map { |v| s.display(key, v) }, values.index(s.get(key)).to_i]
       end
-      return [s.definition(key)[:values].each_index.map { |v| s.display(key, v) }, s.get(key).to_i]
+      return [d[:values].each_index.map { |v| s.display(key, v) }, s.get(key).to_i]
+    end
+
+    # A slider's or number's values, min to max
+    def number_values(d)
+      return (d[:min].to_i..d[:max].to_i).step([d[:step].to_i, 1].max).to_a
     end
 
     # The Default button: the selected Feel setting, or the selected column
     # of an action.
     def reset_current
-      if feel?
-        key = feel_keys[@sel]
-        return pbPlayBuzzerSE unless Reloaded::Settings.changed?(key)
-        Reloaded::Settings.reset(key)
+      if (key = current_key)
+        s = Reloaded::Settings
+        return pbPlayBuzzerSE unless s.changed?(key) && !s.locked?(key)
+        s.reset(key)
       else
         a = current
         return pbPlayBuzzerSE unless a && C.customized?(a.id, @side)
@@ -707,10 +789,13 @@ module Reloaded
         end
         add.call(_INTL("Save as New Layout"), _INTL("Keep your controls and Feel as a layout of your own."), [:new]) unless L.full?
         add.call(_INTL("Paste Share Code"), _INTL("Add a layout someone copied for you."), [:paste])
-        add.call(_INTL("Reset Section ({1})", name),
-                 feel? ? _INTL("Puts the Feel settings back to their defaults.") : _INTL("Puts every action in {1} back to its default.", name),
-                 [:section])
-        add.call(_INTL("Reset All to Default"), _INTL("Every action and Feel setting back to its default."), [:all])
+        reset_text = case section_id
+                     when :feel then _INTL("Puts the Feel settings back to their defaults.")
+                     when :speed_up then _INTL("Puts the Speed-Up settings and buttons back to their defaults.")
+                     else _INTL("Puts every action in {1} back to its default.", name)
+                     end
+        add.call(_INTL("Reset Section ({1})", name), reset_text, [:section])
+        add.call(_INTL("Reset All to Default"), _INTL("Every action and setting here back to its default."), [:all])
         add.call(_INTL("Cancel"), _INTL("Back to the controls."), [:cancel])
         index = Reloaded::Dialogs.menu(self, _INTL("Layouts"), rows, descs, index)
         refresh
@@ -732,22 +817,41 @@ module Reloaded
       question = { :game    => _INTL("Put every action back on your F1 layout?"),
                    :pokemon => _INTL("Put the controller on Pokémon-Style? Your keys stay as they are, and holding Select quicksaves."),
                    :section => _INTL("Reset everything in {1}?", name),
-                   :all     => _INTL("Reset every action and Feel setting?") }[pick]
+                   :all     => _INTL("Reset every action and setting here?") }[pick]
       yes = pick == :pokemon ? _INTL("Use It") : _INTL("Reset")
       return refresh unless Reloaded::Dialogs.confirm(self, title, question, yes, _INTL("Cancel"), false)
       case pick
       when :game    then C.reset_all
       when :pokemon then L.pokemon_style
-      when :section then feel? ? reset_feel : C.reset_area(section_id)
+      when :section then reset_section
       when :all
         C.reset_all
         reset_feel
+        reset_speed
       end
       refresh
     end
 
+    # Reset Section: the actions listed, and the section's settings
+    def reset_section
+      case section_id
+      when :feel then return reset_feel
+      when :speed_up
+        reset_speed
+        speed_actions.each { |a| C.reset(a.id) }
+      else
+        selectable(items_for(section_id)).each { |_k, a| C.reset(a.id) }
+      end
+    end
+
     def reset_feel
       feel_keys.each { |k| Reloaded::Settings.reset(k) }
+    end
+
+    # Speed-Up's settings, the other type's locked ones too (the type first)
+    def reset_speed
+      s = Reloaded::Settings
+      speed_keys.each { |k| s.set(k, s.default(k), true) }
     end
 
     # One of the player's layouts: :loaded when it was put on.
@@ -829,7 +933,7 @@ module Reloaded
       @cursor_rect = nil
       paint_title(base, top, c)
       paint_sidebar(base, top, c)
-      feel? ? paint_feel(base, top, c) : paint_actions(base, top, c)
+      paint_list(base, top, c)
       paint_description(base, top, c)
       paint_hints(base, c)
       paint_dropdown(c)
@@ -874,40 +978,67 @@ module Reloaded
       end
     end
 
-    def paint_actions(base, top, c)
+    def head?(kind)
+      return kind == :head || kind == :cols
+    end
+
+    # Where the list's rows start: under the Keyboard and Controller labels
+    # when it's all actions (a list with settings labels its Buttons
+    # heading instead)
+    def list_top(list)
+      return LIST_Y0 + 4 if list.any? { |k, _| k == :set || k == :cols }
+      return LIST_Y0 + 4 + COLS_H
+    end
+
+    def paint_list(base, top, c)
       P.ui.rbox(base, LIST_X0, LIST_Y0, LIST_X1, LIST_Y1, 6, c[:panel])
       @row_hits = []
+      @value_boxes = []                # where each setting's dropdown drops from
       list = items
       if list.empty?
         msg = @query ? _INTL("Nothing matches \"{1}\".", @query) : _INTL("Nothing here yet.")
         P.text(top, LIST_X0 + 12, LIST_Y0 + 8, LIST_X1 - LIST_X0 - 24, 22, msg, c[:dim])
         return
       end
-      P.text(top, KEY_X, LIST_Y0 + 4, 90, 13, _INTL("KEYBOARD"), c[:dim], PF::TINY)
-      P.text(top, PAD_X, LIST_Y0 + 4, 90, 13, _INTL("CONTROLLER"), c[:dim], PF::TINY)
+      y0 = list_top(list)
+      if y0 > LIST_Y0 + 4
+        P.text(top, KEY_X, LIST_Y0 + 4, 90, 13, _INTL("KEYBOARD"), c[:dim], PF::TINY)
+        P.text(top, PAD_X, LIST_Y0 + 4, 90, 13, _INTL("CONTROLLER"), c[:dim], PF::TINY)
+      end
+      @value_cx = value_column(list)
       ys = []
       y = 0
-      list.each { |k, _| ys << y; y += k == :head ? HEAD_H : ROW_H }
+      list.each { |k, _| ys << y; y += head?(k) ? HEAD_H : ROW_H }
       total = y
-      rows = list.each_index.select { |i| list[i][0] == :row }
+      rows = list.each_index.select { |i| !head?(list[i][0]) }
       si = rows[@sel % [rows.length, 1].max]
-      y0 = LIST_Y0 + 4 + COLS_H
       avail = LIST_Y1 - 4 - y0
       if si
-        top_needed = (si > 0 && list[si - 1][0] == :head) ? ys[si - 1] : ys[si]
+        top_needed = (si > 0 && head?(list[si - 1][0])) ? ys[si - 1] : ys[si]
         @scroll = top_needed if top_needed < @scroll
         @scroll = ys[si] + ROW_H - avail if ys[si] + ROW_H - @scroll > avail
       end
       list.each_with_index do |(kind, what), i|
-        h = kind == :head ? HEAD_H : ROW_H
+        h = head?(kind) ? HEAD_H : ROW_H
         next if ys[i] < @scroll || ys[i] + h - @scroll > avail
         ry = y0 + ys[i] - @scroll
-        if kind == :head
+        case kind
+        when :head
           P.heading(top, LIST_X0 + 10, LIST_X1 - 10, ry + 3, what, c[:head], c[:line])
-          next
+        when :cols
+          P.heading(top, LIST_X0 + 10, KEY_X - 10, ry + 3, what, c[:head], c[:line])
+          P.text(top, KEY_X, ry + 3, 90, 13, _INTL("KEYBOARD"), c[:dim], PF::TINY)
+          P.text(top, PAD_X, ry + 3, 90, 13, _INTL("CONTROLLER"), c[:dim], PF::TINY)
+        else
+          k = rows.index(i)
+          @row_hits << [k, LIST_X0 + 4, ry, LIST_X1 - 8, ry + ROW_H - 1]
+          selected = i == si && @focus == :list && !@entry
+          if kind == :row
+            paint_action(top, c, what, ry, selected)
+          else
+            @value_boxes[k] = paint_setting(top, c, what, ry, selected)
+          end
         end
-        @row_hits << [rows.index(i), LIST_X0 + 4, ry, LIST_X1 - 8, ry + ROW_H - 1]
-        paint_action(top, c, what, ry, i == si && @focus == :list && !@entry)
       end
       return unless total > avail
       track = LIST_Y1 - LIST_Y0 - 12
@@ -955,46 +1086,47 @@ module Reloaded
       end
     end
 
-    def paint_feel(base, top, c)
-      P.ui.rbox(base, LIST_X0, LIST_Y0, LIST_X1, LIST_Y1, 6, c[:panel])
-      y = LIST_Y0 + 4
-      P.heading(top, LIST_X0 + 10, LIST_X1 - 10, y + 3, _INTL("Feel"), c[:head], c[:line])
-      y += HEAD_H
-      cx = feel_column
+    # A setting's row: its name, and its value with arrows round it (a
+    # locked one dimmed, with a padlock). Returns where its dropdown drops
+    # from.
+    def paint_setting(top, c, key, y, selected)
       s = Reloaded::Settings
-      @row_hits = []
-      @feel_boxes = []                 # where each one's dropdown drops from
-      feel_keys.each_with_index do |k, i|
-        @row_hits << [i, LIST_X0 + 4, y, LIST_X1 - 8, y + ROW_H - 1]
-        selected = i == @sel && @focus == :list
-        @cursor_rect = [LIST_X0 + 4, y, (LIST_X1 - 8) - (LIST_X0 + 4) + 1, ROW_H - 1] if selected
-        if s.changed?(k)
-          dy = y + (ROW_H - 2) / 2 - 3
-          P.ui.rrect(top, NAME_X - 11, dy, NAME_X - 6, dy + 5, 3, c[:dot])
-        end
-        P.text(top, NAME_X, y, 200, ROW_H - 2, _INTL(s.definition(k)[:name]), c[:opt], PF::ROW)
-        v = s.display(k).to_s
-        vw = P.width(PF::TEXT, v)
-        # (while a dropdown is open, a value it would cut through isn't drawn)
-        unless @dropdown && @dropdown.covers?(cx - vw / 2 - 14, y + 4, cx + vw / 2 + 10, y + ROW_H - 5)
-          P.text(top, cx - vw / 2, y, vw + 2, ROW_H - 2, v, c[:opt])
+      cx = @value_cx
+      locked = s.locked?(key)
+      @cursor_rect = [LIST_X0 + 4, y, (LIST_X1 - 8) - (LIST_X0 + 4) + 1, ROW_H - 1] if selected
+      if s.changed?(key)
+        dy = y + (ROW_H - 2) / 2 - 3
+        P.ui.rrect(top, NAME_X - 11, dy, NAME_X - 6, dy + 5, 3, c[:dot])
+      end
+      P.text(top, NAME_X, y, 200, ROW_H - 2, _INTL(s.definition(key)[:name]), locked ? c[:dim] : c[:opt], PF::ROW)
+      v = s.display(key).to_s
+      vw = P.width(PF::TEXT, v)
+      # (while a dropdown is open, a value it would cut through isn't drawn)
+      unless @dropdown && @dropdown.covers?(cx - vw / 2 - 14, y + 4, cx + vw / 2 + 10, y + ROW_H - 5)
+        P.text(top, cx - vw / 2, y, vw + 2, ROW_H - 2, v, locked ? c[:dim] : c[:opt])
+        if locked
+          padlock(top, cx + vw / 2 + 6, y + 6, c[:dim])
+        else
           arrow = selected ? c[:txt] : c[:dim]
           P.ui.tri(top, cx - vw / 2 - 14, y + 7, :l, arrow, 4)
           P.ui.tri(top, cx + vw / 2 + 6, y + 7, :r, arrow, 4)
         end
-        @feel_boxes << [cx - vw / 2 - 14, y, cx + vw / 2 + 10, y + ROW_H - 2]
-        y += ROW_H
       end
+      return [cx - vw / 2 - 14, y, cx + vw / 2 + 10, y + ROW_H - 2]
     end
 
-    # The Feel values' column, as KIF Settings lines its values up: left
+    # The settings' value column, as KIF Settings lines its values up: left
     # only as far as the widest value needs.
-    def feel_column
+    def value_column(list)
       s = Reloaded::Settings
-      feel_keys.map do |k|
-        d = s.definition(k)
-        values = d[:type] == :toggle ? [true, false] : (d[:values] || []).each_index.to_a
-        value_centre(values.map { |v| P.width(PF::TEXT, s.display(k, v).to_s) }.max.to_i)
+      list.select { |k, _| k == :set }.map do |_k, key|
+        d = s.definition(key)
+        values = case d[:type]
+                 when :toggle then [true, false]
+                 when :slider, :number then number_values(d)
+                 else (d[:values] || []).each_index.to_a
+                 end
+        value_centre(values.map { |v| P.width(PF::TEXT, s.display(key, v).to_s) }.max.to_i)
       end.min || VALUE_CX
     end
 
@@ -1007,18 +1139,26 @@ module Reloaded
         paint_lines(top, c, y0, P.small_wrap(top, _INTL(SECTION_HELP[id]), W - 30).first(DESC_LINES))
         return
       end
-      if feel?
-        key = feel_keys[@sel]
-        d = Reloaded::Settings.definition(key)
+      if (key = current_key)
+        s = Reloaded::Settings
+        d = s.definition(key)
         title = @dropdown ? @dropdown.values[@dropdown.index] : _INTL(d[:name])   # the highlighted choice
         P.text(top, 14, y0 + 1, 330, 26, title, c[:head], PF::ROW)
         x = W - 14
         x -= P.pill(top, x, y0 + 7, _INTL("ALL SAVES"), c[:pill], c[:txt]) + 6
-        dv = Reloaded::Settings.display(key, d[:default]).to_s.upcase
+        dv = s.display(key, d[:default]).to_s.upcase
         P.pill(top, x, y0 + 7, _INTL("DEFAULT: {1}", dv), c[:pill], c[:txt])
         text = _INTL(d[:description])
         text = Reloaded::KIFDropdowns.explain_setting(key, @dropdown.index, text) if @dropdown
-        paint_lines(top, c, y0, P.small_wrap(top, text, W - 30).first(DESC_LINES))
+        lines = P.small_wrap(top, text, W - 30)
+        lock = s.lock_reason(key)
+        if lock && !@dropdown
+          paint_lines(top, c, y0, lines.first(DESC_LINES - 1))
+          P.small(top, 14, y0 + 28 + [lines.length, DESC_LINES - 1].min * DESC_DY, W - 34, DESC_DY,
+                  _INTL("Locked: {1}.", lock), c[:dim])
+        else
+          paint_lines(top, c, y0, lines.first(DESC_LINES))
+        end
         return
       end
       a = current
@@ -1073,7 +1213,7 @@ module Reloaded
         return [[:ud, _INTL("Section")], [:lr, _INTL("Open"), :mouse_open], [back, @query ? _INTL("Clear") : _INTL("Close"), :mouse_back]]
       end
       out = @query ? _INTL("Clear") : _INTL("Sections")
-      if feel?
+      if current_key
         return [[:ud, _INTL("Select")], [:lr, _INTL("Change"), :mouse_change], [button(:A), _INTL("Default"), :reset_current],
                 [back, out, :mouse_back]]
       end

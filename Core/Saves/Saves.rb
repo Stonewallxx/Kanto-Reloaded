@@ -13,8 +13,8 @@
 #   ../UI/SaveManagerScreen.rb, LoadScreen.rb, WhatsNewScreen.rb
 #
 # Settings: Reloaded Load Screen and Startup Mod-Check (Reloaded Systems:
-# Off skips KIF Beta's look for mod updates before the main menu), and a
-# Saves page with
+# Off skips KIF Beta's startup checks, for a newer KIF and for mod
+# updates; his call, 2026-10-23), and a Saves page with
 # the Save Manager and Backup Cap. Backup Cap takes over KIF Beta's Save
 # Backups setting (locked to Infinite in mod.json): Unlimited keeps every
 # backup; a number keeps that many plain backups of each save (named ones
@@ -36,13 +36,22 @@ module Reloaded
         return true
       end
 
-      # Startup Mod-Check Off: KIF Beta's look for mod updates before the main
-      # menu (ModCatalogUI.startup_check, 0.21.68+) is skipped. Mods > Updates
-      # still looks when it's opened.
+      # Startup Mod-Check Off: KIF Beta's startup checks are skipped, so
+      # nothing comes up before the load screen: its look for mod updates
+      # (ModCatalogUI.startup_check, 0.21.68+) and its look for a newer KIF
+      # (Updater.check at the load screen). Mods > Updates and Options >
+      # System > Check for Updates still look when they're used.
       def hook_mod_check
-        return unless defined?(::KIF::ModCatalogUI) && ::KIF::ModCatalogUI.respond_to?(:startup_check)
-        Reloaded::Hooks.around(nil, ::KIF::ModCatalogUI.singleton_class, :startup_check, :id => :saves_startup_mod_check) do |original, *args|
-          Reloaded::Settings.get(MOD_CHECK) == false ? false : original.call(*args)
+        if defined?(::KIF::ModCatalogUI) && ::KIF::ModCatalogUI.respond_to?(:startup_check)
+          Reloaded::Hooks.around(nil, ::KIF::ModCatalogUI.singleton_class, :startup_check, :id => :saves_startup_mod_check) do |original, *args|
+            Reloaded::Settings.get(MOD_CHECK) == false ? false : original.call(*args)
+          end
+        end
+        if defined?(::KIF::Updater) && ::KIF::Updater.respond_to?(:check)
+          Reloaded::Hooks.around(nil, ::KIF::Updater.singleton_class, :check, :id => :saves_startup_kif_check) do |original, *args|
+            manual = args[0] ? true : false
+            !manual && Reloaded::Settings.get(MOD_CHECK) == false ? false : original.call(*args)
+          end
         end
       end
 
@@ -50,10 +59,10 @@ module Reloaded
         s = Reloaded::Settings
         s.register(LOAD_SCREEN, :page => :systems, :priority => 20, :type => :toggle, :default => true, :preset => false,
           :name => "Reloaded Load Screen",
-          :description => "Kanto Reloaded's Load Screen: Your save's note, health and backups, What's New and the Save Manager. Off shows the game's own.")
+          :description => "Kanto Reloaded's Load Screen: Your save's note, health and backups, What's New and the Save Manager, and KIF's update checks before it in Reloaded's look. Off shows the game's own.")
         s.register(MOD_CHECK, :page => :systems, :priority => 40, :type => :toggle, :default => true, :preset => false,
           :name => "Startup Mod-Check",
-          :description => "Before the main menu, KIF looks for updates to your mods and offers to open them. Off skips it; Mods > Updates still checks when you open it.")
+          :description => "Before the load screen, KIF looks for a newer KIF and for updates to your mods. Off skips both, so nothing comes up; Options > System > Check for Updates and Mods > Updates still check.")
         s.register_page(:saves, :group => :general, :name => "Saves", :icon => :saves, :priority => 35,
           :description => "Your save files, their backups and notes.")
         s.register(:"saves.manager", :page => :saves, :priority => 0, :type => :button, :preset => false,

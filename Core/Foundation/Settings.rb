@@ -66,8 +66,8 @@ module Reloaded
       # style: :raw (value as-is), :int (toggle <-> 0/1), :int_inverted
       # (toggle <-> 1/0), or a [to_game, from_game] pair of procs.
       def self.system(field, style = :raw)
-        reader = proc { $PokemonSystem ? $PokemonSystem.send(field) : nil }
-        writer = proc { |value| $PokemonSystem.send("#{field}=", value) if $PokemonSystem }
+        reader = proc { $PokemonSystem && $PokemonSystem.respond_to?(field) ? $PokemonSystem.send(field) : nil }
+        writer = proc { |value| $PokemonSystem.send("#{field}=", value) if $PokemonSystem && $PokemonSystem.respond_to?("#{field}=") }
         bind = new(:mirror, reader, writer, style, true)
         bind.instance_variable_set(:@field, field.to_sym)
         return bind
@@ -454,6 +454,7 @@ module Reloaded
         d[:on_press].call
         return true
       rescue Exception => e
+        raise if e.is_a?(SystemExit) || (defined?(Reset) && e.is_a?(Reset))   # the game closing or resetting
         Reloaded::Log.exception("Setting button #{key} failed", e, :settings)
         return false
       end
