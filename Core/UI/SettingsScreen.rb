@@ -689,7 +689,7 @@ module Reloaded
           P.glyph(top, 14, y + 2, 15, 15, name[0], TILE_TEXT)
         end
         dim = @query ? !found[id] : empty_section?(i)
-        color = active ? c[:white] : (dim ? faded : c[:dim])
+        color = active ? c[:strong] : (dim ? faded : c[:dim])
         P.text(top, 33, y + 2, SIDE_X1 - 37, 15, PF.fit(PF::TEXT, name, SIDE_X1 - 37), color)
         y += SIDE_DY
       end
@@ -918,7 +918,11 @@ module Reloaded
           end
           lx = tx + (tw - width) / 2
           lw = P.text(top, lx, y, width, ROW_H - 2, label, k == cur ? (on ? c[:dark] : c[:txt]) : c[:dim])
-          P.text(top, lx + lw + COUNT_GAP, y, width, ROW_H - 2, count, on ? COUNT_ON : COUNT, PF::TINY) if count
+          if count
+            # Light: the label's own colour on the highlighted tab, the deeper green elsewhere
+            tone = c[:light] ? (on ? c[:dark] : c[:green]) : (on ? COUNT_ON : COUNT)
+            P.text(top, lx + lw + COUNT_GAP, y, width, ROW_H - 2, count, tone, PF::TINY)
+          end
           tx += tw
         end
       else

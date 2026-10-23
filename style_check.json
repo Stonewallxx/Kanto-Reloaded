@@ -115,6 +115,30 @@
       "rule": "names",
       "file": "Core/QualityOfLife/LevelLocks.rb",
       "text": "Pokemon"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/PartyScreen/PartyScreen.rb",
+      "text": "Switch In",
+      "why": "The game's own words, matched as they are"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/PartyScreen/PartyScreen.rb",
+      "text": "Change moves",
+      "why": "The game's own words, matched as they are"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/PartyScene.rb",
+      "text": "GUI party switch",
+      "why": "A sound file's name, not text"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/PartyScene.rb",
+      "text": "Change moves",
+      "why": "The game's own words, matched as they are"
     }
   ]
 }

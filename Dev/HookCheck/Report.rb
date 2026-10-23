@@ -35,10 +35,10 @@ module Reloaded
 
         def text(run)
           out = []
-          out << "# Hook Check: KIF Beta #{run.version}"
+          out << "# Hook Check: KIF #{run.version}"
           out << ""
           since = run.first ? "first check, nothing to compare yet" : "last checked: #{run.previous || run.version}"
-          out << "Kanto Reloaded #{Reloaded.version} against KIF Beta #{run.version} (#{since}). #{run.time.strftime("%Y-%m-%d %H:%M")}."
+          out << "Kanto Reloaded #{Reloaded.version} against KIF #{run.version} (#{since}). #{run.time.strftime("%Y-%m-%d %H:%M")}."
           out << ""
           out << "| Result | Count |"
           out << "|---|---|"

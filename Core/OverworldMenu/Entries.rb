@@ -96,7 +96,7 @@ module Reloaded
             :handler => proc { |menu| menu.use_item(Reloaded::OverworldMenu.last_item) })
           om.register(:kif_pc, :name => "PC", :kind => :action, :priority => 60, :home => false,
             :condition => proc { !kif_entry(:kif_pc).nil? },
-            :description => "KIF Beta's PC: Your boxes, from wherever you are (KIF's QoL setting).",
+            :description => "KIF's PC: Your boxes, from wherever you are (KIF's QoL setting).",
             :handler => proc { |menu| run_kif_entry(menu, :kif_pc) })
           om.register(:kif_return, :name => "Return", :kind => :action, :priority => 65, :home => false,
             :condition => proc { !kif_entry(:kif_er_return).nil? },

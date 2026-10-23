@@ -446,6 +446,9 @@ $PokemonSystem = PokemonSystem.new
 Game.set_up_system
 SaveData.load_new_game_values
 S = Reloaded::Settings
+# KR_THEME_MODE=2 (Light) or 3 (Frost): the whole run in that Theme Mode, to
+# render the full screens' Light look (the checks still run)
+S.set(:"interface.theme_mode", ENV["KR_THEME_MODE"].to_i) if ENV["KR_THEME_MODE"].to_s =~ /\A[0-3]\z/
 $PokemonSystem.pv_typeicons = 0          # changed from its default: the dot
 
 def dump(name)
@@ -592,7 +595,7 @@ drive("A", [
   # Cursor Color: Reloaded Settings, Reloaded Controls, Reloaded Load Screen, Reloaded Pause Menu,
   # Startup Mod-Check, Overworld Menu, Quality of Life (Features), Global Small Text, Theme, Theme Mode,
   # Header Color, Settings Color, Cursor Color
-  *[I::DOWN] * 12,
+  *[I::DOWN] * 13,
   at { check("on Cursor Color", row_name == "Cursor Color") },
   I::USE,
   dmp("08_cursor_picker"),
@@ -784,7 +787,7 @@ def cs_name; a = $screen.send(:current); a ? a.name : nil; end
 hold = CT.hold_steps
 drive("F settings to controls", [
   at { check("Change Controls is on Kanto Reloaded > Controls", S.definition(:"controls.open")[:type] == :button) },
-  I::RIGHT, *[I::DOWN] * 17,
+  I::RIGHT, *[I::DOWN] * 18,
   at { check("on Change Controls (#{row_name})", row_name == "Change Controls") },
   at {
     rs = scr.send(:rows)
@@ -828,7 +831,7 @@ drive("G frames", [
       S.reset(:"interface.speech_frame")
     end
   },
-  I::RIGHT, *[I::DOWN] * 13,
+  I::RIGHT, *[I::DOWN] * 14,
   at { check("Global Frame comes after Cursor Color (#{row_name})", row_name == "Global Frame") },
   dmp("80_frames_rows"),
   I::USE,
@@ -862,7 +865,7 @@ drive("H mouse", [
   dmp("84_mouse_hover_presets"),
   [:click, 60, 48],
   at { check("a click on Kanto Reloaded opens its list", scr.section_id == :kanto_reloaded && scr.focus == :list) },
-  move_row("Quality of Life"),                         # the last row in view
+  move_row("Overworld Menu"),                          # the last row in view
   at { $top = scr.instance_variable_get(:@scroll) },
   [:wheel, -1],
   at {
@@ -874,7 +877,7 @@ drive("H mouse", [
   },
   [:wheel, -1], [:wheel, -1],
   at { check("...and on down (#{scr.instance_variable_get(:@scroll)}, #{row_name})", scr.instance_variable_get(:@scroll) > $top + 18) },
-  [:wheel, 1], [:wheel, -1],                           # up one and down again, Theme in view
+  [:wheel, 1], [:wheel, -1], [:wheel, -1],             # up one and down again, Theme in view
   click_row("Theme"),
   dmp("85_mouse_theme_picker"),
   at { check("one click on Theme opens its picker", Reloaded::Dialogs.instance_variable_get(:@hits).length > 1) },
@@ -1204,7 +1207,7 @@ drive("J dropdowns", [
   I::RIGHT,
   at { check("Right steps over the locked choice (Mid to Max)", S.get(TC) == 3) },
   at { check("Settings.set refuses a locked choice", S.set(TC, 2) == false && S.get(TC) == 3) },
-  I::BACK, [:click, 60, 48], *[I::DOWN] * 8,
+  I::BACK, [:click, 60, 48], *[I::DOWN] * 9,
   at { check("on Theme (#{row_name})", row_name == "Theme") },
   I::USE,
   at { check("Theme keeps its own picker", dd.nil? && Reloaded::Dialogs.instance_variable_get(:@hits).length == [Reloaded::Palette::THEME_NAMES.length, Reloaded::Dialogs::PICK_MAX].min) },
@@ -1221,7 +1224,7 @@ def vanilla_dd; $sprites.reverse.find { |sp| sp.z == 10 && !sp.disposed? && sp.v
 S.set(:"systems.reloaded_settings", false)
 tm = S.get(:"interface.theme_mode")
 drive("J vanilla", [
-  I::RIGHT, *[I::DOWN] * 9,
+  I::RIGHT, *[I::DOWN] * 10,
   at { check("KIF Settings as it ships, on Theme Mode (#{row_name})", scr.instance_of?(KifSettingsScreen) && row_name == "Theme Mode") },
   I::USE,
   at { check("A on a Kanto Reloaded choice opens its dropdown", !vanilla_dd.nil? && vanilla_dd.bitmap.ops.length > 5) },
@@ -1229,7 +1232,7 @@ drive("J vanilla", [
   dmp("96_vanilla_dropdown"),
   at { check("...and the description box and key bar are drawn over KIF's", vanilla_dd.bitmap.ops.any? { |o| o[0] == "fill" && o[2] >= KifSettingsScreen::LIST_Y1 + 4 }) },
   I::USE,
-  at { check("...Down and A pick (Theme Mode #{tm} -> #{S.get(:"interface.theme_mode")}), and it's gone", S.get(:"interface.theme_mode") == (tm + 1) % 3 && vanilla_dd.nil?) },
+  at { check("...Down and A pick (Theme Mode #{tm} -> #{S.get(:"interface.theme_mode")}), and it's gone", S.get(:"interface.theme_mode") == (tm + 1) % 4 && vanilla_dd.nil?) },   # Dark, Glass, Light, Frost
   I::BACK, I::DOWN, I::DOWN, I::DOWN, I::RIGHT, I::DOWN, I::DOWN, I::DOWN, I::DOWN,
   at { $sw = ps.pv_swap; check("on KIF's own Swap BattleGUI (#{row_name})", row_name == "Swap BattleGUI") },
   I::USE,

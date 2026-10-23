@@ -170,7 +170,7 @@ module Reloaded
         out << "- Size: #{size_words(r.size)}" if r.size.to_i > 0
         out << "- Saved: #{r.saved_at.strftime("%Y-%m-%d %H:%M")}" if r.saved_at.is_a?(Time)
         out << "- Checked: #{r.at.strftime("%Y-%m-%d %H:%M:%S")}, on a copy read from the file"
-        kif = defined?(::KIF::PORT_VERSION) ? " · KIF Beta #{::KIF::PORT_VERSION}" : ""
+        kif = defined?(::KIF::PORT_VERSION) ? " · KIF #{::KIF::PORT_VERSION}" : ""
         out << "- Kanto Reloaded #{Reloaded.version}#{kif}"
         out << ""
         out << "## Checks"

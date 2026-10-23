@@ -648,94 +648,17 @@ R::Pointer.singleton_class.send(:alias_method, :left?, :test_left?)
 R::Pointer.singleton_class.send(:alias_method, :pos, :test_pos)
 $tap = nil
 
-#---------------------------------------------------------------- the device survey and the newer models (the engine's SDL)
-SDLX = R::Controls::PadSDL
-check("the device survey without Win32API (plain Ruby): it says it can't ask, once",
-      log_count("The engine's SDL couldn't be asked about devices (RuntimeError: Win32API isn't here)") == 1)
-# The engine's SDL and Windows, stood in: what each call gets is recorded.
-# A device: [name, vendor, product, a controller?]
-$sdl_devs = [["PS5 Controller", 0x054c, 0x0ce6, true], ["8BitDo Pro 2", 0x2dc8, 0x6003, false],
-             ["8BitDo Ultimate", 0x2dc8, 0x3011, false]]
-$sdl_text = {}
-$sdl_dlls = []
-$sdl_wine = nil
-$sdl_known = ["03000000fa190000918d000000000000"]       # one of the newer models SDL already has
-$sdl_added = []
-$sdl_pushed = []
-$sdl_freed = []
-EXE = "E:/Games/KIF/InfiniteFusion.exe"
-def sdl_guid(vid, pid); format("03000000%02x%02x0000%02x%02x000000000000", vid & 255, vid >> 8, pid & 255, pid >> 8); end
+#---------------------------------------------------------------- Wine (the controller fix that also asked is gone, 2026-10-22)
+check("...not under Wine without Win32API (plain Ruby)", R::Runtime.facts[:wine].nil?)
+$wine = "9.0"
 class Win32API
-  def initialize(dll, name, _args, _ret)
-    raise RuntimeError, "no #{name} in #{dll}" if name == "wine_get_version" && !$sdl_wine
-    @dll, @name = dll, name
-  end
-  def call(*a)
-    $sdl_dlls << @dll if @name.start_with?("SDL_")
-    case @name
-    when "GetModuleFileNameA" then a[1][0, EXE.length] = EXE; EXE.length
-    when "SDL_NumJoysticks" then $sdl_devs.length
-    when "SDL_GetVersion" then a[0][0, 3] = [2, 0, 12].pack("C3"); nil
-    when "SDL_JoystickNameForIndex"
-      name = $sdl_devs[a[0]][0]
-      return 0 unless name
-      $sdl_text[5000 + a[0]] = name
-      5000 + a[0]
-    when "SDL_JoystickGetDeviceVendor" then $sdl_devs[a[0]][1]
-    when "SDL_JoystickGetDeviceProduct" then $sdl_devs[a[0]][2]
-    when "SDL_IsGameController" then $sdl_devs[a[0]][3] ? 1 : 0
-    when "SDL_GameControllerMappingForGUID"
-      guid = a[0].unpack1("H*")
-      return 0 unless $sdl_known.include?(guid)
-      $sdl_text[7000] = guid + ",known"
-      7000
-    when "SDL_free" then $sdl_freed << a[0]; nil
-    when "SDL_GameControllerAddMapping"
-      $sdl_added << a[0]
-      $sdl_devs.each { |d| d[3] = true if sdl_guid(d[1], d[2]) == a[0][0, 32] }
-      1
-    when "SDL_PushEvent" then $sdl_pushed << a[0].unpack("LLl"); 1
-    when "lstrlenA" then $sdl_text[a[0]].to_s.bytesize
-    when "RtlMoveMemory" then a[0].replace($sdl_text[a[1]].to_s[0, a[2]]); nil
-    when "wine_get_version" then $sdl_wine
-    end
-  end
+  def initialize(dll, name, _args, _ret); @dll, @name = dll, name; end
+  def call(*_a); @dll == "ntdll" && @name == "wine_get_version" ? $wine : nil; end
 end
-SDLX.reset
-C::PadLog.reset
-Input::Controller.connected = false        # no controller open in the game yet
-step
-check("the newer models are added at start-up, one SDL already has left as it is (#{$sdl_added.length} added)",
-      log_count("Added 140 newer controller models to the engine's list (1 it already had)") == 1 &&
-      $sdl_added.length == 140 && $sdl_added.none? { |l| l.start_with?($sdl_known[0]) } && $sdl_freed == [7000])
-check("...then SDL's version and every device it sees, by name and model",
-      log_count("SDL 2.0.12 sees 3 devices:") == 1 && log_count("  \"PS5 Controller\" 054c:0ce6: a controller") == 1)
-check("...one the engine's list didn't have, now a controller from the newer models",
-      log_count("  \"8BitDo Ultimate\" 2dc8:3011: a controller (one of the newer models added)") == 1)
-check("...one still unknown says the game can't use it",
-      log_count("  \"8BitDo Pro 2\" 2dc8:6003: not on the engine's controller list, so the game can't use it") == 1)
-check("...and the newly known one, plugged in, is opened: the engine is told the way SDL tells it (#{$sdl_pushed.inspect})",
-      $sdl_pushed == [[0x653, 0, 2]] && log_count("Asked the engine to open the newly known controller") == 1)
-check("...SDL asked inside the running exe itself, never another copy (#{$sdl_dlls.uniq.inspect})", $sdl_dlls.uniq == [EXE])
-Input::Controller.connected = true
-step(30)
-check("...not again while nothing changes", log_count("SDL 2.0.12 sees") == 1 && log_count("Added 140") == 1)
-$sdl_devs << [nil, 0x1234, 0x5678, false]
-$sdl_wine = "9.0"
-SDLX.reset
-step(60)
-check("...again when a device comes, a nameless one too; and under Wine it says so",
-      log_count("SDL 2.0.12, under Wine 9.0, sees 4 devices:") == 1 && log_count("  \"?\" 1234:5678: not on the engine's controller list") == 1)
-$sdl_added.clear
-KIF.const_set(:Controllers, Module.new)     # KIF's own fix (C-SYS-08) is here
-C::PadLog.reset
-step
-check("with KIF's own controller fix there, Kanto Reloaded's steps aside: no models added twice, the devices listed once (in KIF's log)",
-      log_count("KIF's own controller fix is here: it adds the newer models and lists the devices in KIF_log.txt") == 1 &&
-      $sdl_added.empty? && log_count("Added 140") == 1)
-KIF.send(:remove_const, :Controllers)
+R::Runtime.reset
+check("...and Wine's version when Wine answers (Linux, Steam Deck)", R::Runtime.facts[:wine] == "9.0")
 Object.send(:remove_const, :Win32API)
-SDLX.reset
+R::Runtime.reset
 C::PadLog.reset
 release_all
 key(40)

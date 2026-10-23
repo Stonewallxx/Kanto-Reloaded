@@ -179,7 +179,7 @@ drive_screen("what's new", [
              wn.send(:source)[:name] == "Kanto Reloaded" && wn.instance_variable_get(:@fresh)[["Kanto Reloaded", Reloaded.version]]) },
   I::RIGHT,
   dmp("wn_02_kif"),
-  at { check("Right: KIF Beta's notes", wn.send(:source)[:name] == "KIF Beta") },
+  at { check("Right: KIF's notes", wn.send(:source)[:name] == "KIF") },
   I::RIGHT,
   dmp("wn_03_mod"),
   I::USE, I::DOWN,
@@ -220,7 +220,8 @@ result = drive_screen("load screen", [
              lv_order == ["File A", "New Game", "What's New", "Mystery Gift", "Options", "Save Manager", "KIF Discord", "KIF Documentation", "Quit Game"]) },
   at { check("What's New is NEW again (reset)", lv.instance_variable_get(:@new)) },
   at { check("the Save Manager's colours: Normal blue, time gold, money green",
-             lv.send(:difficulty_colour) == LV::BLUE && drawn_in?(lv, "41h 12m", LV::GOLD) && drawn_in?(lv, "12,450", LV::GREEN)) },
+             lv.send(:difficulty_colour) == lv.palette[:blue] && drawn_in?(lv, "41h 12m", lv.palette[:gold]) &&
+             drawn_in?(lv, "12,450", lv.palette[:green])) },
   *[I::DOWN] * 6,
   dmp("lw_02_scrolled"),
   at { check("a lower row scrolls the list (#{lv.instance_variable_get(:@scroll)})", lv.instance_variable_get(:@scroll) > 0) },

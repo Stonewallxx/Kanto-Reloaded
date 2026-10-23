@@ -70,6 +70,15 @@ module Reloaded
 
       private
 
+      # A finding colour (one of the constants) in Theme Mode's look: the
+      # palette's deeper tone of it on Light
+      def tone_of(colour)
+        c = palette
+        return colour unless c[:light]
+        { RED => :red, AMBER => :amber, GOLD => :gold, BLUE => :blue, GREEN => :green }.each { |k, v| return c[v] if k.equal?(colour) }
+        return colour
+      end
+
       def rows
         return @run.problems
       end
@@ -175,8 +184,8 @@ module Reloaded
         o.fill_rect(0, 0, W, H, Color.new(0, 0, 0, 120))
         pw = PROGRESS_W
         if done
-          parts = [[@run.count(:broken), _INTL("Broken"), RED], [@run.count(:changed), _INTL("Changed"), AMBER],
-                   [@run.count(:shared), _INTL("Shared"), BLUE], [@run.count(:missing), _INTL("Missing"), RED]]
+          parts = [[@run.count(:broken), _INTL("Broken"), tone_of(RED)], [@run.count(:changed), _INTL("Changed"), tone_of(AMBER)],
+                   [@run.count(:shared), _INTL("Shared"), tone_of(BLUE)], [@run.count(:missing), _INTL("Missing"), tone_of(RED)]]
           segs = []
           parts.each_with_index do |(n, word, colr), i|
             segs << ["#{n} #{word}", n > 0 ? colr : c[:dim], true]
@@ -199,7 +208,7 @@ module Reloaded
         by = y + 46
         P.ui.rbox(o, bx0, by, bx1, by + 10, 4, c[:dark], c[:line])
         fill = (bx1 - bx0 - 2) * step / [steps, 1].max
-        P.ui.rbox(o, bx0 + 1, by + 1, bx0 + 1 + fill, by + 9, 3, done ? GREEN : c[:selb]) if fill >= 6
+        P.ui.rbox(o, bx0 + 1, by + 1, bx0 + 1 + fill, by + 9, 3, done ? tone_of(GREEN) : c[:selb]) if fill >= 6
         if done
           P.small_rich(o, x + 10, y + 64, pw - 20, 18, segs)
           P.small(o, x, y + 86, pw, 16, report, c[:dim], 2)
@@ -241,7 +250,7 @@ module Reloaded
         base.fill_rect(0, 0, W, H, c[:bg])
         @cursor_rect = nil
         paint_title_bar(base, c)
-        P.small(top, 8, 9, 150, 16, _INTL("KIF Beta {1}", @run.version), c[:dim])
+        P.small(top, 8, 9, 150, 16, _INTL("KIF {1}", @run.version), c[:dim])
         P.text(top, 0, 2, W, 28, _INTL("Hook Check"), c[:title], PF::TITLE, 2)
         title_box(base, top, c, W - 8 - BUTTON_W, _INTL("Run Again"))
         title_keys(top, c, nil, button(:X))
@@ -257,7 +266,7 @@ module Reloaded
         list = rows
         if list.empty?
           n = @run.hooks.length
-          P.text(top, LIST_X0, 60, LIST_X1 - LIST_X0, 24, _INTL("All {1} Hooks OK", n), GREEN, PF::ROW, 2)
+          P.text(top, LIST_X0, 60, LIST_X1 - LIST_X0, 24, _INTL("All {1} Hooks OK", n), tone_of(GREEN), PF::ROW, 2)
           P.small_wrap(top, _INTL("Takeovers, locks and settings are OK too."), LIST_X1 - LIST_X0 - 24).each_with_index do |ln, k|
             P.small(top, LIST_X0, 90 + k * 17, LIST_X1 - LIST_X0, 16, ln, c[:txt], 2)
           end
@@ -271,7 +280,7 @@ module Reloaded
           y = ROW_Y0 + k * ROW_DY
           @row_hits << [i, LIST_X0 + 3, y, LIST_X1 - 3, y + ROW_DY - 3]
           @cursor_rect = [LIST_X0 + 3, y, LIST_X1 - LIST_X0 - 6, ROW_DY - 2] if i == @sel
-          colr = COLORS[r.kind]
+          colr = tone_of(COLORS[r.kind])
           P.ui.rbox(top, LIST_X0 + 10, y + 9, LIST_X0 + 16, y + 15, 3, colr)
           P.text(top, LIST_X0 + 22, y + 2, 150, 22, PF.fit(PF::TEXT, r.id, 150), c[:opt], PF::TEXT)
           P.small(top, LIST_X1 - 70, y + 5, 62, 16, _INTL(LABELS[r.kind]), colr, 2)
@@ -288,9 +297,9 @@ module Reloaded
         P.ui.rbox(base, DETAIL_X0, PANEL_Y0, W - 6, PANEL_Y1, 6, c[:panel2], c[:line])
         r = current
         return paint_summary(base, top, c) unless r
-        colr = COLORS[r.kind]
+        colr = tone_of(COLORS[r.kind])
         badge = _INTL(LABELS[r.kind]).upcase
-        bw = P.pill(top, W - 14, PANEL_Y0 + 10, badge, Color.new(colr.red / 4, colr.green / 4, colr.blue / 4), colr)
+        bw = P.pill(top, W - 14, PANEL_Y0 + 10, badge, dark_fill(colr), colr)
         P.text(top, TEXT_X, PANEL_Y0 + 4, W - 14 - bw - 6 - TEXT_X, 24, PF.fit(PF::ROW, r.id, W - 14 - bw - 6 - TEXT_X), c[:head], PF::ROW)
         @y = PANEL_Y0 + 34
         if r.hook?
@@ -310,7 +319,7 @@ module Reloaded
       end
 
       def paint_summary(base, top, c)
-        P.text(top, TEXT_X, PANEL_Y0 + 4, TEXT_W, 24, _INTL("KIF Beta {1}", @run.version), c[:head], PF::ROW)
+        P.text(top, TEXT_X, PANEL_Y0 + 4, TEXT_W, 24, _INTL("KIF {1}", @run.version), c[:head], PF::ROW)
         @y = PANEL_Y0 + 34
         field(top, c, _INTL("Checked"), [@run.previous ? _INTL("Against {1}", @run.previous) : _INTL("First check")])
         field(top, c, _INTL("Report"), split_path(Report.short(@run.report)))
@@ -325,7 +334,7 @@ module Reloaded
           r.diff.each do |kind, line|
             next if kind == :same
             sign = kind == :add ? "+" : "-"         # the game's fonts have no minus sign
-            colr = kind == :add ? GREEN : RED
+            colr = kind == :add ? tone_of(GREEN) : tone_of(RED)
             wrapped = P.small_wrap(top, line.to_s.strip, TEXT_W - 12)
             wrapped = [""] if wrapped.empty?
             wrapped.each_with_index do |ln, k|
@@ -338,7 +347,7 @@ module Reloaded
           @y += 6
         end
         paragraph(top, r.what, c[:txt]) if r.what
-        paragraph(top, r.check, GOLD) if r.check
+        paragraph(top, r.check, tone_of(GOLD)) if r.check
       end
 
       def paint_others(top, c, r)

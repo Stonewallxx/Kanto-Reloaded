@@ -119,7 +119,7 @@ module Reloaded
             P.text(o, x + 48, ry + 7, 100, 18, PF.fit(PF::TEXT, name, 100), c[:txt], PF::TEXT)
             unless pkmn.egg?
               # centred between the name's room and the tool's column (his ask, 2026-10-21)
-              P.text(o, x + 148, ry + 10, 56, 12, _INTL("LV {1}", pkmn.level), GOLD, PF::TINY, 2)
+              P.text(o, x + 148, ry + 10, 56, 12, _INTL("LV {1}", pkmn.level), tone(:gold), PF::TINY, 2)
               column.call(o, c, x, ry, w, pkmn) if column
             end
             @hits << [i, x + 6, ry, x + w - 6, ry + ROW_H - 2]
@@ -160,7 +160,7 @@ module Reloaded
               ry = y + 40 + k * NATURE_ROW_H
               Reloaded::Dialogs.send(:cursor_row, o, c, x + 6, ry, lx1, ry + NATURE_ROW_H) if top + k == i
               tw = P.text(o, x + 14, ry + 1, 90, 16, n.name.to_s, c[:txt], PF::TEXT)
-              P.pill(o, x + 18 + tw, ry + 1, _INTL("NOW"), GOLD_FILL, GOLD, false) if now && n.id == now.id
+              P.pill(o, x + 18 + tw, ry + 1, _INTL("NOW"), now_fill, tone(:gold), false) if now && n.id == now.id
               tags(o, c, lx1 - 8, ry + 1, n, :right)
               @hits << [top + k, x + 6, ry, lx1, ry + NATURE_ROW_H]
             end
@@ -173,7 +173,7 @@ module Reloaded
             px = lx1 + 16
             pw = x + w - 12 - px
             place_icon(0, px + pw / 2, y + 74, 56)
-            P.text(o, px, y + 106, pw, 12, _INTL("LV {1}", pkmn.level), GOLD, PF::TINY, 2)
+            P.text(o, px, y + 106, pw, 12, _INTL("LV {1}", pkmn.level), tone(:gold), PF::TINY, 2)
             a = stats_with(pkmn, now)
             b = stats_with(pkmn, order[i])
             5.times { |s| stat_line(o, c, px, y + 126 + s * 18, pw, s, a[s], b[s]) }
@@ -223,7 +223,7 @@ module Reloaded
       def tags(o, c, x, y, nature, align = :left)
         up = nature.stat_changes.find { |_s, v| v > 0 }
         down = nature.stat_changes.find { |_s, v| v < 0 }
-        parts = up && down ? [["+#{SHORT[STATS.index(up[0])]}", GREEN], ["-#{SHORT[STATS.index(down[0])]}", PINK]] :
+        parts = up && down ? [["+#{SHORT[STATS.index(up[0])]}", tone(:green)], ["-#{SHORT[STATS.index(down[0])]}", tone(:pink)]] :
                              [[_INTL("No Change"), c[:dim]]]
         ws = parts.map { |t, _| small_w(o, t) }
         total = ws.sum + 5 * (parts.length - 1)
@@ -240,7 +240,7 @@ module Reloaded
           P.small(o, x + w - 34, y, 34, 16, now.to_s, c[:txt], 1)
           return
         end
-        col = new > now ? GREEN : PINK
+        col = new > now ? tone(:green) : tone(:pink)
         P.small(o, x + w - 80, y, 30, 16, now.to_s, c[:dim], 1)
         P.ui.tri(o, x + w - 44, y + 4, :r, col, 4)
         P.small(o, x + w - 34, y, 34, 16, new.to_s, col, 1)
@@ -255,8 +255,8 @@ module Reloaded
           P.small(o, x + w - 134, ry + 9, 120, 16, _INTL("Not Locked"), c[:dim], 1)
           return
         end
-        tw = P.text(o, x + w - 74, ry + 9, 60, 14, _INTL("LV {1}", lv), GOLD, PF::TINY, 1)
-        lock_icon(o, x + w - 14 - tw - 14, ry + 10, GOLD)
+        tw = P.text(o, x + w - 74, ry + 9, 60, 14, _INTL("LV {1}", lv), tone(:gold), PF::TINY, 1)
+        lock_icon(o, x + w - 14 - tw - 14, ry + 10, tone(:gold))
       end
 
       # Lock At (Left and Right: its level now to the highest) and Unlock
@@ -276,7 +276,7 @@ module Reloaded
         loop do
           if redraw
             o = top.bitmap
-            c = Reloaded::Palette.current
+            c = Reloaded::Palette.map_menu   # Theme Mode: Dark, or Light for Light and Frost
             o.clear
             o.fill_rect(0, 0, W, H, Color.new(0, 0, 0, 120))
             popup(o, c, x, y, w, h, _INTL("{1}'s Level Lock", pkmn.name))
@@ -289,7 +289,7 @@ module Reloaded
             end
             ry = y + 42
             P.ui.tri(o, x + 150, ry + 8, :l, c[:dim], 5)
-            P.text(o, x + 162, ry + 5, w - 194, 18, _INTL("Lv {1}", lv), GOLD, PF::TEXT, 2)
+            P.text(o, x + 162, ry + 5, w - 194, 18, _INTL("Lv {1}", lv), tone(:gold), PF::TEXT, 2)
             P.ui.tri(o, x + w - 30, ry + 8, :r, c[:dim], 5)
             P.small(o, x, y + h - 26, w, 16, _INTL("It gains no EXP past this level."), c[:dim], 2)
             P.hints(o, o, c, hints, Reloaded::Prompts.style)
@@ -371,7 +371,7 @@ module Reloaded
             P.text(o, x + 16, ry + 5, 100, 18, _INTL("Raise to"), c[:txt], PF::TEXT)
             words = [_INTL("Level Cap (Lv {1})", cap), _INTL("Highest in Party (Lv {1})", highest), _INTL("Lv {1}", own)][choice]
             P.ui.tri(o, x + 132, ry + 8, :l, c[:dim], 5)
-            P.text(o, x + 144, ry + 5, w - 176, 18, PF.fit(PF::TEXT, words, w - 176), GOLD, PF::TEXT, 2)
+            P.text(o, x + 144, ry + 5, w - 176, 18, PF.fit(PF::TEXT, words, w - 176), tone(:gold), PF::TEXT, 2)
             P.ui.tri(o, x + w - 30, ry + 8, :r, c[:dim], 5)
             o.fill_rect(x + 12, ry + 32, w - 24, 1, c[:line])
             list.each_with_index do |pkmn, i|
@@ -416,15 +416,15 @@ module Reloaded
         to, why = Reloaded::QualityOfLife::SuperCandy.reach(pkmn, target)
         case why
         when :locked
-          tw = P.small(o, x1 - 120, y, 120, 16, _INTL("Locked at Lv {1}", pkmn.level), GOLD, 1)
-          lock_icon(o, x1 - tw - 14, y + 2, GOLD)
+          tw = P.small(o, x1 - 120, y, 120, 16, _INTL("Locked at Lv {1}", pkmn.level), tone(:gold), 1)
+          lock_icon(o, x1 - tw - 14, y + 2, tone(:gold))
         when :already
           P.small(o, x1 - 120, y, 120, 16, _INTL("Already There"), c[:dim], 1)
         else
-          P.small(o, x1 - 30, y, 30, 16, to.to_s, GREEN, 1)
-          P.ui.tri(o, x1 - 44, y + 4, :r, GREEN, 4)
+          P.small(o, x1 - 30, y, 30, 16, to.to_s, tone(:green), 1)
+          P.ui.tri(o, x1 - 44, y + 4, :r, tone(:green), 4)
           P.small(o, x1 - 80, y, 30, 16, pkmn.level.to_s, c[:dim], 1)
-          lock_icon(o, x1 - 100, y + 2, GOLD) if why == :locked_at
+          lock_icon(o, x1 - 100, y + 2, tone(:gold)) if why == :locked_at
         end
       end
 
@@ -454,17 +454,17 @@ module Reloaded
           when :egg
             next
           when :locked
-            tw = P.small(o, rx + rw - 120, ry + 3, 120, 16, _INTL("Locked at Lv {1}", r[:from]), GOLD, 1)
-            lock_icon(o, rx + rw - tw - 14, ry + 5, GOLD)
+            tw = P.small(o, rx + rw - 120, ry + 3, 120, 16, _INTL("Locked at Lv {1}", r[:from]), tone(:gold), 1)
+            lock_icon(o, rx + rw - tw - 14, ry + 5, tone(:gold))
           when :already
             P.small(o, rx + rw - 120, ry + 3, 120, 16, _INTL("No Change"), c[:dim], 1)
           else
-            P.small(o, rx + rw - 30, ry + 3, 30, 16, r[:to].to_s, GREEN, 1)
-            P.ui.tri(o, rx + rw - 44, ry + 7, :r, GREEN, 4)
+            P.small(o, rx + rw - 30, ry + 3, 30, 16, r[:to].to_s, tone(:green), 1)
+            P.ui.tri(o, rx + rw - 44, ry + 7, :r, tone(:green), 4)
             P.small(o, rx + rw - 80, ry + 3, 30, 16, r[:from].to_s, c[:dim], 1)
-            lock_icon(o, rx + rw - 100, ry + 5, GOLD) if r[:result] == :lock_stop
+            lock_icon(o, rx + rw - 100, ry + 5, tone(:gold)) if r[:result] == :lock_stop
             note = r[:evolved] ? _INTL("Evolved") : (r[:learned].empty? ? nil : _INTL("Learned {1}", r[:learned].join(", ")))
-            P.small(o, rx + 122, ry + 3, rw - 228, 16, small_fit(o, note, rw - 228), PINK) if note
+            P.small(o, rx + 122, ry + 3, rw - 228, 16, small_fit(o, note, rw - 228), tone(:pink)) if note
           end
         end
         P.hints(o, o, c, [[button(:C), _INTL("OK")]], Reloaded::Prompts.style)
@@ -545,7 +545,7 @@ module Reloaded
       # the overlay, cleared and dimmed (or not, for a popup over a popup)
       def start_draw(dim = true)
         o = @sprite.bitmap
-        c = Reloaded::Palette.current
+        c = Reloaded::Palette.map_menu   # Theme Mode: Dark, or Light for Light and Frost
         if dim
           o.clear
           o.fill_rect(0, 0, W, H, Color.new(0, 0, 0, 120))
@@ -604,6 +604,17 @@ module Reloaded
             return index
           end
         end
+      end
+
+      # A status colour in Theme Mode's look (deeper on Light)
+      def tone(name)
+        return Reloaded::Palette.map_menu[name]
+      end
+
+      # The NOW pill's fill: dark gold on Dark, a tint of gold on Light
+      def now_fill
+        c = Reloaded::Palette.map_menu
+        return c[:light] ? Reloaded::Palette.mix(c[:panel2], c[:gold], 0.22) : GOLD_FILL
       end
 
       def button(sym)

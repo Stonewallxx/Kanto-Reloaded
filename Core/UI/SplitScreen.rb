@@ -36,10 +36,6 @@ module Reloaded
     VAL_X1  = LIST_X1 - 12           # the right column's right edge
     DESC_STEP = 100                  # frames per description line
     DESC_HOLD = 3                    # steps on its first and last lines
-    GREEN = Color.new(120, 230, 150)
-    BLUE  = Color.new(130, 190, 250)
-    RED   = Color.new(240, 100, 90)
-    AMBER = Color.new(240, 170, 60)
     TILE_TEXT = Color.new(248, 248, 248)
     # an entry's tile, by its place in the list
     TILES = [[76, 160, 90], [200, 80, 80], [80, 130, 210], [210, 150, 50], [150, 100, 200],
@@ -50,11 +46,6 @@ module Reloaded
 
     def tile_colour(i)
       return TILES[i % TILES.length]
-    end
-
-    # A badge's fill: its colour, darkened.
-    def dark_fill(colour)
-      return Color.new(colour.red / 4, colour.green / 4, colour.blue / 4)
     end
 
     #--------------------------------------------------------------------------
@@ -86,7 +77,7 @@ module Reloaded
           P.glyph(top, 14, y + 2, 15, 15, letter.to_s, TILE_TEXT)
         end
         room = SIDE_X1 - 37                 # a dot sits at the name's end, as in the designs
-        color = if on then c[:white]
+        color = if on then c[:strong]
                 elsif e[:faded] then faded
                 else c[:dim]
                 end

@@ -32,7 +32,7 @@ module Reloaded
     KIND_TILES = { "battle" => ["B", [200, 80, 80]], "map" => ["M", [60, 170, 150]], "menu" => ["U", [80, 130, 210]],
                    "saving" => ["S", [150, 100, 200]], "loading" => ["L", [150, 100, 200]] }.freeze
     KIND_WORDS = { "battle" => "Battle", "map" => "Map load", "menu" => "Menu", "saving" => "Saving", "loading" => "Loading a save" }.freeze
-    OWNER_RGB = { "Kanto Reloaded" => [214, 52, 60], "EBDX" => [230, 140, 50], "KIF Beta" => [80, 160, 220],
+    OWNER_RGB = { "Kanto Reloaded" => [214, 52, 60], "EBDX" => [230, 140, 50], "KIF" => [80, 160, 220],
                   "PIF" => [150, 150, 160], "All" => [205, 205, 210], "PIF and KIF" => [150, 150, 160] }.freeze
     SORTS = [:peak, :total, :calls, :name].freeze
     SORT_NAMES = { :peak => "Peak", :total => "Total", :calls => "Calls", :name => "Name" }.freeze
@@ -457,7 +457,7 @@ module Reloaded
       P.text(top, LABEL_X, y, room, ROW_H - 2, PF.fit(PF::ROW, r[:label], room), c[:opt], PF::ROW)
       P.text(top, PEAK_X1 - pw, y, pw + 2, ROW_H - 2, peak, severity_colour(x["peak"], c), PF::ROW)
       slow = x["slow"].to_i
-      P.text(top, VAL_X1 - 44, y, 44, ROW_H - 2, slow.to_s, slow > 0 ? RED : c[:opt], PF::ROW, 1)
+      P.text(top, VAL_X1 - 44, y, 44, ROW_H - 2, slow.to_s, slow > 0 ? palette[:red] : c[:opt], PF::ROW, 1)
     end
 
     def paint_stat_row(top, c, r, y)
@@ -519,7 +519,7 @@ module Reloaded
       out = []
       rgb = Color.new(*owner_rgb(owner))
       out << [PF.utf8(owner.to_s).upcase, dark_fill(rgb), rgb] unless owner.to_s.empty? || owner == "All"
-      out << [_INTL("{1} SLOW", slow), dark_fill(RED), RED] if slow > 0
+      out << [_INTL("{1} SLOW", slow), dark_fill(palette[:red]), palette[:red]] if slow > 0
       return out
     end
 
@@ -527,7 +527,7 @@ module Reloaded
       slow = s["sections"][Reloaded::Profiler::FRAME_WORK]
       n = slow ? slow["slow"].to_i : 0
       out = []
-      out << [_INTL("{1} SLOW", n), dark_fill(RED), RED] if n > 0
+      out << [_INTL("{1} SLOW", n), dark_fill(palette[:red]), palette[:red]] if n > 0
       out << [_INTL("EARLIER"), c_pill, palette[:txt]] if s["earlier"]
       return out
     end
@@ -595,7 +595,7 @@ module Reloaded
       battle = HT.per_frame(o, :battle)
       frames = _INTL("{1} ms a frame on the map, {2} ms in battle", map ? ms(map) : "0", battle ? ms(battle) : "0")
       if o == HT::GAME_LABEL
-        return _INTL("The game's own work (PIF, KIF Beta and EBDX's code that isn't a hook): Its frames' work less every mod's hooks. {1}.", frames)
+        return _INTL("The game's own work (PIF, KIF and EBDX's code that isn't a hook): Its frames' work less every mod's hooks. {1}.", frames)
       end
       st = HT.startup_of(o)
       start = st[:scripts] || st[:data_patches] ? _INTL("Started in {1} ms. ", ms(st[:scripts].to_f + st[:data_patches].to_f)) : ""
@@ -680,18 +680,18 @@ module Reloaded
 
     def severity_colour(seconds, c)
       case PR.severity(seconds)
-      when :red then return RED
-      when :amber then return AMBER
+      when :red then return palette[:red]
+      when :amber then return palette[:amber]
       end
-      return GREEN
+      return palette[:green]
     end
 
     def status_colour(status)
       case status.to_s
-      when "red" then return RED
-      when "amber" then return AMBER
+      when "red" then return palette[:red]
+      when "amber" then return palette[:amber]
       end
-      return GREEN
+      return palette[:green]
     end
 
     # A mod's colour: its own (Kanto Reloaded, EBDX, the game), else by its

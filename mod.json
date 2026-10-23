@@ -4,7 +4,7 @@
   "version": "2.0.0",
   "author": "Stonewall",
   "requires_kif": ">=0.21.52",
-  "description": "An overhaul for KIF Beta: controls, menus, PC, battle tools and more. Every feature can be switched on or off.",
+  "description": "An overhaul for KIF: controls, menus, PC, battle tools and more. Every feature can be switched on or off.",
   "tags": ["Gameplay", "UI", "QoL"],
   "dependencies": [],
   "incompatible": [],

@@ -107,7 +107,7 @@ check("mod.json's lock and module are checked", run.needs.any? { |r| r.need == "
       run.needs.any? { |r| r.need == "Module" && r.name == "auto_battle" })
 check("the report is written", run.report && File.file?(run.report) && File.basename(run.report) == "Hook Check 1.0.md")
 rep = File.read(run.report, :encoding => "UTF-8")
-check("the report: real headings in the chosen order", rep.start_with?("# Hook Check: KIF Beta 1.0\n") &&
+check("the report: real headings in the chosen order", rep.start_with?("# Hook Check: KIF 1.0\n") &&
       %w[Broken Changed\ Upstream Others\ on\ the\ Same\ Method Takeovers\ and\ Settings OK].map { |h| rep.index("\n## #{h}\n") }.each_cons(2).all? { |a, b| a && b && a < b })
 check("...a count table", rep.include?("| Broken | #{run.count(:broken)} |") && rep.include?("| Result | Count |"))
 check("...the first check says there's nothing to compare yet", rep.include?("Nothing to compare yet"))

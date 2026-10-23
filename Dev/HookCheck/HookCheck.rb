@@ -99,7 +99,7 @@ module Reloaded
         Reloaded::Settings.register(:"developer.hook_check", :page => :developer, :type => :button, :priority => 10,
           :name => "Hook Check", :preset => false,
           :on_press => proc { Reloaded::HookCheck::Screen.open },
-          :description => "Checks Kanto Reloaded's hooks against this KIF Beta: what broke, what KIF changed, what else is on the same methods. Runs by itself when KIF updates.")
+          :description => "Checks Kanto Reloaded's hooks against this KIF: what broke, what KIF changed, what else is on the same methods. Runs by itself when KIF updates.")
         if defined?(::PokemonLoad_Scene)
           Reloaded::Hooks.around(nil, "PokemonLoad_Scene", :pbChoose, :id => :hook_check_alert) do |original, *args|
             Reloaded::HookCheck.at_load_screen
@@ -680,7 +680,7 @@ module Reloaded
       def need_result(ok, name, need, where, what, effect)
         return Result.new(ok ? :ok : :missing, name, :need => need, :name => name.to_s, :where => where,
                           :what => ok ? nil : what, :effect => ok ? nil : effect,
-                          :fix => ok ? nil : "Find its new name in KIF Beta #{kif_version} and update Kanto Reloaded.")
+                          :fix => ok ? nil : "Find its new name in KIF #{kif_version} and update Kanto Reloaded.")
       end
 
       def mod_json

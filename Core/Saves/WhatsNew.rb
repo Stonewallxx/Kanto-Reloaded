@@ -26,7 +26,7 @@ module Reloaded
   module WhatsNew
     FILE = "Whats New.json".freeze
     KR = "Kanto Reloaded".freeze
-    KIF = "KIF Beta".freeze
+    KIF = "KIF".freeze
     Version = Struct.new(:version, :date, :notes)       # notes: [[text, depth]]
 
     @added = {}         # source => [Version] (from scripts)

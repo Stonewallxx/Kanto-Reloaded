@@ -96,10 +96,16 @@ module Reloaded
       end
     end
 
-    # Recursive-descent reader over the text's characters.
+    # Recursive-descent reader over the text's characters. The text is split
+    # into its characters once: indexing a UTF-8 string walks it from the
+    # start each time, which made a 200 KB file take seconds (the Hook
+    # Check's saved copy held the Main Menu dim, 2026-10-21).
     class Reader
+      SPACE = [" ", "\t", "\r", "\n"].freeze
+      NUMBER = "+-0123456789.eE"
+
       def initialize(text)
-        @text = text.dup.force_encoding(Encoding::UTF_8).delete_prefix("﻿")
+        @text = text.dup.force_encoding(Encoding::UTF_8).delete_prefix("﻿").chars
         @pos = 0
         @depth = 0
       end
@@ -215,7 +221,7 @@ module Reloaded
         when "t" then "\t"
         when "u"
           code = hex4
-          if code >= 0xD800 && code <= 0xDBFF && @text[@pos, 2] == "\\u"
+          if code >= 0xD800 && code <= 0xDBFF && @text[@pos, 2].to_a.join == "\\u"
             @pos += 2
             low = hex4
             code = 0x10000 + ((code - 0xD800) << 10) + (low - 0xDC00) if low >= 0xDC00 && low <= 0xDFFF
@@ -227,21 +233,23 @@ module Reloaded
       end
 
       def hex4
-        digits = @text[@pos, 4].to_s
+        digits = @text[@pos, 4].to_a.join
         fail!("bad \\u escape") unless digits =~ /\A[0-9a-fA-F]{4}\z/
         @pos += 4
         return digits.to_i(16)
       end
 
       def number
-        match = /\A-?(?:0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?/.match(@text[@pos..-1])
+        stop = @pos
+        stop += 1 while stop < @text.length && NUMBER.include?(@text[stop])
+        match = /\A-?(?:0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?/.match(@text[@pos...stop].join)
         fail!("bad number") unless match
         @pos += match[0].length
         return (match[1] || match[2]) ? match[0].to_f : match[0].to_i
       end
 
       def literal(word, result)
-        fail!("unexpected text") unless @text[@pos, word.length] == word
+        fail!("unexpected text") unless @text[@pos, word.length].to_a.join == word
         @pos += word.length
         return result
       end
@@ -252,7 +260,7 @@ module Reloaded
       end
 
       def skip_space
-        @pos += 1 while @pos < @text.length && " \t\r\n".include?(@text[@pos])
+        @pos += 1 while @pos < @text.length && SPACE.include?(@text[@pos])
       end
 
       def nest

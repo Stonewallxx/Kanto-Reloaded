@@ -180,7 +180,7 @@ check("...that opens: every file's CRC and size check out (#{files.keys.inspect}
       files.key?("settings/Kanto Reloaded Settings.json"))
 report = files["Report.md"].force_encoding("UTF-8")
 check("Report.md: the note, the versions, this session's errors and Recent Steps",
-      report.include?(note) && report.include?("Kanto Reloaded #{R.version}, KIF Beta 0.21.59") &&
+      report.include?(note) && report.include?("Kanto Reloaded #{R.version}, KIF 0.21.59") &&
       report.include?("## Errors This Session") && report.include?("Broken Mod: failed") && report.include?("## Recent Steps (100)"))
 mods = files["mods.md"].force_encoding("UTF-8")
 check("mods.md: each mod with its version, author and state", mods.include?("| 1 | Hard Trainers+ | HardTrainers | 1.4 | Ash | loaded |") &&

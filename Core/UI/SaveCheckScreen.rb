@@ -32,11 +32,7 @@ module Reloaded
     PF = ::KIF::PixelFont
     P = Reloaded::Pixel
     SC = Reloaded::SaveCheck
-    GREEN = Color.new(120, 230, 150)
-    RED   = Color.new(240, 100, 90)
-    AMBER = Color.new(240, 170, 60)
-    GOLD  = Color.new(240, 200, 80)
-    STATE = { :ok => GREEN, :note => AMBER, :problem => RED, :damaged => RED }.freeze
+    STATE = { :ok => :green, :note => :amber, :problem => :red, :damaged => :red }.freeze
     X0 = 8
     X1 = W - 8
     BANNER_Y = 38
@@ -182,17 +178,17 @@ module Reloaded
                 elsif state == :ok then _INTL("Its own save value, plain values only.")
                 else _INTL("Its own save value, with its objects in it.")
                 end
-        out << [state, ":#{k}", under, SC.size_words((m.bytes.to_f / [m.keys.length, 1].max).to_i), STATE[state]]
+        out << [state, ":#{k}", under, SC.size_words((m.bytes.to_f / [m.keys.length, 1].max).to_i), palette[STATE[state]]]
       end
       m.classes.each do |name, places|
         where = places.map { |p| place_words(p) }.uniq
         state = m.installed == true ? :note : :problem
-        out << [state, name, _INTL("In {1}.", SC.join_words(where)), _INTL("Object"), state == :problem ? RED : AMBER]
+        out << [state, name, _INTL("In {1}.", SC.join_words(where)), _INTL("Object"), state == :problem ? palette[:red] : palette[:amber]]
       end
       m.added.each do |kind, id, n|
         under = _INTL("Becomes Missing Content without {1}.", m.name)
         right = n > 1 ? "#{SC.kind_words(kind)} ×#{n}" : SC.kind_words(kind)
-        out << [:note, SC::Content.words(id), under, right, GOLD]
+        out << [:note, SC::Content.words(id), under, right, palette[:gold]]
       end
       return out
     end
@@ -478,34 +474,34 @@ module Reloaded
     def banner_words
       case @mode
       when :report
-        return [@report.verdict.to_s, @report.sub.to_s, STATE[@report.state] || RED]
+        return [@report.verdict.to_s, @report.sub.to_s, palette[STATE[@report.state] || :red]]
       when :missing
         list = @report.missing
-        colour = list.any? { |m| m.kind == :move } ? RED : AMBER
+        colour = list.any? { |m| m.kind == :move } ? palette[:red] : palette[:amber]
         return [_INTL("{1} Missing", title_counts(list)), _INTL("The game doesn't have them now. Keep Aside saves them."), colour]
       when :mods
         mods = @report.mods
         needed = mods.select(&:needed)
         n = mods.length == 1 ? _INTL("1 Mod") : _INTL("{1} Mods", mods.length)
         unless blocked.empty?
-          return [_INTL("{1}, {2} Needed to Load", n, needed.length), _INTL("{1} can't load without {2}. Make It Loadable can fix that.", @slot, SC.join_words(blocked.map(&:name))), RED]
+          return [_INTL("{1}, {2} Needed to Load", n, needed.length), _INTL("{1} can't load without {2}. Make It Loadable can fix that.", @slot, SC.join_words(blocked.map(&:name))), palette[:red]]
         end
         unless needed.empty?
-          return [_INTL("{1}, {2} Needed to Load", n, needed.length), _INTL("{1} can't load without {2}. The others are safe to remove.", @slot, SC.join_words(needed.map(&:name))), AMBER]
+          return [_INTL("{1}, {2} Needed to Load", n, needed.length), _INTL("{1} can't load without {2}. The others are safe to remove.", @slot, SC.join_words(needed.map(&:name))), palette[:amber]]
         end
-        return [_INTL("{1}, All Safe to Remove", n), _INTL("Each one keeps plain values only: Its data waits in the save."), GREEN]
+        return [_INTL("{1}, All Safe to Remove", n), _INTL("Each one keeps plain values only: Its data waits in the save."), palette[:green]]
       end
       m = @mod
       if m.needed
-        return [_INTL("{1}: Needed to Load", m.name), _INTL("Keep {1} installed while you play this save.", m.name), AMBER] if m.installed == true
-        return [_INTL("{1}: Needed to Load", m.name), _INTL("{1} can't load without it. Make It Loadable fixes that.", @slot), RED]
+        return [_INTL("{1}: Needed to Load", m.name), _INTL("Keep {1} installed while you play this save.", m.name), palette[:amber]] if m.installed == true
+        return [_INTL("{1}: Needed to Load", m.name), _INTL("{1} can't load without it. Make It Loadable fixes that.", @slot), palette[:red]]
       end
-      return [_INTL("{1}: Safe to Remove", m.name), m.kr ? _INTL("Plain values only. Its .kr copy brings the data back when it's installed again.") : _INTL("Plain values only. Its data waits in the save."), GREEN]
+      return [_INTL("{1}: Safe to Remove", m.name), m.kr ? _INTL("Plain values only. Its .kr copy brings the data back when it's installed again.") : _INTL("Plain values only. Its data waits in the save."), palette[:green]]
     end
 
     def paint_banner(base, top, c)
       title, sub, colour = banner_words
-      P.ui.rbox(base, X0, BANNER_Y, X1, BANNER_Y + BANNER_H, 6, Color.new(colour.red / 6, colour.green / 6, colour.blue / 6), colour)
+      P.ui.rbox(base, X0, BANNER_Y, X1, BANNER_Y + BANNER_H, 6, dark_fill(colour, 6), colour)
       w = X1 - X0 - 20
       P.text(top, X0 + 10, BANNER_Y - 2, w, 24, PF.fit(PF::ROW, title, w), colour, PF::ROW)
       P.small(top, X0 + 10, BANNER_Y + 20, w, 16, fit_small(top, sub, w), c[:txt])
@@ -545,8 +541,8 @@ module Reloaded
 
     # A circle: a tick (OK) or ! (a note, a problem).
     def status_icon(b, x, y, state, c)
-      colour = STATE[state] || RED
-      P.ui.rbox(b, x, y, x + 17, y + 17, 9, Color.new(colour.red / 4, colour.green / 4, colour.blue / 4), colour)
+      colour = palette[STATE[state] || :red]
+      P.ui.rbox(b, x, y, x + 17, y + 17, 9, dark_fill(colour), colour)
       if state == :ok
         [[4, 9], [5, 10], [6, 11], [7, 10], [8, 9], [9, 8], [10, 7], [11, 6], [12, 5]].each { |dx, dy| b.fill_rect(x + dx, y + dy, 2, 2, colour) }
       else
@@ -581,10 +577,10 @@ module Reloaded
       mx = X0 + 218
       mw = X1 - 112 - mx
       lines = P.small_wrap(top, m.where.to_s, mw).first(2)
-      lines.each_with_index { |ln, k| P.small(top, mx, y + 6 + k * 15, mw, 16, ln, m.party ? RED : c[:txt]) }
-      P.small(top, mx, y + 6 + lines.length * 15, mw, 16, _INTL("Can crash a battle."), RED) if m.kind == :move && lines.length < 2
+      lines.each_with_index { |ln, k| P.small(top, mx, y + 6 + k * 15, mw, 16, ln, m.party ? palette[:red] : c[:txt]) }
+      P.small(top, mx, y + 6 + lines.length * 15, mw, 16, _INTL("Can crash a battle."), palette[:red]) if m.kind == :move && lines.length < 2
       label, colour = if !m.fixable then [_INTL("Its Mod's"), c[:dim]]
-                      elsif m.fix == :remove then [_INTL("Remove"), RED]
+                      elsif m.fix == :remove then [_INTL("Remove"), palette[:red]]
                       else [_INTL("Keep Aside"), c[:txt]]
                       end
       P.text(top, X1 - 112, y + 9, 100, 24, label, colour, PF::ROW, 1)
@@ -597,7 +593,7 @@ module Reloaded
       pk = list.find { |m| m.kind == :pokemon && m.party && m.fix == :keep && m.fixable }
       return unless pk
       y = list_top + list.length * row_h + 6
-      P.small(top, X0 + 14, y, X1 - X0 - 28, 16, _INTL("{1} is in the party, so Keep Aside moves it out.", pk.name), RED)
+      P.small(top, X0 + 14, y, X1 - X0 - 28, 16, _INTL("{1} is in the party, so Keep Aside moves it out.", pk.name), palette[:red])
     end
 
     def paint_mod(base, top, c, m, y, on)
@@ -608,9 +604,9 @@ module Reloaded
       P.text(top, X0 + 32, y - 1, 240, 24, PF.fit(PF::ROW, m.name.to_s, 230), c[:txt], PF::ROW)
       P.small(top, X0 + 40 + nw, y + 5, 80, 16, SC.size_words(m.bytes), c[:dim])
       if m.needed
-        P.pill(top, X1 - 12, y + 5, _INTL("NEEDED TO LOAD"), Color.new(70, 24, 22), RED)
+        P.pill(top, X1 - 12, y + 5, _INTL("NEEDED TO LOAD"), palette[:light] ? dark_fill(palette[:red]) : Color.new(70, 24, 22), palette[:red])
       else
-        P.pill(top, X1 - 12, y + 5, _INTL("SAFE TO REMOVE"), Color.new(24, 60, 36), GREEN)
+        P.pill(top, X1 - 12, y + 5, _INTL("SAFE TO REMOVE"), palette[:light] ? dark_fill(palette[:green]) : Color.new(24, 60, 36), palette[:green])
       end
       words, colour = mod_words(m, c)
       P.small_wrap(top, words, X1 - X0 - 50).first(2).each_with_index do |ln, k|
@@ -621,7 +617,7 @@ module Reloaded
     def mod_words(m, c)
       if m.needed
         what = SC.join_words(m.classes.keys.first(2))
-        return [_INTL("Needed to load: It stores {1}, which the game can't read without {2}.", what, m.name), m.installed == true ? AMBER : RED]
+        return [_INTL("Needed to load: It stores {1}, which the game can't read without {2}.", what, m.name), m.installed == true ? palette[:amber] : palette[:red]]
       end
       return [_INTL("Safe to remove: Plain values only. Its .kr copy brings the data back when it's installed again."), c[:txt]] if m.kr
       text = _INTL("Safe to remove: Plain values only. Its data waits in the save.")
@@ -807,7 +803,7 @@ module Reloaded
         @cursor_rect = [6, y, W - 12, ROW] if @top + k == @sel
         P.text(top, 12, y - 1, 170, 22, PF.fit(PF::TEXT, label, 170), c[:txt])
         klass = v.is_a?(Reloaded::SaveCheck::Stub) ? "#{v.class.name}*" : v.class.name.to_s
-        P.text(top, 186, y - 1, 140, 22, PF.fit(PF::TEXT, klass, 140), v.is_a?(Reloaded::SaveCheck::Stub) ? Color.new(240, 100, 90) : c[:dim])
+        P.text(top, 186, y - 1, 140, 22, PF.fit(PF::TEXT, klass, 140), v.is_a?(Reloaded::SaveCheck::Stub) ? palette[:red] : c[:dim])
         P.text(top, 330, y - 1, W - 342, 22, PF.fit(PF::TEXT, summary(v), W - 342), c[:txt], nil, 1)
       end
       P.text(top, 12, Y0 + 8, 300, 22, _INTL("Nothing inside."), c[:dim]) if list.empty?

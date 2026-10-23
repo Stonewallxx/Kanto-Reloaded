@@ -53,7 +53,7 @@ module Reloaded
           :description => "Kanto Reloaded's Load Screen: Your save's note, health and backups, What's New and the Save Manager. Off shows the game's own.")
         s.register(MOD_CHECK, :page => :systems, :priority => 40, :type => :toggle, :default => true, :preset => false,
           :name => "Startup Mod-Check",
-          :description => "Before the main menu, KIF Beta looks for updates to your mods and offers to open them. Off skips it; Mods > Updates still checks when you open it.")
+          :description => "Before the main menu, KIF looks for updates to your mods and offers to open them. Off skips it; Mods > Updates still checks when you open it.")
         s.register_page(:saves, :group => :general, :name => "Saves", :icon => :saves, :priority => 35,
           :description => "Your save files, their backups and notes.")
         s.register(:"saves.manager", :page => :saves, :priority => 0, :type => :button, :preset => false,

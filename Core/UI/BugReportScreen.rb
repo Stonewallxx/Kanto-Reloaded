@@ -309,8 +309,8 @@ module Reloaded
     def paint_make_box(base, top, c)
       x0, y0, x1, y1 = right_box
       hover = @hover_box == :right
-      P.ui.rbox(base, x0, y0, x1, y1, 5, Color.new(24, 60, 36), hover ? c[:selb] : GREEN)
-      P.text(top, x0, y0, x1 - x0, 24, _INTL("Make Report"), GREEN, nil, 2)
+      P.ui.rbox(base, x0, y0, x1, y1, 5, c[:light] ? dark_fill(palette[:green]) : Color.new(24, 60, 36), hover ? c[:selb] : palette[:green])
+      P.text(top, x0, y0, x1 - x0, 24, _INTL("Make Report"), palette[:green], nil, 2)
       key = button(:X)
       kw = Reloaded::ButtonIcons.width(key, Reloaded::Prompts.style) rescue 0
       Reloaded::ButtonIcons.draw(top, x0 - 6 - kw, 8, key, c, Reloaded::Prompts.style) rescue nil
@@ -321,7 +321,7 @@ module Reloaded
       P.heading(top, LIST_X0 + 10, LIST_X1 - 10, y, _INTL("What Happened"), c[:head], c[:line])
       y += 18
       if @crash
-        P.small(top, LIST_X0 + 12, y, LIST_X1 - LIST_X0 - 24, 16, fit_small(top, _INTL("The crash: {1} in {2}", @crash[:error].to_s.split(":").first, @crash[:where]), LIST_X1 - LIST_X0 - 24), RED)
+        P.small(top, LIST_X0 + 12, y, LIST_X1 - LIST_X0 - 24, 16, fit_small(top, _INTL("The crash: {1} in {2}", @crash[:error].to_s.split(":").first, @crash[:where]), LIST_X1 - LIST_X0 - 24), palette[:red])
         y += 16
       end
       # the note, in its box
@@ -395,7 +395,7 @@ module Reloaded
         @cursor_rect = [LIST_X0 + 4, y, LIST_X1 - 8 - LIST_X0 - 4 + 1, ROW_H - 1] if @focus == :list && @sel == k
         tick(top, NAME_X - 2, y + 4, id, c)
         P.text(top, NAME_X + 20, y, 150, ROW_H - 2, label, c[:opt], PF::ROW)
-        colour = id == :errors && !@errors.empty? ? AMBER : c[:txt]
+        colour = id == :errors && !@errors.empty? ? palette[:amber] : c[:txt]
         if id == :save
           vw = P.width(PF::ROW, value)
           P.ui.tri(top, VAL_X1 - vw - 14, y + 9, :l, c[:dim], 3)
@@ -412,8 +412,8 @@ module Reloaded
     # A tick for what goes in; Include the Save's is empty while it's Off.
     def tick(top, x, y, id, c)
       on = id != :save || !@save.zero?
-      colour = on ? GREEN : c[:dim]
-      P.ui.rbox(top, x, y, x + 15, y + 15, 8, Color.new(colour.red / 4, colour.green / 4, colour.blue / 4), colour)
+      colour = on ? palette[:green] : c[:dim]
+      P.ui.rbox(top, x, y, x + 15, y + 15, 8, dark_fill(colour), colour)
       return unless on
       [[3, 7], [4, 8], [5, 9], [6, 8], [7, 7], [8, 6], [9, 5], [10, 4]].each { |dx, dy| top.fill_rect(x + dx, y + dy, 2, 2, colour) }
     end
@@ -436,7 +436,7 @@ module Reloaded
       when :note then return [_INTL("What Happened"), _INTL("Type straight in: What you were doing and what went wrong. A opens the naming screen.")]
       when :shot then return [_INTL("Screenshot"), _INTL("This Screen is the screen as it was when you opened the Pause Menu. Or your last screenshot, or none.")]
       when :logs then return [_INTL("Logs"), _INTL("Kanto Reloaded's log and the one before it, KIF's session and error logs, and the game's errorlog.")]
-      when :settings then return [_INTL("Settings"), _INTL("Kanto Reloaded's settings, controls, layouts and features, and KIF Beta's settings.")]
+      when :settings then return [_INTL("Settings"), _INTL("Kanto Reloaded's settings, controls, layouts and features, and KIF's settings.")]
       when :mods then return [_INTL("Mods"), _INTL("Every mod: On or off, loaded or not, its version and author, and the order they load in.")]
       when :hooks then return [_INTL("Hooks"), _INTL("Where Kanto Reloaded changes the game, and any other code on the same methods.")]
       when :check then return [_INTL("Save Check"), @slot ? _INTL("The Save Checker's report on {1}.", @slot) : _INTL("No save to check yet.")]

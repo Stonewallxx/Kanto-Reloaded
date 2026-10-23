@@ -76,7 +76,7 @@ add_session(:map, "Viridian City", "Route 1",
              ["Sprites Build", "PIF", 54.0, 1, 1, "Building the new map's tilemap, character sprites and weather."],
              ["Map Setup", "PIF", 31.3, 3, 0, "One map's setup: its data file, tileset, fog and every event on it.", "Map Data Load"],
              ["Events Setup", "PIF", 22.7, 48, 0, "Making the map's events, one call each.", "Map Setup"],
-             ["Fusion Sprite Load", "KIF Beta", 17.3, 6, 0], ["Overworld Pokémon", KR, 4.0, 1, 0],
+             ["Fusion Sprite Load", "KIF", 17.3, 6, 0], ["Overworld Pokémon", KR, 4.0, 1, 0],
              ["Music Change", "PIF", 1.2, 1, 0], ["Frame Work", "All", 96.0, 22, 2]])
 add_session(:battle, "Wild Battle", "Route 1",
             [["Target Icon Prewarm", KR, 38.6, 1, 1, "One frame of battle froze while the target icons were drawn ahead of time."],

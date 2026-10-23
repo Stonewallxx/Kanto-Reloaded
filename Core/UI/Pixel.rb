@@ -236,7 +236,7 @@ module Reloaded
         else
           x += hint_button(b, x, y + 5, button.to_s, c, style) + 5
         end
-        x += small(b, x, y + 1, 300, 24, label, i == hover ? c[:white] : c[:dim]) + 12
+        x += small(b, x, y + 1, 300, 24, label, i == hover ? (c[:strong] || c[:white]) : c[:dim]) + 12
         spans << [i, start, x - 12] if spans
       end
       return x - x0 - 12

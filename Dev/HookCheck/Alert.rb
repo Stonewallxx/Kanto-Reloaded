@@ -84,15 +84,15 @@ module Reloaded
         end
 
         def draw(run, choice)
-          c = Reloaded::Palette.current
+          c = Reloaded::Palette.map_menu   # Theme Mode: Dark, or Light for Light and Frost
           o = @sprite.bitmap
           o.clear
           o.fill_rect(0, 0, W, H, Color.new(0, 0, 0, 140))
           ok = run.all_ok?
           y0 = ok ? 110 : 64
           y1 = ok ? 268 : 318
-          P.ui.rbox(o, X0, y0, X1, y1, 8, c[:panel2], border(run))
-          title = run.first ? _INTL("Hook Check") : _INTL("KIF Beta Updated")
+          P.ui.rbox(o, X0, y0, X1, y1, 8, c[:panel2], shade(border(run), c))
+          title = run.first ? _INTL("Hook Check") : _INTL("KIF Updated")
           sub = run.first ? _INTL("First check on {1}", run.version) : _INTL("{1} to {2}", run.previous, run.version)
           P.text(o, X0, y0 + 6, X1 - X0, 26, title, c[:title], PF::ROW, 2)
           P.small(o, X0, y0 + 32, X1 - X0, 16, sub, c[:dim], 2)
@@ -100,7 +100,7 @@ module Reloaded
           report = _INTL("Report: {1}", Report.short(run.report))
           @hits = []
           if ok
-            P.text(o, X0, y0 + 62, X1 - X0, 24, _INTL("All {1} Hooks OK", run.hooks.length), GREEN, PF::ROW, 2)
+            P.text(o, X0, y0 + 62, X1 - X0, 24, _INTL("All {1} Hooks OK", run.hooks.length), shade(GREEN, c), PF::ROW, 2)
             P.small(o, X0, y0 + 90, X1 - X0, 16, _INTL("Takeovers, locks and settings are OK too."), c[:txt], 2)
             P.small(o, X0, y0 + 110, X1 - X0, 16, report, c[:dim], 2)
             hints(o, c, [[button(:C), _INTL("OK")]])
@@ -113,9 +113,9 @@ module Reloaded
           w = X1 - X0 - 48
           rows.each_with_index do |(label, n, colr), i|
             y = y0 + 60 + i * 22
-            P.ui.rbox(o, x, y + 6, x + 8, y + 14, 4, colr)
+            P.ui.rbox(o, x, y + 6, x + 8, y + 14, 4, shade(colr, c))
             P.text(o, x + 16, y, w - 60, 22, label, c[:txt], PF::TEXT)
-            P.text(o, x + w - 44, y, 44, 22, n.to_s, n > 0 && colr != GREEN ? colr : c[:dim], PF::TEXT, 2)
+            P.text(o, x + w - 44, y, 44, 22, n.to_s, n > 0 && !colr.equal?(GREEN) ? shade(colr, c) : c[:dim], PF::TEXT, 2)
           end
           o.fill_rect(X0 + 12, y0 + 176, X1 - X0 - 24, 1, c[:line])
           P.small(o, X0, y0 + 184, X1 - X0, 16, report, c[:dim], 2)
@@ -124,13 +124,21 @@ module Reloaded
             @hits << [i, bx, by, bx + 130, by + 28]
             if i == choice
               P.ui.rbox(o, bx, by, bx + 130, by + 28, 6, c[:sel], c[:selb])
-              P.text(o, bx, by + 2, 130, 24, label, c[:white], PF::TEXT, 2)
+              P.text(o, bx, by + 2, 130, 24, label, c[:strong], PF::TEXT, 2)
             else
               P.ui.rbox(o, bx, by, bx + 130, by + 28, 6, c[:dark], c[:line])
               P.text(o, bx, by + 2, 130, 24, label, c[:txt], PF::TEXT, 2)
             end
           end
           hints(o, c, [[:lr, _INTL("Choose")], [button(:C), _INTL("Select")], [button(:B), _INTL("Close")]])
+        end
+
+        # A finding colour (one of the constants) on Light: the palette's deeper
+        # tone of it
+        def shade(colour, c)
+          return colour unless c[:light]
+          { RED => :red, GOLD => :gold, BLUE => :blue, GREEN => :green }.each { |k, v| return c[v] if k.equal?(colour) }
+          return colour
         end
 
         # The most serious finding's colour: red for something broken or

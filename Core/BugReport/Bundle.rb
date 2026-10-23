@@ -176,7 +176,7 @@ module Reloaded
         end
 
         def kif_settings
-          lines = ["# KIF Beta's settings (* changed from the default)", ""]
+          lines = ["# KIF's settings (* changed from the default)", ""]
           ::KIF::Options.defaults.each do |key, default|
             value = ($PokemonSystem.send(key) rescue nil)
             lines << "#{value == default ? " " : "*"} #{key} = #{value.inspect}"
@@ -185,7 +185,7 @@ module Reloaded
         end
 
         def mods_text
-          lines = ["# Mods", "", "Kanto Reloaded #{Reloaded.version}, KIF Beta #{(::KIF::PORT_VERSION rescue "?")}, game #{(::Settings::GAME_VERSION_NUMBER rescue "?")}", "",
+          lines = ["# Mods", "", "Kanto Reloaded #{Reloaded.version}, KIF #{(::KIF::PORT_VERSION rescue "?")}, game #{(::Settings::GAME_VERSION_NUMBER rescue "?")}", "",
                    "| # | Mod | Folder | Version | Author | State |", "|---|---|---|---|---|---|"]
           mods.each_with_index do |m, i|
             lines << "| #{i + 1} | #{m[:name]} | #{m[:folder]} | #{m[:version]} | #{m[:author]} | #{m[:state]} |"
@@ -237,7 +237,7 @@ module Reloaded
         def report_text(note, crash, slot)
           out = ["# Kanto Reloaded Bug Report", ""]
           out << "- Made: #{Time.now.strftime("%Y-%m-%d %H:%M:%S")}"
-          out << "- Kanto Reloaded #{Reloaded.version}, KIF Beta #{(::KIF::PORT_VERSION rescue "?")}, game #{(::Settings::GAME_VERSION_NUMBER rescue "?")}"
+          out << "- Kanto Reloaded #{Reloaded.version}, KIF #{(::KIF::PORT_VERSION rescue "?")}, game #{(::Settings::GAME_VERSION_NUMBER rescue "?")}"
           out << "- Save: #{slot || "none"}"
           out += Reloaded::QualityOfLife.report_lines if defined?(Reloaded::QualityOfLife)
           out += ["", "## What Happened", "", note.to_s.strip.empty? ? "(no note)" : note.to_s.strip]

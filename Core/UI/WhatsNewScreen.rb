@@ -214,7 +214,7 @@ module Reloaded
       P.text(top, 0, 2, W, 28, _INTL("What's New"), c[:title], PF::TITLE, 2)
       entries = @sources.map do |s|
         { :name => s[:name], :tile => s[:name] == WN::KR ? :ball : nil,
-          :dot => s[:versions].any? { |v| @fresh[[s[:name], v.version]] } ? GOLD_DOT : nil }
+          :dot => s[:versions].any? { |v| @fresh[[s[:name], v.version]] } ? palette[:gold] : nil }
       end
       paint_sidebar(base, top, c, entries, @sources.empty? ? nil : @section, false)
       paint_versions_box(base, top, c)
@@ -223,7 +223,6 @@ module Reloaded
       place_cursor
     end
 
-    GOLD_DOT = Color.new(240, 200, 80)
 
     def side_y1
       return VERSIONS_Y0 - 6
@@ -237,7 +236,7 @@ module Reloaded
       rows.each_with_index do |(name, v), k|
         y = VERSIONS_Y0 + 22 + k * 22
         P.small(top, 14, y, SIDE_X1 - 28, 18, name, c[:txt])
-        P.small(top, 14, y, SIDE_X1 - 24, 18, v.to_s, BLUE, 1)
+        P.small(top, 14, y, SIDE_X1 - 24, 18, v.to_s, palette[:blue], 1)
       end
     end
 
@@ -287,13 +286,13 @@ module Reloaded
       @cursor_rect = [LIST_X0 + 4, y, (LIST_X1 - 8) - (LIST_X0 + 4) + 1, ROW_H - 1] if i == @sel && @focus == :list
       P.text(top, NAME_X, y, 170, ROW_H - 2, _INTL("Version {1}", v.version), c[:opt], PF::ROW)
       P.text(top, LIST_X0 + 190, y, 80, ROW_H - 2, date_text(v.date), c[:dim], PF::ROW)
-      P.pill(top, LIST_X1 - 14, y + 5, _INTL("NEW"), Color.new(60, 50, 10), GOLD_DOT) if @fresh[[source[:name], v.version]]
+      P.pill(top, LIST_X1 - 14, y + 5, _INTL("NEW"), c[:light] ? dark_fill(c[:gold]) : Color.new(60, 50, 10), c[:gold]) if @fresh[[source[:name], v.version]]
     end
 
     def paint_note(top, c, x, y)
       text, depth, first = x
       bx = BULLET_X + depth * 14
-      P.ui.rbox(top, bx, y + 8, bx + 4, y + 12, 2, depth.zero? ? BLUE : c[:dim]) if first
+      P.ui.rbox(top, bx, y + 8, bx + 4, y + 12, 2, depth.zero? ? palette[:blue] : c[:dim]) if first
       P.text(top, TEXT_X + depth * 14, y, TEXT_W - depth * 14, NOTE_DY, text, depth.zero? ? c[:txt] : c[:dim])
     end
 

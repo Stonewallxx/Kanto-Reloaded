@@ -60,6 +60,12 @@ class Window_AdvancedCommandPokemon
   def drawItem(index, _count, _rect); @drawn << @commands[index]; end
 end
 class Window_PauseMenuCommand < Window_AdvancedCommandPokemon; end
+# EBDX's battle command window as 660_EBDX/007_EBDX_UIWidgets.rb has it
+class CommandWindowEBDX
+  attr_accessor :index
+  attr_reader :indexes
+  def initialize(indexes); @indexes = indexes; @index = 0; end
+end
 
 #---------------------------------------------------------------- boot
 load File.join(KIF_ROOT, "Mods/KantoReloaded/Bootstrap.rb")
@@ -419,6 +425,17 @@ check("a pause menu icon row is drawn in the window's colours (#{menu.drawn[1]})
       menu.drawn[1] == shadowctag(menu.baseColor, menu.shadowColor) + "  <icon=menuIcons/BAG>  Bag")
 check("...a plain row as it was, and the rows themselves aren't changed",
       menu.drawn[0] == "Plain" && menu.commands == ["Plain", "  <icon=menuIcons/BAG>  Bag"])
+check("the EBDX command cursor fix is on", R::Fixes.on?(:ebdx_command_cursor))
+w = CommandWindowEBDX.new([0, 1, 2, 3, 50])     # Battle Info's INFO is 50
+w.index = 50
+check("the cursor memory's INFO value (50) puts the cursor on INFO (#{w.index})", w.index == 4)
+w.index = 2
+check("...a real position stays", w.index == 2)
+w = CommandWindowEBDX.new([0, 1, 3])             # EBDX metrics leaving PARTY out
+w.index = 3
+check("...a value whose command moved goes to it (RUN at 2: #{w.index})", w.index == 2)
+w.index = 9
+check("...and one with no command goes to the first", w.index == 0)
 check("a fix written against a method's source recognises it (PIF's fight menu)", R::Fixes.source?(PokeBattle_Scene, :pbFightMenu, 1739628443))
 check("...and a fix written for other source doesn't apply", !R::Fixes.source?(PokeBattle_Scene, :pbFightMenu, 1))
 real = File.join(KIF_ROOT, "Data/Scripts/011_Battle/005_Battle scene/008_Scene_Commands.rb")

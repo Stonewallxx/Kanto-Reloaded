@@ -26,7 +26,7 @@ module Reloaded
     LOAD_ORDER_W = 132               # the right box, so Load Order fits
     RELOAD_W = 372
     WORDS = { :added => "Added", :edited => "Edited", :rejected => "Rejected" }.freeze
-    COLORS = { :added => GREEN, :edited => BLUE, :rejected => RED }.freeze
+    COLORS = { :added => :green, :edited => :blue, :rejected => :red }.freeze   # palette tones
 
     attr_reader :entry
 
@@ -394,7 +394,7 @@ module Reloaded
         ly += 24
       end
       errors.each_with_index do |ln, k|
-        P.small(o, x + 18, ly + 4 + k * 16, RELOAD_W - 36, 16, ln, RED)
+        P.small(o, x + 18, ly + 4 + k * 16, RELOAD_W - 36, 16, ln, palette[:red])
       end
       bw = 110
       bx = x + (RELOAD_W - bw) / 2
@@ -411,14 +411,14 @@ module Reloaded
         parts << _INTL("{1} added", n[:added]) if n[:added] > 0
         parts << _INTL("{1} changed", n[:changed]) if n[:changed] > 0
         parts << _INTL("{1} removed", n[:removed]) if n[:removed] > 0
-        colr = n[:changed] == 0 && n[:removed] == 0 ? GREEN : BLUE
+        colr = n[:changed] == 0 && n[:removed] == 0 ? palette[:green] : palette[:blue]
         [Reloaded::DataPatches.label(target), parts.join(", "), colr]
       end
       more = report[:targets].length - 6
-      out << [_INTL("And More"), _INTL("{1} more", more), BLUE] if more > 0
+      out << [_INTL("And More"), _INTL("{1} more", more), palette[:blue]] if more > 0
       news = report[:new_errors].length
-      out << [_INTL("Rejected"), _INTL("{1} new", news), RED] if news > 0
-      out << [_INTL("Fixed"), _INTL("{1} fewer rejected", report[:fixed]), GREEN] if report[:fixed] > 0
+      out << [_INTL("Rejected"), _INTL("{1} new", news), palette[:red]] if news > 0
+      out << [_INTL("Fixed"), _INTL("{1} fewer rejected", report[:fixed]), palette[:green]] if report[:fixed] > 0
       out << [_INTL("Nothing Changed"), "", palette[:dim]] if out.empty?
       return out
     end
@@ -490,7 +490,7 @@ module Reloaded
         cw = PF.width(PF::ROW, count)
         P.text(top, NAME_X, y, COUNT_X1 - cw - 10 - NAME_X, ROW_H - 2, PF.fit(PF::ROW, it.label, COUNT_X1 - cw - 10 - NAME_X), c[:opt], PF::ROW)
         P.text(top, COUNT_X1 - cw, y, cw + 2, ROW_H - 2, count, c[:opt], PF::ROW)
-        P.text(top, COUNT_X1 + 6, y, VAL_X1 - COUNT_X1 - 6, ROW_H - 2, _INTL(WORDS[it.kind]), COLORS[it.kind], PF::ROW, 1)
+        P.text(top, COUNT_X1 + 6, y, VAL_X1 - COUNT_X1 - 6, ROW_H - 2, _INTL(WORDS[it.kind]), palette[COLORS[it.kind]], PF::ROW, 1)
       end
       paint_list_scrollbar(base, c, total, avail)
     end
@@ -498,9 +498,9 @@ module Reloaded
     # A mod's heading: its name, a line, its status.
     def paint_heading(top, c, s, y)
       label, colr = case s.status
-                    when :rejected then [_INTL("{1} REJECTED", s.rejected), RED]
-                    when :conflict then [s.conflicts == 1 ? _INTL("1 CONFLICT") : _INTL("{1} CONFLICTS", s.conflicts), AMBER]
-                    else [_INTL("OK"), GREEN]
+                    when :rejected then [_INTL("{1} REJECTED", s.rejected), palette[:red]]
+                    when :conflict then [s.conflicts == 1 ? _INTL("1 CONFLICT") : _INTL("{1} CONFLICTS", s.conflicts), palette[:amber]]
+                    else [_INTL("OK"), palette[:green]]
                     end
       pw = P.pill(top, VAL_X1, y + 2, label, dark_fill(colr), colr)
       P.heading(top, LIST_X0 + 10, VAL_X1 - pw - 6, y + 3, s.name, c[:head], c[:line])

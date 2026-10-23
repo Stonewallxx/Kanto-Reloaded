@@ -262,10 +262,10 @@ check("Delete Forever: gone", S.archived.empty? && !File.file?(SaveData.get_full
 #---------------------------------------------------------------- What's New
 srcs = WN.sources
 kr_src = srcs.find { |s| s[:name] == "Kanto Reloaded" }
-kif_src = srcs.find { |s| s[:name] == "KIF Beta" }
+kif_src = srcs.find { |s| s[:name] == "KIF" }
 check("What's New: Kanto Reloaded's notes from Changelog.md (#{kr_src && kr_src[:versions].map(&:version).inspect})",
       kr_src && kr_src[:versions].first.version == R.version && kr_src[:versions].first.notes.length > 3)
-check("KIF Beta's from update_notes.txt (#{kif_src && kif_src[:versions].first.version}: #{kif_src && kif_src[:versions].first.notes.first.inspect})",
+check("KIF's from update_notes.txt (#{kif_src && kif_src[:versions].first.version}: #{kif_src && kif_src[:versions].first.notes.first.inspect})",
       kif_src && kif_src[:versions].first.version == "0.21.57" && !kif_src[:versions].first.notes.empty?)
 kept = JSON.parse(File.read(File.join(R::Paths.settings_dir, "Whats New.json")))
 check("...kept, so KIF's older notes stay after it updates", kept["kif"]["0.21.57"]["notes"].length >= 1)

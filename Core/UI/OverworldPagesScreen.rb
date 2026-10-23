@@ -381,12 +381,12 @@ module Reloaded
         else
           tick(top, NAME_X - 2, y + 5, on, c)
         end
-        name_colour = @moving == e.key ? GREEN : (on ? c[:opt] : c[:dim])
+        name_colour = @moving == e.key ? palette[:green] : (on ? c[:opt] : c[:dim])
         room = VAL_X1 - NAME_X - 24 - (@moving == e.key ? 24 : 0)
         P.text(top, NAME_X + 22, y, room, ROW_H - 2, PF.fit(PF::ROW, e.name.to_s, room), name_colour, PF::ROW)
         if @moving == e.key
-          P.ui.tri(top, VAL_X1 - 70, y + 4, :u, GREEN, 3)
-          P.ui.tri(top, VAL_X1 - 70, y + 14, :d, GREEN, 3)
+          P.ui.tri(top, VAL_X1 - 70, y + 4, :u, palette[:green], 3)
+          P.ui.tri(top, VAL_X1 - 70, y + 14, :d, palette[:green], 3)
         end
       end
       paint_list_scrollbar(base, c, total, avail)
@@ -394,14 +394,14 @@ module Reloaded
 
     # Add a Setting's mark: a plus in a ring
     def plus(top, x, y, c)
-      P.ui.rbox(top, x, y, x + 15, y + 15, 8, Color.new(c[:selb].red / 4, c[:selb].green / 4, c[:selb].blue / 4), c[:selb])
+      P.ui.rbox(top, x, y, x + 15, y + 15, 8, dark_fill(c[:selb]), c[:selb])
       top.fill_rect(x + 4, y + 7, 8, 2, c[:selb])
       top.fill_rect(x + 7, y + 4, 2, 8, c[:selb])
     end
 
     def tick(top, x, y, on, c)
-      colour = on ? GREEN : c[:dim]
-      P.ui.rbox(top, x, y, x + 15, y + 15, 8, Color.new(colour.red / 4, colour.green / 4, colour.blue / 4), colour)
+      colour = on ? palette[:green] : c[:dim]
+      P.ui.rbox(top, x, y, x + 15, y + 15, 8, dark_fill(colour), colour)
       return unless on
       [[3, 7], [4, 8], [5, 9], [6, 8], [7, 7], [8, 6], [9, 5], [10, 4]].each { |dx, dy| top.fill_rect(x + dx, y + dy, 2, 2, colour) }
     end
@@ -424,7 +424,7 @@ module Reloaded
       end
       e, on = row
       return paint_description_box(base, top, c, e.name, e.description.to_s, [:entry, e.key]) if e.equal?(ADD_SETTING)
-      pills = [[on ? _INTL("ON THIS PAGE") : _INTL("OFF THIS PAGE"), dark_fill(on ? GREEN : AMBER), on ? GREEN : AMBER]]
+      pills = [[on ? _INTL("ON THIS PAGE") : _INTL("OFF THIS PAGE"), dark_fill(on ? palette[:green] : palette[:amber]), on ? palette[:green] : palette[:amber]]]
       paint_description_box(base, top, c, e.name, e.description.to_s, [:entry, e.key], pills)
     end
 

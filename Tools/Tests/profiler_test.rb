@@ -95,7 +95,7 @@ check("Slow Frame 16.7 ms (#{ms(PR.slow_limit)} ms)", near(PR.slow_limit, 16.7, 
 #---------------------------------------------------------------- owners
 check("owners: a mod by its folder, Kanto Reloaded by its own",
       OW.of(File.join(KIF_ROOT, "Mods/FakeMod/hook.rb")) == "FakeMod" && OW.of(File.join(R::ROOT, "Core/Profiler/Profiler.rb")) == OW::KR)
-check("owners: the game's bare file names: EBDX, KIF Beta, PIF (#{OW.of("010_EBDX_Scene.rb")}, #{OW.of("Mods.rb")}, #{OW.of("002_Scene_Map.rb")})",
+check("owners: the game's bare file names: EBDX, KIF, PIF (#{OW.of("010_EBDX_Scene.rb")}, #{OW.of("Mods.rb")}, #{OW.of("002_Scene_Map.rb")})",
       OW.of("010_EBDX_Scene.rb") == OW::EBDX && OW.of("Mods.rb") == OW::KIF && OW.of("002_Scene_Map.rb") == OW::PIF)
 
 #---------------------------------------------------------------- a battle

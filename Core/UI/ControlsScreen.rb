@@ -557,8 +557,8 @@ module Reloaded
         text = _INTL("{1} is already {2} ({3}).", label(token), o.name, C.area_name(o.area))
         c = palette
         swap = old ? _INTL(" gives {1} the {2} {3}. ", o.name, label(old), what) : _INTL(" takes it from {1}. ", o.name)
-        segments = [[_INTL("Swap"), c[:white], true], [swap, c[:dim]],
-                    [_INTL("Keep Both"), c[:white], true], [_INTL(" lets {1} do both.", label(token)), c[:dim]]]
+        segments = [[_INTL("Swap"), c[:strong], true], [swap, c[:dim]],
+                    [_INTL("Keep Both"), c[:strong], true], [_INTL(" lets {1} do both.", label(token)), c[:dim]]]
         k = Reloaded::Dialogs.ask(self, "#{a.name}: #{side_name(side)}", text, segments,
                                   [_INTL("Swap"), _INTL("Keep Both"), _INTL("Cancel")], 0)
         refresh
@@ -581,10 +581,10 @@ module Reloaded
       title = "#{a.name}: #{side_name(side)}"
       rest = [_INTL(". Keep holding it to bind it as a Hold."), c[:dim]]
       segments = if side == :keys
-                   [[_INTL("Press a Key"), c[:white], true], rest]
+                   [[_INTL("Press a Key"), c[:strong], true], rest]
                  else
-                   [[_INTL("Press a Button"), c[:white], true], [" " + _INTL("or") + " ", c[:dim]],
-                    [_INTL("Move a Stick"), c[:white], true], rest]
+                   [[_INTL("Press a Button"), c[:strong], true], [" " + _INTL("or") + " ", c[:dim]],
+                    [_INTL("Move a Stick"), c[:strong], true], rest]
                  end
       layer = C::Layer
       hold_steps = C.hold_steps
@@ -870,7 +870,7 @@ module Reloaded
         P.ui.rbox(top, 14, y + 2, 28, y + 16, 3, Color.new(*rgb))
         P.glyph(top, 14, y + 2, 15, 15, name[0], TILE_TEXT)
         dim = @query ? !found[id] : empty_section?(i)
-        P.text(top, 33, y + 2, SIDE_X1 - 37, 15, name, active ? c[:white] : (dim ? faded : c[:dim]))
+        P.text(top, 33, y + 2, SIDE_X1 - 37, 15, name, active ? c[:strong] : (dim ? faded : c[:dim]))
         y += 20
       end
     end

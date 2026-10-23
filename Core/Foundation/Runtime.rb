@@ -6,7 +6,7 @@
 # which reimplement the engine and may lack parts of it (his goal,
 # 2026-10-21: Kanto Reloaded working on mobile). It names the Ruby version
 # and platform, the system the engine reports, and whether these are there:
-# Windows calls (the Recycle Bin, the controller fix), Wine, the engine's
+# Windows calls (the Recycle Bin), Wine, the engine's
 # raw keyboard (Reloaded Controls), its controller functions, the mouse or
 # touch position (clicks in Kanto Reloaded's screens), the clipboard (share
 # codes, copying a link on a phone), and PIF's own Device
@@ -29,7 +29,7 @@ module Reloaded
           :ruby => "#{RUBY_VERSION} (#{RUBY_PLATFORM})",
           :system => system_name,
           :windows_calls => windows_calls?,
-          :wine => (defined?(Reloaded::Controls::PadSDL) ? Reloaded::Controls::PadSDL.wine : nil),
+          :wine => wine,
           :raw_keys => (defined?(::Input) && ::Input.respond_to?(:raw_key_states)) ? true : false,
           :controller => (defined?(::Input::Controller) && ::Input::Controller.respond_to?(:raw_button_states)) ? true : false,
           :mouse => (defined?(::Input) && ::Input.respond_to?(:mouse_x)) ? true : false,
@@ -72,9 +72,22 @@ module Reloaded
                            "Kanto Reloaded's folder writable #{yes.call(f[:writable])}", :bootstrap)
       end
 
+      # Wine's version ("9.0") under Wine / Proton (Linux, Steam Deck, Mac),
+      # else nil (worked out once)
+      def wine
+        return @wine || nil unless @wine.nil?
+        @wine = begin
+          v = ::Win32API.new("ntdll", "wine_get_version", "", "P").call.to_s
+          v.empty? ? false : v
+        rescue StandardError, LoadError, NotImplementedError
+          false
+        end
+        return @wine || nil
+      end
+
       # Forget what was worked out (the tests start again)
       def reset
-        @phone = nil
+        @phone = @wine = nil
       end
 
       private

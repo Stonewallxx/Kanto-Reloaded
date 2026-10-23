@@ -173,15 +173,11 @@ module Reloaded
       INFO_X1 = PANEL_X1 - 14
       TRAINER_X = PANEL_X0 + 56
       BOTTOM = H - P::HINT_H - 6
-      GREEN = Color.new(120, 230, 150)
-      RED   = Color.new(240, 100, 90)
-      AMBER = Color.new(240, 170, 60)
-      GOLD  = Color.new(240, 200, 80)
-      BLUE  = Color.new(130, 190, 250)
-      PINK  = Color.new(240, 130, 160)
+      # (statuses are the palette's tones: c[:green], c[:gold]... deeper in Light)
       CHARCOAL = Color.new(0x38, 0x38, 0x40)   # KIF Beta's version, on PIF's light background
       KR_RED = Color.new(214, 52, 60)          # Kanto Reloaded's (the roadmap's red)
-      HEALTH = { :healthy => ["HEALTHY", GREEN], :check => ["CHECK", AMBER], :damaged => ["DAMAGED", RED] }.freeze
+      NEW_FILL = Color.new(60, 50, 10)         # the NEW pill on Dark
+      HEALTH = { :healthy => ["HEALTHY", :green], :check => ["CHECK", :amber], :damaged => ["DAMAGED", :red] }.freeze
       S = Reloaded::Saves
 
       attr_reader :entry
@@ -606,6 +602,7 @@ module Reloaded
       #------------------------------------------------------------------------
       # Painting
       #------------------------------------------------------------------------
+
       def draw_screen
         c = palette
         base = @sprite.bitmap
@@ -627,13 +624,13 @@ module Reloaded
         place_cursor
       end
 
-      # "Kanto Reloaded 2.0.0 · KIF Beta 0.21.57", centred between the top
+      # "Kanto Reloaded 2.0.0 · KIF 1.0.7", centred between the top
       # of the screen and the Continue panel: Kanto Reloaded's in red, KIF
       # Beta's in charcoal (PIF's background is light there).
       def versions(top, c)
         ours = "Kanto Reloaded #{Reloaded.version}"
         kif = Reloaded::WhatsNew.kif_version rescue nil
-        rest = kif ? " · KIF Beta #{kif}" : ""
+        rest = kif ? " · KIF #{kif}" : ""
         P.small_font(top)
         w1 = top.text_size(ours).width
         w2 = rest.empty? ? 0 : top.text_size(rest).width
@@ -651,7 +648,7 @@ module Reloaded
         P.ui.rbox(top, x0 + 5, y + 8, x0 + 9, y + PANEL_H - 8, 2, rgb ? Color.new(*rgb) : c[:line])
         P.text(top, x0 + 18, y + 2, 200, 26, _INTL("Continue"), c[:txt], PF::ROW)
         map = @pv && @pv[:map] || (defined?(pbGetMapNameFromId) && @map_id ? (pbGetMapNameFromId(@map_id) rescue "") : "")
-        P.text(top, x1 - 210, y + 2, 198, 26, PF.fit(PF::ROW, map.to_s, 198), GREEN, PF::ROW, 1)
+        P.text(top, x1 - 210, y + 2, 198, 26, PF.fit(PF::ROW, map.to_s, 198), c[:green], PF::ROW, 1)
         many = S.slots.length > 1
         P.ui.tri(top, x0 + 20, y + 33, :l, many ? c[:dim] : c[:line], 4) if many
         P.ui.tri(top, x1 - 26, y + 33, :r, many ? c[:dim] : c[:line], 4) if many
@@ -662,16 +659,16 @@ module Reloaded
           Reloaded::TextEntry.draw_field(base, top, c, @entry, lx - 4, y + 46, INFO_X1 - lx + 4, 20)
         else
           note = @note.to_s.empty? ? _INTL("No note yet. Y writes one.") : @note
-          P.small(top, lx, y + 48, INFO_X1 - lx, 16, fit_small(top, note, INFO_X1 - lx), @note.to_s.empty? ? c[:dim] : GOLD)
+          P.small(top, lx, y + 48, INFO_X1 - lx, 16, fit_small(top, note, INFO_X1 - lx), @note.to_s.empty? ? c[:dim] : c[:gold])
         end
         t = @trainer
-        name_colour = t && (t.female? rescue false) ? PINK : BLUE
+        name_colour = t && (t.female? rescue false) ? c[:pink] : c[:blue]
         cols = [[lx, rx - 10], [rx, INFO_X1]]
         # [label, value, label colour, value colour]: the Save Manager's
         # colours (play time gold, money green), difficulty by how hard
-        lines = [[[t ? t.name.to_s : "?", nil, name_colour], [_INTL("Time"), play_time(@pv && @pv[:seconds] || @frame_count / 40), nil, GOLD]],
+        lines = [[[t ? t.name.to_s : "?", nil, name_colour], [_INTL("Time"), play_time(@pv && @pv[:seconds] || @frame_count / 40), nil, c[:gold]]],
                  [[_INTL("Badges"), (t.badge_count rescue 0).to_s], [_INTL("Pokédex"), dex_text]],
-                 [[(@pv && @pv[:difficulty]).to_s, mode_text, difficulty_colour], [_INTL("Money"), money_text, nil, GREEN]]]
+                 [[(@pv && @pv[:difficulty]).to_s, mode_text, difficulty_colour(c)], [_INTL("Money"), money_text, nil, c[:green]]]]
         lines.each_with_index do |row, k|
           ly = y + 66 + k * 22
           row.each_with_index do |(label, value, colour, value_colour), j|
@@ -681,8 +678,9 @@ module Reloaded
           end
         end
         P.small(top, lx, y + 134, 160, 14, @backups == 1 ? _INTL("1 BACKUP") : _INTL("{1} BACKUPS", @backups.to_i), c[:dim])
-        label, colour = HEALTH[(@pv || {})[:health]] || HEALTH[:damaged]
-        P.pill(top, INFO_X1, y + 133, _INTL(label), Color.new(colour.red / 4, colour.green / 4, colour.blue / 4), colour)
+        label, tone = HEALTH[(@pv || {})[:health]] || HEALTH[:damaged]
+        colour = c[tone]
+        P.pill(top, INFO_X1, y + 133, _INTL(label), dark_fill(colour), colour)
         @cursor_rect = nil if on
       end
 
@@ -694,15 +692,15 @@ module Reloaded
       end
 
       # Easy (and Debug) green, Normal blue, Hard red.
-      def difficulty_colour
+      def difficulty_colour(c = palette)
         return nil unless @pv
         index = @pv[:difficulty_index]
         name = @pv[:difficulty].to_s
         index ||= 0 if [_INTL("Easy"), "Easy", "Debug"].include?(name)
         index ||= 1 if [_INTL("Normal"), "Normal"].include?(name)
         index ||= 2 if [_INTL("Hard"), "Hard"].include?(name)
-        return GREEN if name == "Debug"
-        return [GREEN, BLUE, RED][index.to_i] if index && index.to_i.between?(0, 2)
+        return c[:green] if name == "Debug"
+        return [c[:green], c[:blue], c[:red]][index.to_i] if index && index.to_i.between?(0, 2)
         return nil
       end
 
@@ -722,10 +720,10 @@ module Reloaded
         P.ui.rbox(base, ROW_X0, y, ROW_X1, y + ROW_H, 5, on ? Reloaded::Palette.mix(c[:selb], c[:panel2], 0.55) : c[:panel2],
                   on ? c[:selb] : c[:line])
         label = label_of(i)
-        colour = label == _INTL("Save Manager") || label == "Save Manager" ? GOLD : c[:txt]
+        colour = label == _INTL("Save Manager") || label == "Save Manager" ? c[:gold] : c[:txt]
         P.text(top, ROW_X0 + 14, y - 1, ROW_X1 - ROW_X0 - 80, ROW_H + 2, label, colour, PF::ROW)
         if (label == _INTL("What's New") || label == "What's New") && @new
-          P.pill(top, ROW_X1 - 10, y + 4, _INTL("NEW"), Color.new(60, 50, 10), GOLD)
+          P.pill(top, ROW_X1 - 10, y + 4, _INTL("NEW"), c[:light] ? dark_fill(c[:gold]) : NEW_FILL, c[:gold])
         end
       end
 

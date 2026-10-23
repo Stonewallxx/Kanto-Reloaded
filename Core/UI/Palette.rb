@@ -163,6 +163,7 @@ module Reloaded
         p[:opt] = hex(COLORS[settings.to_i - 1][1]) if settings.to_i > 0 && COLORS[settings.to_i - 1]
         p[:shadow] = Color.new(16, 20, 28)
         p[:white] = Color.new(255, 255, 255)
+        p[:strong] = p[:white]   # the brightest words on a panel (dark ink in Light)
         TONES.each { |k, rgb| p[k] = Color.new(*rgb) }
         return p
       end
@@ -227,6 +228,7 @@ module Reloaded
         p[:title] = header ? p[:head] : ink
         p[:opt] = settings ? mix(d[:opt], ink, 0.55) : ink
         p[:shadow] = p[:panel2]
+        p[:strong] = ink
         LIGHT_TONES.each { |k, rgb| p[k] = Color.new(*rgb) }
         p[:warn] = p[:amber]
         p[:light] = true

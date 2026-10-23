@@ -45,7 +45,6 @@ module Reloaded
       # Reloaded Controls: inputs, actions and bindings, and the layer that
       # reads keys and controller buttons
       "Core/Controls/Inputs.rb",
-      "Core/Controls/PadSDL.rb",
       "Core/Controls/PadLog.rb",
       "Core/Controls/Controls.rb",
       "Core/Controls/Layer.rb",
@@ -119,9 +118,16 @@ module Reloaded
       "Core/QualityOfLife/Hooks.rb",
       "Core/QualityOfLife/Toast.rb",
       "Core/UI/QualityOfLifeScreens.rb",
+      # The title screen's versions, above PRESS ANY KEY
+      "Core/Interface/TitleVersions.rb",
+      # The Party Screen: its switch and commands, its drawing and its scene
+      "Core/PartyScreen/PartyScreen.rb",
+      "Core/UI/PartyPaint.rb",
+      "Core/UI/PartyScene.rb",
       # Fixes to the game's own code
       "Core/Fixes/Fixes.rb",
       "Core/Fixes/CommandTextColours.rb",
+      "Core/Fixes/EBDXCommandCursor.rb",
       # Last: rows for every feature registered above
       "Core/Settings/FeatureSwitches.rb"
     ].freeze
@@ -135,7 +141,7 @@ module Reloaded
     # to KIF Settings. Dev boots last, when it's there. PauseMenu boots
     # before Profiler and BugReport, so their hooks on the pause menu's
     # scene sit over its screen and still see it open.
-    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :QualityOfLife, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
+    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :QualityOfLife, :PartyScreen, :TitleVersions, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
 
     def self.files
       return FILES

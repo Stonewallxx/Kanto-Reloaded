@@ -42,12 +42,7 @@ module Reloaded
     BACKUP_ROW = 36
     LIST_Y = 62
     BACKUP_LIST_Y = 76
-    GREEN = Color.new(120, 230, 150)
-    RED   = Color.new(240, 100, 90)
-    AMBER = Color.new(240, 170, 60)
-    GOLD  = Color.new(240, 200, 80)
-    BLUE  = Color.new(130, 190, 250)
-    HEALTH = { :healthy => ["HEALTHY", GREEN], :check => ["CHECK", AMBER], :damaged => ["DAMAGED", RED] }.freeze
+    HEALTH = { :healthy => ["HEALTHY", :green], :check => ["CHECK", :amber], :damaged => ["DAMAGED", :red] }.freeze
     PARTY_WAIT = 8          # frames the cursor rests before a party is read (a whole save file)
     PARTY_Y = 214           # the middle of the party's row, under the details
     S = Reloaded::Saves
@@ -595,8 +590,9 @@ module Reloaded
     end
 
     def health_pill(top, health, right, y)
-      label, colr = HEALTH[health] || HEALTH[:damaged]
-      return P.pill(top, right, y, _INTL(label), Color.new(colr.red / 4, colr.green / 4, colr.blue / 4), colr)
+      label, tone = HEALTH[health] || HEALTH[:damaged]
+      colr = palette[tone]
+      return P.pill(top, right, y, _INTL(label), dark_fill(colr), colr)
     end
 
     def paint_saves(_base, top, c)
@@ -608,7 +604,7 @@ module Reloaded
         P.text(top, LEFT_X0 + 18, y, room, 22, PF.fit(PF::ROW, e[:slot], room), c[:opt], PF::ROW)
         note = S.note(e[:slot], e[:pv])
         line = note.empty? ? _INTL("No Note") : note
-        P.small(top, LEFT_X0 + 18, y + 22, LEFT_X1 - LEFT_X0 - 30, 16, fit_small(top, line, LEFT_X1 - LEFT_X0 - 30), note.empty? ? c[:dim] : GOLD)
+        P.small(top, LEFT_X0 + 18, y + 22, LEFT_X1 - LEFT_X0 - 30, 16, fit_small(top, line, LEFT_X1 - LEFT_X0 - 30), note.empty? ? c[:dim] : palette[:gold])
       end
     end
 
@@ -634,9 +630,9 @@ module Reloaded
       tg = S.tag(e[:slot], pv)
       tag_bar(top, tg, RIGHT_X0 + 8, PANEL_Y0 + 8, 18)
       detail_head(top, c, e[:slot], tg ? _INTL("Tag: {1}", _INTL(tg)) : nil)
-      y = fields(top, c, PANEL_Y0 + 32, [["Trainer", pv[:name] || "?", pv[:gender] == :female ? Color.new(240, 130, 160) : BLUE],
-                                          ["Location", pv[:map] || "?", GREEN], ["Saved", when_text(pv[:saved_at] || File.mtime(e[:path]))],
-                                          ["Play Time", play_time(pv[:seconds]), GOLD]])
+      y = fields(top, c, PANEL_Y0 + 32, [["Trainer", pv[:name] || "?", pv[:gender] == :female ? palette[:pink] : palette[:blue]],
+                                          ["Location", pv[:map] || "?", palette[:green]], ["Saved", when_text(pv[:saved_at] || File.mtime(e[:path]))],
+                                          ["Play Time", play_time(pv[:seconds]), palette[:gold]]])
       y += 74                                   # the party's row (PARTY_Y)
       P.text(top, RIGHT_X0 + 10, y, 120, 14, _INTL("NOTES"), c[:head], PF::TINY)
       keyw = Reloaded::ButtonIcons.width(button(:X), Reloaded::Prompts.style)
@@ -659,19 +655,19 @@ module Reloaded
       n = S.backups(e[:slot]).length
       keep = S.cap ? _INTL("KEEPING {1}", S.cap) : _INTL("KEEPING UNLIMITED")
       sub = _INTL("{1} BACKUPS · {2}", n, keep)
-      return [_INTL("You're Playing This Save"), sub, BLUE] if e[:slot].to_s == S.playing.to_s
+      return [_INTL("You're Playing This Save"), sub, palette[:blue]] if e[:slot].to_s == S.playing.to_s
       case pv[:health]
-      when :healthy then return [_INTL("Healthy"), sub, GREEN]
-      when :check then return [_INTL("Check: {1}", pv[:problem].to_s), sub, AMBER]
+      when :healthy then return [_INTL("Healthy"), sub, palette[:green]]
+      when :check then return [_INTL("Check: {1}", pv[:problem].to_s), sub, palette[:amber]]
       end
       good = S.newest_good_backup(e[:slot])
       line = good ? _INTL("NEWEST GOOD BACKUP: {1}", when_text(good[:time]).upcase) : _INTL("NO GOOD BACKUP")
-      return [_INTL("Damaged: {1}", pv[:problem].to_s), line, RED]
+      return [_INTL("Damaged: {1}", pv[:problem].to_s), line, palette[:red]]
     end
 
     def banner(base, top, c, title, sub, colour)
       y0 = PANEL_Y1 - 48
-      P.ui.rbox(base, RIGHT_X0 + 10, y0, RIGHT_X1 - 10, PANEL_Y1 - 8, 5, Color.new(colour.red / 6, colour.green / 6, colour.blue / 6), colour)
+      P.ui.rbox(base, RIGHT_X0 + 10, y0, RIGHT_X1 - 10, PANEL_Y1 - 8, 5, dark_fill(colour, 6), colour)
       w = RIGHT_X1 - RIGHT_X0 - 36
       P.text(top, RIGHT_X0 + 18, y0 + 1, w, 22, PF.fit(PF::TEXT, title, w), colour, nil, 2)
       P.text(top, RIGHT_X0 + 18, y0 + 22, w, 14, sub.to_s, c[:dim], PF::TINY, 2)
@@ -686,8 +682,8 @@ module Reloaded
       return P.text(top, LEFT_X0 + 10, BACKUP_LIST_Y + 2, 200, 22, _INTL("No backups yet."), c[:dim]) if backups.empty?
       each_row(backups) do |b, y|
         P.text(top, LEFT_X0 + 12, y, LEFT_X1 - LEFT_X0 - 24, 20, when_text(b[:time]), c[:opt])
-        sub, colour = if b[:name] then ["\"#{b[:name]}\"", GOLD]
-                      elsif b[:pv] then [b[:pv][:map] || b[:pv][:problem].to_s, b[:pv][:health] == :damaged ? RED : c[:dim]]
+        sub, colour = if b[:name] then ["\"#{b[:name]}\"", palette[:gold]]
+                      elsif b[:pv] then [b[:pv][:map] || b[:pv][:problem].to_s, b[:pv][:health] == :damaged ? palette[:red] : c[:dim]]
                       else ["...", c[:dim]]
                       end
         sub = "#{sub} (#{_INTL("Autosave")})" if b[:auto] && !b[:name]
@@ -700,10 +696,11 @@ module Reloaded
       pv = b[:pv] || S.preview(b[:path], :party => false)
       b[:pv] ||= pv
       title = b[:name] ? _INTL("Backup: {1}", b[:name]) : _INTL("Backup")
-      P.text(top, RIGHT_X0, PANEL_Y0 + 3, RIGHT_X1 - RIGHT_X0, 24, PF.fit(PF::ROW, title, RIGHT_X1 - RIGHT_X0 - 16), b[:name] ? GOLD : c[:opt], PF::ROW, 2)
-      label, colour = HEALTH[pv[:health]] || HEALTH[:damaged]
-      fields(top, c, PANEL_Y0 + 32, [["Saved", when_text(b[:time])], ["Location", pv[:map] || "?", GREEN],
-                                     ["Play Time", play_time(pv[:seconds]), GOLD], ["Health", _INTL(label.capitalize), colour]])
+      P.text(top, RIGHT_X0, PANEL_Y0 + 3, RIGHT_X1 - RIGHT_X0, 24, PF.fit(PF::ROW, title, RIGHT_X1 - RIGHT_X0 - 16), b[:name] ? palette[:gold] : c[:opt], PF::ROW, 2)
+      label, tone = HEALTH[pv[:health]] || HEALTH[:damaged]
+      colour = palette[tone]
+      fields(top, c, PANEL_Y0 + 32, [["Saved", when_text(b[:time])], ["Location", pv[:map] || "?", palette[:green]],
+                                     ["Play Time", play_time(pv[:seconds]), palette[:gold]], ["Health", _INTL(label.capitalize), colour]])
       cap = S.cap ? _INTL("BACKUP CAP: {1} (NAMED ONES ARE KEPT)", S.cap) : _INTL("BACKUP CAP: UNLIMITED (NAMED ONES ARE KEPT)")
       P.text(top, RIGHT_X0, PANEL_Y1 - 66, RIGHT_X1 - RIGHT_X0, 14, cap, c[:dim], PF::TINY, 2)
       bw = 110
@@ -733,8 +730,8 @@ module Reloaded
       pv = a[:file] ? S.preview(a[:file], :party => false) : {}
       tag_bar(top, a[:tag], RIGHT_X0 + 8, PANEL_Y0 + 8, 18)
       detail_head(top, c, a[:slot], a[:tag] ? _INTL("Tag: {1}", _INTL(a[:tag])) : nil)
-      y = fields(top, c, PANEL_Y0 + 32, [["Trainer", pv[:name] || a[:name] || "?", BLUE], ["Location", pv[:map] || a[:map] || "?", GREEN],
-                                          ["Play Time", play_time(pv[:seconds] || a[:seconds]), GOLD], ["Deleted", when_text(a[:archived_at])]])
+      y = fields(top, c, PANEL_Y0 + 32, [["Trainer", pv[:name] || a[:name] || "?", palette[:blue]], ["Location", pv[:map] || a[:map] || "?", palette[:green]],
+                                          ["Play Time", play_time(pv[:seconds] || a[:seconds]), palette[:gold]], ["Deleted", when_text(a[:archived_at])]])
       y += 74                                   # the party's row (PARTY_Y)
       if a[:note].to_s != ""
         P.text(top, RIGHT_X0 + 10, y, 120, 14, _INTL("NOTES"), c[:head], PF::TINY)
@@ -744,7 +741,7 @@ module Reloaded
         end
       end
       words = restore_words(a)
-      colour = words.start_with?(_INTL("Back as")) ? GREEN : (S.free_slot ? AMBER : RED)
+      colour = words.start_with?(_INTL("Back as")) ? palette[:green] : (S.free_slot ? palette[:amber] : palette[:red])
       banner(base, top, c, words, _INTL("A: RESTORE / DELETE FOREVER"), colour)
     end
 

@@ -2,7 +2,7 @@
 # Kanto Reloaded: who a file belongs to
 #==============================================================================
 # The Timing Profiler names each piece of code by its owner: "Kanto
-# Reloaded", a mod (its name in KIF's Mods list), "EBDX", "KIF Beta" or
+# Reloaded", a mod (its name in KIF's Mods list), "EBDX", "KIF" or
 # "PIF". The game loads Data\Scripts with only each file's name as its
 # source path, so a bare name is looked up there (Paths.script_file); mods
 # load with their full path (Mods\<folder>\...).
@@ -16,7 +16,7 @@ module Reloaded
     module Owners
       KR = "Kanto Reloaded".freeze
       EBDX = "EBDX".freeze
-      KIF = "KIF Beta".freeze
+      KIF = "KIF".freeze
       PIF = "PIF".freeze
       GAME = [EBDX, KIF, PIF].freeze      # the game itself, not a mod
 

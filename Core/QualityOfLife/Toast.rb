@@ -27,7 +27,7 @@ module Reloaded
 
         def show(item, text, badge)
           dispose
-          c = Reloaded::Palette.current
+          c = Reloaded::Palette.map_menu   # Theme Mode, as the map menus
           tw = P.width(PF::TEXT, text)
           bw = P.width(PF::TINY, badge) + 12
           w = 34 + tw + 10 + bw + 10
@@ -42,7 +42,8 @@ module Reloaded
           P.ui.rbox(o, 0, 0, w - 1, h - 1, 7, c[:panel], c[:line])
           icon(o, item, 18, h / 2)
           P.text(o, 34, 6, tw + 2, 18, text, c[:txt], PF::TEXT)
-          P.pill(o, w - 10, 7, badge, GOLD_FILL, GOLD, true)
+          fill = c[:light] ? Reloaded::Palette.mix(c[:panel2], c[:gold], 0.22) : GOLD_FILL
+          P.pill(o, w - 10, 7, badge, fill, c[:light] ? c[:gold] : GOLD, true)
           @left = FRAMES
           return true
         rescue StandardError => e

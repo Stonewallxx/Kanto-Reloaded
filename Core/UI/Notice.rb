@@ -88,9 +88,18 @@ module Reloaded
         @sprite = @viewport = nil
       end
 
+      # A caller's colour (RED, GOLD, GREEN, BLUE) in the notice's look: the
+      # palette's deeper tone of it on Light, as it is on Dark
+      def tone(colour, c)
+        return colour unless c[:light] && colour.is_a?(Color)
+        rgb = [colour.red.to_i, colour.green.to_i, colour.blue.to_i]
+        key = Reloaded::Palette::TONES.find { |_k, v| v == rgb }
+        return key ? c[key[0]] : colour
+      end
+
       def draw(choice)
-        c = Reloaded::Palette.current
-        a = @args
+        c = Reloaded::Palette.map_menu   # Theme Mode: Dark, or Light for Light and Frost
+        a = @args.merge(:colour => tone(@args[:colour], c))
         o = @sprite.bitmap
         o.clear
         o.fill_rect(0, 0, W, H, Color.new(0, 0, 0, 140))
@@ -122,7 +131,7 @@ module Reloaded
           y += 6
           # never Color == Symbol: the engine's Color#== raises for anything not a Color
           lc = a[:line_colour]
-          colour = lc.nil? || lc.is_a?(Symbol) ? c[:dim] : lc
+          colour = lc.nil? || lc.is_a?(Symbol) ? c[:dim] : tone(lc, c)
           line.each do |ln|
             P.small(o, X0 + 14, y, w - 28, 16, ln, colour)
             y += 16
@@ -150,7 +159,7 @@ module Reloaded
           else
             P.ui.rbox(o, bx, by, bx + bw, by + 28, 6, c[:dark], c[:line])
           end
-          P.text(o, bx, by + 2, bw, 24, PF.fit(PF::TEXT, label, bw - 8), i == choice ? c[:white] : c[:txt], PF::TEXT, 2)
+          P.text(o, bx, by + 2, bw, 24, PF.fit(PF::TEXT, label, bw - 8), i == choice ? (c[:strong] || c[:white]) : c[:txt], PF::TEXT, 2)
           bx += bw + gap
         end
       end

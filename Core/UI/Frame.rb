@@ -37,9 +37,11 @@ module Reloaded
       @hint_room = 0
     end
 
-    # The colours this screen and its popups draw in.
+    # The colours this screen and its popups draw in: Dark, or Light for
+    # Theme Mode Light and Frost (his rule, 2026-10-21: a full screen is
+    # only ever Dark or Light; Glass shows it Dark, Frost Light).
     def palette
-      return Reloaded::Palette.current
+      return Reloaded::Palette.map_menu
     end
 
     # The popups' layer (Reloaded::Dialogs draws on it).
@@ -79,6 +81,14 @@ module Reloaded
     end
 
     private
+
+    # A badge's, pill's or banner's fill from its colour: the colour darkened
+    # on Dark (div 4, or 6 for a banner), a pale tint of it on Light
+    def dark_fill(colour, div = 4)
+      c = palette
+      return Reloaded::Palette.mix(c[:panel2], colour, div > 4 ? 0.14 : 0.22) if c[:light]
+      return Color.new(colour.red / div, colour.green / div, colour.blue / div)
+    end
 
     #--------------------------------------------------------------------------
     # Layers
