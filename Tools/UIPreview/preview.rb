@@ -593,9 +593,9 @@ drive("A", [
   dmp("07_ocean_kr_rows"),
   at { check("Kanto Reloaded's rows are there (#{row_name})", row_name == "Reloaded Settings") },
   # Cursor Color: Reloaded Settings, Reloaded Controls, Reloaded Load Screen, Reloaded Pause Menu,
-  # Startup Mod-Check, Overworld Menu, Quality of Life (Features), Global Small Text, Theme, Theme Mode,
-  # Header Color, Settings Color, Cursor Color
-  *[I::DOWN] * 13,
+  # Startup Mod-Check, Overworld Menu, Quality of Life, PokeVial (Features), Global Small Text, Theme,
+  # Theme Mode, Header Color, Settings Color, Cursor Color
+  *[I::DOWN] * 14,
   at { check("on Cursor Color", row_name == "Cursor Color") },
   I::USE,
   dmp("08_cursor_picker"),
@@ -787,7 +787,7 @@ def cs_name; a = $screen.send(:current); a ? a.name : nil; end
 hold = CT.hold_steps
 drive("F settings to controls", [
   at { check("Change Controls is on Kanto Reloaded > Controls", S.definition(:"controls.open")[:type] == :button) },
-  I::RIGHT, *[I::DOWN] * 18,
+  I::RIGHT, *[I::DOWN] * 19,
   at { check("on Change Controls (#{row_name})", row_name == "Change Controls") },
   at {
     rs = scr.send(:rows)
@@ -831,7 +831,7 @@ drive("G frames", [
       S.reset(:"interface.speech_frame")
     end
   },
-  I::RIGHT, *[I::DOWN] * 14,
+  I::RIGHT, *[I::DOWN] * 15,
   at { check("Global Frame comes after Cursor Color (#{row_name})", row_name == "Global Frame") },
   dmp("80_frames_rows"),
   I::USE,
@@ -877,7 +877,7 @@ drive("H mouse", [
   },
   [:wheel, -1], [:wheel, -1],
   at { check("...and on down (#{scr.instance_variable_get(:@scroll)}, #{row_name})", scr.instance_variable_get(:@scroll) > $top + 18) },
-  [:wheel, 1], [:wheel, -1], [:wheel, -1],             # up one and down again, Theme in view
+  [:wheel, 1], [:wheel, -1], [:wheel, -1], [:wheel, -1],   # up one and down again, Theme in view
   click_row("Theme"),
   dmp("85_mouse_theme_picker"),
   at { check("one click on Theme opens its picker", Reloaded::Dialogs.instance_variable_get(:@hits).length > 1) },
@@ -1207,7 +1207,7 @@ drive("J dropdowns", [
   I::RIGHT,
   at { check("Right steps over the locked choice (Mid to Max)", S.get(TC) == 3) },
   at { check("Settings.set refuses a locked choice", S.set(TC, 2) == false && S.get(TC) == 3) },
-  I::BACK, [:click, 60, 48], *[I::DOWN] * 9,
+  I::BACK, [:click, 60, 48], *[I::DOWN] * 10,
   at { check("on Theme (#{row_name})", row_name == "Theme") },
   I::USE,
   at { check("Theme keeps its own picker", dd.nil? && Reloaded::Dialogs.instance_variable_get(:@hits).length == [Reloaded::Palette::THEME_NAMES.length, Reloaded::Dialogs::PICK_MAX].min) },
@@ -1224,7 +1224,7 @@ def vanilla_dd; $sprites.reverse.find { |sp| sp.z == 10 && !sp.disposed? && sp.v
 S.set(:"systems.reloaded_settings", false)
 tm = S.get(:"interface.theme_mode")
 drive("J vanilla", [
-  I::RIGHT, *[I::DOWN] * 10,
+  I::RIGHT, *[I::DOWN] * 11,
   at { check("KIF Settings as it ships, on Theme Mode (#{row_name})", scr.instance_of?(KifSettingsScreen) && row_name == "Theme Mode") },
   I::USE,
   at { check("A on a Kanto Reloaded choice opens its dropdown", !vanilla_dd.nil? && vanilla_dd.bitmap.ops.length > 5) },

@@ -648,9 +648,8 @@ module Reloaded
       h = 50 + n * 18 + 22 + (note ? 18 : 0)
       x = (W - w) / 2
       y = (H - h) / 2
-      P.ui.rbox(b, x, y, x + w, y + h, 6, c[:panel2], c[:line])
-      P.text(b, x, y + 6, w, 26, title, c[:title], PF::ROW, 2)
-      b.fill_rect(x + 10, y + 34, w - 20, 1, c[:line])
+      Reloaded::Dialogs.send(:panel, b, c, x, y, w, h)
+      Reloaded::Dialogs.send(:title_bar, b, c, x, y, w, title)
       P.small_rich(b, x + 16, y + 42, w - 32, 18, segments)
       by = y + 48 + n * 18
       P.small(b, x, by - 4, w, 18, note, c[:warn], 2) if note

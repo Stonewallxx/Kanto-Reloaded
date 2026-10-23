@@ -121,7 +121,8 @@ module Reloaded
 
     def draw(b, c)
       x0, y0, x1, y1 = @rect
-      P.ui.rbox(b, x0, y0, x1, y1, 6, c[:panel2], c[:selb])
+      # the popups' cut-corner plate (Slash Tab look), no title
+      Reloaded::PartyPaint.chamfer(b, x0, y0, x1, y1, 8, c[:panel2], c[:selb])
       ry0 = rows_y
       right = x1 - 8 - (scrolls? ? BAR_W + 5 : 0)      # where the text and badges end
       @hits = []

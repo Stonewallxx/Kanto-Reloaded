@@ -25,8 +25,8 @@ module Reloaded
   module Saves
     LOAD_SCREEN = :"systems.reloaded_load_screen"
     MOD_CHECK = :"systems.startup_mod_check"
-    CAPS = [nil, 10, 25, 50, 100].freeze
-    CAP_NAMES = ["Unlimited", "10", "25", "50", "100"].freeze
+    CAPS = [nil, 10, 15, 20, 25, 50, 100].freeze
+    CAP_NAMES = ["Unlimited", "10", "15", "20", "25", "50", "100"].freeze
 
     class << self
       def boot
@@ -61,10 +61,8 @@ module Reloaded
           :on_press => proc { Reloaded::SaveManagerScreen.open if defined?(Reloaded::SaveManagerScreen) },
           :description => "Your save files: Notes, color tags, health, backups to restore, and the saves you've deleted.")
         s.register(:"saves.backup_cap", :page => :saves, :priority => 10, :type => :enum, :default => 0, :preset => false,
-          :values => CAP_NAMES, :name => "Backup Cap",
-          :descriptions => ["Every backup is kept.", "The newest 10 backups of each save are kept.",
-                            "The newest 25 backups of each save are kept.", "The newest 50 backups of each save are kept.",
-                            "The newest 100 backups of each save are kept."],
+          :values => CAP_NAMES, :name => "Backup Cap", :remap => [5, { 2 => 4, 3 => 5, 4 => 6 }],
+          :descriptions => ["Every backup is kept."] + CAPS.compact.map { |n| "The newest #{n} backups of each save are kept." },
           :description => "How many backups of each save are kept. Older ones go to the Recycle Bin, and named backups are always kept.")
       end
 

@@ -171,6 +171,8 @@ S = Reloaded::Settings unless defined?(S)
 LAYOUT = File.join(KR_LOCAL_DIR, "Settings", "Pause Menu.json")
 PM.forget_layout
 FileUtils.rm_f(LAYOUT)
+# The PokeVial has its own preview (pokevial_preview.rb): out of these checks' way
+Reloaded::Features.set(:pokevial, :off)
 check("Reloaded Pause Menu is a Reloaded System, On", S.definition(PM::TOGGLE)[:page] == :systems && S.get(PM::TOGGLE) == true)
 check("Menu Animations is on the Interface page (both menus), On", S.definition(PM::ANIMATIONS)[:page] == :interface && S.get(PM::ANIMATIONS) == true)
 check("Open Favorite is a Controls action on the map, with no button at first",
@@ -348,6 +350,32 @@ def rgb_of(col); [col.red, col.green, col.blue]; end
 end
 S.set(Reloaded::Palette::MODE, 0)
 check("...and Dark again: the Theme's colours, the panel as it was (226)", !Reloaded::Palette.map_menu[:light] && Reloaded::Palette.menu_alpha(226) == 226)
+
+#---------------------------------------------------------------- H: the PokeVial's tile
+# (the PokeVial itself: pokevial_test.rb and pokevial_preview.rb)
+Reloaded::Features.set(:pokevial, :on)
+Reloaded::PokeVial.send(:register_menu_entries)       # into these stand-ins' KIF list, made after it booted
+$alert = true
+Reloaded::PokeVial.singleton_class.prepend(Module.new {
+  def usable; true; end
+  def low_hp_alert?; $alert; end
+  def uses; 2; end
+  def configured_max_uses; 4; end
+})
+menu("H pokevial", [
+  dmp("pm_11_pokevial_glow"),
+  at { check("the PokeVial in the Pinned row's third slot, its charges in the pill (#{all_keys.inspect})",
+             iv(:@pinned)[2] && iv(:@pinned)[2].key == "pokevial" && drawn?(:@top_sprite, "2/4") && !all_keys.include?("kif_heal")) },
+  at { check("the Low HP Reminder: its tile glows red (the alert layer)", (a = iv(:@alert_sprite)) && a.bitmap.ops.any? { |o| o[0] == "fill" }) },
+  I::UP, I::UP,
+  at { check("...not while the cursor's on it", iv(:@focus) == :pinned && (a = iv(:@alert_sprite)) && a.bitmap.ops.reject { |o| o[0] == "clear" }.empty?) },
+  I::BACK
+])
+$alert = false
+menu("H pokevial calm", [
+  at { check("...and no glow when the party's fine", (a = iv(:@alert_sprite)).nil? || a.bitmap.ops.reject { |o| o[0] == "clear" }.empty?) },
+  I::BACK
+])
 
 errors = File.read(Reloaded::Log.path).lines.grep(/ERROR|skipped/)
 check("no errors or skipped hooks in Kanto Reloaded's log (#{errors.length})", errors.empty?)

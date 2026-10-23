@@ -1,0 +1,141 @@
+#==============================================================================
+# Kanto Reloaded: the toast
+#==============================================================================
+# A short line at the top of the screen for a moment, with no button: you
+# keep going (his pick for Auto-Repel Reuse, 2026-10-21; the PokeVial's
+# toasts, 2026-10-22). An icon, what happened, and a pill at its end, or a
+# drawing of the caller's own there (the PokeVial's charges). It fades
+# after about two and a half seconds. The map moves it on, also while a
+# menu or a message is open (miniupdate), and so does the Bag, so an item
+# used from the Bag can say what it did. It shows over the map menus,
+# under popups.
+#
+#   Reloaded::Toast.show("Used Another Super Repel", :icon => :SUPERREPEL,
+#                        :pill => ["4 LEFT", :gold])
+#   Reloaded::Toast.show("The PokeVial regained a charge.", :icon => "Graphics/PauseMenu/POKEVIAL",
+#                        :paint => [width, proc { |b, x0, y0, colours| ... }])
+#
+# :icon is an item (its Bag icon) or a picture's path; :pill's colour is
+# :gold, :green or :red (the Theme Mode's tone of it).
+#==============================================================================
+
+return unless defined?(Reloaded::Pixel) && defined?(::KIF::PixelFont)
+
+module Reloaded
+  module Toast
+    FRAMES = 150
+    FADE = 30
+    H = 30
+    P = Reloaded::Pixel
+    PF = ::KIF::PixelFont
+    # Dark's pill fills (on Light, the pill is the palette's pale mix)
+    FILLS = { :gold => Color.new(70, 58, 20), :green => Color.new(24, 60, 36), :red => Color.new(70, 26, 24) }.freeze
+
+    class << self
+      attr_reader :sprite
+
+      def boot
+        h = Reloaded::Hooks
+        h.prepend(nil, "Scene_Map", Update, :id => :toast_map) if defined?(::Scene_Map)
+        h.prepend(nil, "Scene_Map", MiniUpdate, :id => :toast_map_menus) if defined?(::Scene_Map) && ::Scene_Map.method_defined?(:miniupdate)
+        h.prepend(nil, "PokemonBag_Scene", BagUpdate, :id => :toast_bag) if defined?(::PokemonBag_Scene)
+        return true
+      end
+
+      def show(text, icon: nil, pill: nil, paint: nil)
+        dispose
+        c = Reloaded::Palette.map_menu   # Theme Mode, as the map menus
+        text = text.to_s
+        tw = P.width(PF::TEXT, text)
+        end_w = if paint then paint[0].to_i
+                elsif pill then P.width(PF::TINY, pill[0].to_s) + 12
+                else 0
+                end
+        lx = icon ? 34 : 12
+        w = lx + tw + (end_w > 0 ? 10 + end_w : 0) + 10
+        @viewport = Viewport.new(0, 0, Graphics.width, Graphics.height)
+        @viewport.z = 100_300
+        @sprite = Sprite.new(@viewport)
+        @sprite.bitmap = Bitmap.new(w, H)
+        @sprite.x = (Graphics.width - w) / 2
+        @sprite.y = 10
+        o = @sprite.bitmap
+        P.ui.rbox(o, 0, 0, w - 1, H - 1, 7, c[:panel], c[:line])
+        draw_icon(o, icon, 18, H / 2) if icon
+        P.text(o, lx, 6, tw + 2, 18, text, c[:txt], PF::TEXT)
+        if paint
+          paint[1].call(o, w - 10 - end_w, 7, c)
+        elsif pill
+          tone = c[pill[1]] || c[:gold]
+          fill = c[:light] ? Reloaded::Palette.mix(c[:panel2], tone, 0.22) : (FILLS[pill[1]] || FILLS[:gold])
+          P.pill(o, w - 10, 7, pill[0].to_s, fill, tone, true)
+        end
+        @left = FRAMES
+        return true
+      rescue StandardError => e
+        Reloaded::Log.exception("A toast couldn't be shown", e, :interface)
+        dispose
+        return false
+      end
+
+      def update
+        return unless @sprite
+        @left -= 1
+        @sprite.opacity = [@left * 255 / FADE, 255].min
+        dispose if @left <= 0
+      end
+
+      def dispose
+        @sprite.bitmap.dispose if @sprite && !@sprite.disposed? && @sprite.bitmap
+        @sprite.dispose if @sprite && !@sprite.disposed?
+        @viewport.dispose if @viewport && !@viewport.disposed?
+        @sprite = @viewport = nil
+      end
+
+      private
+
+      # An item's Bag icon at 24 pixels, or a picture fitted in 24 by 24
+      def draw_icon(o, icon, cx, cy)
+        file = icon.is_a?(Symbol) ? (::GameData::Item.icon_filename(icon) rescue "Graphics/Items/#{icon}") : icon.to_s
+        path = defined?(pbResolveBitmap) ? (pbResolveBitmap(file) || file) : file
+        bm = Bitmap.new(path)
+        if icon.is_a?(Symbol)
+          w = h = 24
+        else
+          s = [24.0 / bm.width, 24.0 / bm.height].min
+          w = (bm.width * s).round
+          h = (bm.height * s).round
+        end
+        o.stretch_blt(Rect.new(cx - w / 2, cy - h / 2, w, h), bm, Rect.new(0, 0, bm.width, bm.height))
+        bm.dispose
+      rescue StandardError
+        nil
+      end
+    end
+
+    module Update
+      def update(*args)
+        ret = super
+        Reloaded::Toast.update
+        ret
+      end
+    end
+
+    # the map while a menu or a message is open (pbUpdateSceneMap)
+    module MiniUpdate
+      def miniupdate(*args)
+        ret = super
+        Reloaded::Toast.update
+        ret
+      end
+    end
+
+    module BagUpdate
+      def pbUpdate(*args)
+        ret = super
+        Reloaded::Toast.update
+        ret
+      end
+    end
+  end
+end

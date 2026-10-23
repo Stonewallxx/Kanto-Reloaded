@@ -224,6 +224,9 @@ rescue Exception => e
   check("#{label}: #{e.class}: #{e.message} #{e.backtrace.first(6).inspect}", false)
 end
 
+# Design scripts load this file for its stand-ins and helpers only
+return if defined?(PARTY_PREVIEW_SETUP_ONLY)
+
 check("Reloaded Party Screen is a Reloaded System, On", S.definition(PS::TOGGLE)[:page] == :systems && S.get(PS::TOGGLE) == true)
 check("the game's PokemonParty_Scene.new makes Kanto Reloaded's (a subclass of the game's)",
       PokemonParty_Scene.new.class == PS.scene_class && PS.scene_class < PokemonParty_Scene)

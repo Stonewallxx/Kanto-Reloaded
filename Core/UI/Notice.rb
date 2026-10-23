@@ -107,12 +107,14 @@ module Reloaded
         body = a[:body] ? P.wrap(a[:body].to_s, w - 28) : []
         line = a[:line] ? P.small_wrap(o, a[:line].to_s, w - 28) : []
         sub2 = a[:sub2] ? P.small_wrap(o, a[:sub2].to_s, w - 20).first(2) : []
-        height = 36 + (a[:sub] ? 18 : 0) + sub2.length * 16 + 12 + body.length * 18 + (line.empty? ? 0 : 6 + line.length * 16) + 52
+        height = 44 + (a[:sub] ? 18 : 0) + sub2.length * 16 + 12 + body.length * 18 + (line.empty? ? 0 : 6 + line.length * 16) + 52
         y0 = [(H - P::HINT_H - height) / 2, 8].max
         y1 = y0 + height
-        P.ui.rbox(o, X0, y0, X1, y1, 8, c[:panel2], a[:colour])
-        P.text(o, X0, y0 + 4, w, 28, PF.fit(PF::ROW, a[:title].to_s, w - 20), a[:colour], PF::ROW, 2)
-        y = y0 + 32
+        # the popups' Header Plate in the notice's colour: its edge, the
+        # plate's tint, the title and the line under it
+        Reloaded::Dialogs.send(:panel, o, c, X0, y0, w, height, a[:colour])
+        Reloaded::Dialogs.send(:title_bar, o, c, X0, y0, w, a[:title].to_s, a[:colour], a[:colour], a[:colour])
+        y = y0 + 40
         if a[:sub]
           P.small(o, X0 + 10, y, w - 20, 16, fit(o, a[:sub].to_s, w - 20), c[:txt], 2)
           y += 18
@@ -154,11 +156,7 @@ module Reloaded
         labels.each_with_index do |label, i|
           bw = widths[i]
           @hits << [i, bx, by, bx + bw, by + 28]
-          if i == choice
-            P.ui.rbox(o, bx, by, bx + bw, by + 28, 6, c[:sel], c[:selb])
-          else
-            P.ui.rbox(o, bx, by, bx + bw, by + 28, 6, c[:dark], c[:line])
-          end
+          Reloaded::Dialogs.send(:button, o, c, bx, by, bx + bw, by + 28, i == choice)
           P.text(o, bx, by + 2, bw, 24, PF.fit(PF::TEXT, label, bw - 8), i == choice ? (c[:strong] || c[:white]) : c[:txt], PF::TEXT, 2)
           bx += bw + gap
         end

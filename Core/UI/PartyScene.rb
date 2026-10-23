@@ -40,6 +40,9 @@ module Reloaded
     RENAMES = { "Kuray Actions" => "RLD Actions", "Change moves" => "Relearn Moves" }.freeze
     # RLD Actions keeps only these of KIF Beta's actions (his ask, 2026-10-21)
     RLD_KEEP = ["Export"].freeze
+    # The panel's two bands (Two Bands, his pick, 2026-10-22): from the wide
+    # one's middle, each one's offset and width
+    BANDS = [[0, 56], [40, 8]].freeze
 
     #--------------------------------------------------------------------------
     # The game's scene methods
@@ -826,15 +829,29 @@ module Reloaded
       paint_details(base, top, c, pkmn)
     end
 
-    # the panel's plate, lit in a colour, with its band behind the sprite
-    # down to the red line at line_y (and the band's x and width)
-    def panel_plate(base, c, col, line_y = GY + LINE_Y, bx = DX + 52, bw = 64)
+    # the panel's plate, lit in a colour, its two bands running from the
+    # top right to the bottom left (through the top and bottom edges, just
+    # clipping the sides) and fading away below the red line at line_y
+    # (his ask, 2026-10-22)
+    def panel_plate(base, c, col, line_y = GY + LINE_Y)
+      cut = 16
       top = mix(c[:panel], col, 0.4)
       bottom = mix(c[:panel], c[:dark], 0.4)
-      chamfer_grad(base, DX, GY, DX + DW, GY + DH, 16, top, bottom, mix(c[:line], col, 0.5))
-      (GY + 2...line_y).each do |y|
-        under = mix(top, bottom, (y - GY).to_f / DH)
-        base.fill_rect(bx + (line_y - y) / 3, y, bw, 1, mix(under, col, 0.4))
+      chamfer_grad(base, DX, GY, DX + DW, GY + DH, cut, top, bottom, mix(c[:line], col, 0.5))
+      from = DX + DW - 48                     # the wide band's middle at the top...
+      to = DX + 24                            # ...and at the bottom
+      (GY + 1...GY + DH - 1).each do |y|
+        t = (y - GY).to_f / DH
+        left = DX + 1 + [cut - (y - GY), 0].max
+        right = DX + DW - 1 - [cut - (GY + DH - 1 - y), 0].max
+        mid = from + (to - from) * t
+        k = y < line_y ? 0.4 : 0.22 - 0.18 * (y - line_y).to_f / (GY + DH - line_y)
+        tint = mix(mix(top, bottom, t), col, k)
+        BANDS.each do |off, w|
+          a = [(mid + off - w / 2.0).round, left].max
+          b = [(mid + off + w / 2.0).round, right].min
+          base.fill_rect(a, y, b - a, 1, tint) if b > a
+        end
       end
       base.fill_rect(DX + 8, line_y, DW - 16, 2, POKE_RED)
     end
@@ -1018,7 +1035,7 @@ module Reloaded
       m = @kr_menu
       pkmn = m[:pkmn]
       col = pkmn && !pkmn.egg? ? rgb(Reloaded::PartyScreen.type_rgb(types_of(pkmn)[0])) : c[:line]
-      panel_plate(base, c, col, GY + 44, DX + 96, 50)
+      panel_plate(base, c, col, GY + 44)
       if pkmn
         @kr_panel_spots << [pkmn, DX + 26, GY + 22, 34]
         P.text(top, DX + 48, GY + 6, DW - 56, 18, PF.fit(PF::TEXT, pkmn.name.to_s, DW - 56), c[:txt], PF::TEXT)

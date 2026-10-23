@@ -355,11 +355,17 @@ gdata = J.parse(File.read(gpath))
 gdata["schema"] = 1
 gdata["values"]["demo.kept"] = true
 gdata["values"]["demo.reset"] = true
+gdata["values"]["demo.remap"] = 2
+gdata["values"]["demo.remap_new"] = 1
 File.write(gpath, J.generate(gdata))
 ST.send(:load_global)
 ST.register(:"demo.kept", :page => :interface, :type => :toggle, :default => false)
 ST.register(:"demo.reset", :page => :interface, :type => :toggle, :default => false, :reset => 2)
 check(":reset drops a value an older Settings.json stored; others are kept", ST.get(:"demo.kept") == true && ST.get(:"demo.reset") == false)
+ST.register(:"demo.remap", :page => :interface, :type => :enum, :default => 0, :values => %w[A B C D E], :remap => [5, { 2 => 4 }])
+ST.register(:"demo.remap_new", :page => :interface, :type => :enum, :default => 0, :values => %w[A B C D E], :remap => [5, { 2 => 4 }])
+check(":remap moves an older file's enum pick to its new index; picks it doesn't name stay",
+      ST.get(:"demo.remap") == 4 && ST.get(:"demo.remap_new") == 1)
 ST.flush
 check("...once: the file is written as the new schema", J.parse(File.read(gpath))["schema"] == R::Settings::SCHEMA_VERSION)
 

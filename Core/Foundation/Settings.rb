@@ -21,6 +21,9 @@
 # right now; they show locked in the dropdown and set refuses them.
 # :reset => n drops a Global value stored by a Settings.json older than
 # schema n, once, so the setting starts at its default again.
+# :remap => [n, { old => new }] moves an :enum value stored by a
+# Settings.json older than schema n to its new index, once (values were
+# added in the middle of the list).
 #
 # A setting or page with :feature => :controls is shown only while that
 # feature is On.
@@ -49,7 +52,7 @@ module Reloaded
     TYPES  = [:toggle, :enum, :slider, :number, :text, :button, :custom].freeze
     SCOPES = [:global, :save].freeze
     GLOBAL_FILE = "Settings.json"
-    SCHEMA_VERSION = 4     # 2: the colour settings start at Theme; 3, 4: the frame lists changed order
+    SCHEMA_VERSION = 5     # 2: the colour settings start at Theme; 3, 4: the frame lists changed order; 5: Backup Cap gained 15 and 20
     SAVE_SECTION = :settings
     SAVE_LOCK_TEXT = "Load a save to change this"
 
@@ -299,6 +302,7 @@ module Reloaded
           :long        => !!options[:long],
           :swatch      => options[:swatch] ? options[:swatch].to_sym : nil,
           :reset       => options[:reset],
+          :remap       => options[:remap],
           :min         => options[:min],
           :max         => options[:max],
           :step        => options[:step] || 1,
@@ -763,6 +767,11 @@ module Reloaded
         values = global["values"]
         if values.has_key?(key) && definition[:reset] && @file_schema.to_i < definition[:reset].to_i
           values.delete(key)       # stored before the setting's reset: back to its default
+          @dirty = true
+        end
+        remap = definition[:remap]
+        if values.has_key?(key) && remap && @file_schema.to_i < remap[0].to_i && remap[1].has_key?(values[key].to_i)
+          values[key] = remap[1][values[key].to_i]    # stored before values were added: the same choice, moved
           @dirty = true
         end
         if values.has_key?(key)

@@ -12,6 +12,7 @@
 #   - the description box's lines
 #   - Option Dropdowns: running one, its hints, drawing it
 #   - stepping aside for another screen (hidden)
+#   - alerts: a red glow around an entry that wants attention, pulsing
 #
 # A screen includes Frame, calls frame_init in initialize, open_sprites /
 # dispose_sprites around its loop, update_frame every frame, and paints on
@@ -49,11 +50,12 @@ module Reloaded
       return @overlay_sprite.bitmap
     end
 
-    # Every frame (TextEntry calls it too): the cursor's pulse, and the hint
-    # line scrolling when it's too long.
+    # Every frame (TextEntry calls it too): the cursor's and alerts' pulse,
+    # and the hint line scrolling when it's too long.
     def update_frame
       @frame += 1
       @cursor_sprite.opacity = P.cursor_opacity(@frame) if @cursor_sprite && @cursor_sprite.visible
+      update_alerts
       return unless @hint_room > 0
       @hint_tick += 1
       place_hints
@@ -117,11 +119,11 @@ module Reloaded
     end
 
     def sprites
-      return [@sprite, @cursor_sprite, @top_sprite, @hint_sprite, @overlay_sprite].compact.reject { |s| s.disposed? }
+      return [@sprite, @cursor_sprite, @alert_sprite, @top_sprite, @hint_sprite, @overlay_sprite].compact.reject { |s| s.disposed? }
     end
 
     def dispose_sprites
-      [@sprite, @top_sprite, @hint_sprite, @overlay_sprite].each do |s|
+      [@sprite, @alert_sprite, @top_sprite, @hint_sprite, @overlay_sprite].each do |s|
         next if s.nil? || s.disposed?
         s.bitmap.dispose if s.bitmap && !s.bitmap.disposed?
         s.dispose
@@ -130,7 +132,53 @@ module Reloaded
       (@cursor_cache || {}).each_value { |b| b.dispose unless b.disposed? }
       @cursor_cache = {}
       @viewport.dispose if @viewport && !@viewport.disposed?
-      @sprite = @cursor_sprite = @top_sprite = @hint_sprite = @overlay_sprite = @viewport = nil
+      @sprite = @cursor_sprite = @alert_sprite = @top_sprite = @hint_sprite = @overlay_sprite = @viewport = nil
+    end
+
+    #--------------------------------------------------------------------------
+    # Alerts: an entry that wants attention (the PokeVial's Low HP Reminder,
+    # Red Glow, his pick 2026-10-22) glows red around its box, slowly
+    # pulsing. Its own layer over the panels and under the words, made the
+    # first time it's needed; it moves with the layer the box is drawn on
+    # (host). A screen clears them when it repaints and adds one per box.
+    #--------------------------------------------------------------------------
+    ALERT_RINGS = [[3, 35], [2, 70], [1, 130], [0, 220]].freeze   # [pixels outside the box, alpha]
+    ALERT_TINT = 30
+
+    def alerts_clear
+      @alert_sprite.bitmap.clear if @alert_sprite && !@alert_sprite.disposed?
+    end
+
+    # x0, y0 to x1, y1 (inclusive) on the host sprite's bitmap
+    def alert_box(host, x0, y0, x1, y1)
+      if @alert_sprite.nil? || @alert_sprite.disposed?
+        @alert_sprite = layer(1)
+        @alert_sprite.visible = @sprite ? @sprite.visible : true
+      end
+      @alert_host = host
+      b = @alert_sprite.bitmap
+      red = palette[:red]
+      b.fill_rect(x0 + 1, y0 + 1, x1 - x0 - 1, y1 - y0 - 1, Color.new(red.red, red.green, red.blue, ALERT_TINT))
+      ALERT_RINGS.each do |d, a|
+        col = Color.new(red.red, red.green, red.blue, a)
+        rx0 = x0 - d; ry0 = y0 - d; rx1 = x1 + d; ry1 = y1 + d
+        b.fill_rect(rx0 + 2, ry0, rx1 - rx0 - 3, 1, col)
+        b.fill_rect(rx0 + 2, ry1, rx1 - rx0 - 3, 1, col)
+        b.fill_rect(rx0, ry0 + 2, 1, ry1 - ry0 - 3, col)
+        b.fill_rect(rx1, ry0 + 2, 1, ry1 - ry0 - 3, col)
+        [[rx0 + 1, ry0 + 1], [rx1 - 1, ry0 + 1], [rx0 + 1, ry1 - 1], [rx1 - 1, ry1 - 1]].each { |px, py| b.fill_rect(px, py, 1, 1, col) }
+      end
+      update_alerts
+    end
+
+    # A slower pulse than the cursor's: about two seconds
+    def update_alerts
+      return unless @alert_sprite && !@alert_sprite.disposed?
+      if @alert_host && !@alert_host.disposed?
+        @alert_sprite.x = @alert_host.x
+        @alert_sprite.y = @alert_host.y
+      end
+      @alert_sprite.opacity = (150 + 105 * (Math.sin(@frame.to_i * Math::PI / 60.0) * 0.5 + 0.5)).round
     end
 
     #--------------------------------------------------------------------------

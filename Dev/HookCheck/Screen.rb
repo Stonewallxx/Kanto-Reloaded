@@ -200,9 +200,8 @@ module Reloaded
         x = (W - pw) / 2
         y = 136
         h = done ? 112 : 92
-        P.ui.rbox(o, x, y, x + pw, y + h, 6, c[:panel2], c[:line])
-        P.text(o, x, y + 6, pw, 26, done ? _INTL("Checked Again") : _INTL("Checking Hooks"), c[:title], PF::ROW, 2)
-        o.fill_rect(x + 10, y + 34, pw - 20, 1, c[:line])
+        Reloaded::Dialogs.send(:panel, o, c, x, y, pw, h)
+        Reloaded::Dialogs.send(:title_bar, o, c, x, y, pw, done ? _INTL("Checked Again") : _INTL("Checking Hooks"))
         bx0 = x + 20
         bx1 = x + pw - 20
         by = y + 46

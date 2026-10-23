@@ -13,7 +13,7 @@ Everywhere the game shows the party: the pause menu, using an item from the Bag,
 - **The cards:** Six, two across. Each has the Pokémon (Big Pokémon Icons or small, as you have it), its name, level, gender (KIF Beta's genderless and pizza icons too), its shiny star (KIF Beta's, coloured by the kind of shiny), types, status (SLP, PSN, BRN, PAR, FRZ, FNT, PKRS), HP and HP bar, held item or mail, and KIF Beta's evolution lock. A Pokémon with a level lock (Quality of Life) has a gold padlock by its level, dim while Level Locking is Off. Each card is lit in its type's colour, red when fainted; the highlighted one glows.
 - **An Egg's card:** "Egg" and how close it is (Soon, Moving, Not Close, A Long Time).
 - **Empty spots:** With fewer than six, a dashed outline saying EMPTY.
-- **The details panel:** The highlighted one's picture, name, level, a thin EXP bar under the level (full and gold at its level lock), its types as the game's big labels (a little smaller, evenly between the EXP bar and the red line), its nature, ability and item, and its moves with PP.
+- **The details panel:** Lit in the highlighted one's type colour, with two bands of it from the top right to the bottom left. The highlighted one's picture, name, level, a thin EXP bar under the level (full and gold at its level lock), its types as the game's big labels (a little smaller, evenly between the EXP bar and the red line), its nature, ability and item, and its moves with PP.
 - **An Egg's panel:** The steps left as a number and a bar, with the game's words for how close it is.
 - **The title:** "Party", or what you're choosing for ("Move Pikachu Where?", "Teach Thunderbolt to Which?", "Give to Which Pokémon?").
 

@@ -17,6 +17,7 @@ What's new in each version, newest first. The What's New screen (on the Load Scr
 - Overworld Menu: A quick menu while walking, with 7 Quick Items, quick toggles (the Bicycle too), any setting from KIF Settings (sliders too), your quest, the Pokédex, badges, shiny odds, encounters, the Itemfinder, your party and where you are, and pages of your own
 - The title screen shows PIF's, KIF's and Kanto Reloaded's versions in the top right corner
 - Party Screen: Cards and details in a new look, the menu in the panel (other mods' commands too), Switch with a preview, X for the Summary and Y to move, in battle too, Dark or Light
+- PokeVial: In place of KIF's Heal Pokémon, a few charges to heal your party anywhere, refilled at Pokémon Centers. A Heal Preview shows what each Pokémon gets, more charges come with Badges, and it glows when your party is badly hurt
 - Quality of Life: Toggles for an easier or quicker game (Infinite Repel, Auto-Repel Reuse, Infinite Money, Encounter Rate, Faster Evolutions and more), the ones that change how hard it is kept by each save, and the Nature Selector, Level Lock Manager and Super Candy
 - Tidy folders: Kanto Reloaded's settings, logs and bug reports live in its own folder (Settings, Logging, Bug Reports), and only save things stay beside your saves. Old files move over on the first start
 - Save Checker: A full check of any save or backup, on a copy. Pokémon and items the game hasn't got are kept aside until they're back, each mod's data is listed, and a save stuck on a removed mod can be made to load again

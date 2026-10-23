@@ -139,6 +139,18 @@
       "file": "Core/UI/PartyScene.rb",
       "text": "Change moves",
       "why": "The game's own words, matched as they are"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/PokeVialScreen.rb",
+      "text": "Mart buy item",
+      "why": "An audio file's name (Audio/SE, Audio/ME)"
+    },
+    {
+      "rule": "names",
+      "file": "Core/UI/PokeVialScreen.rb",
+      "text": "Pokemon Healing",
+      "why": "An audio file's name (Audio/SE, Audio/ME)"
     }
   ]
 }

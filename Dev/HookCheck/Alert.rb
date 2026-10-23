@@ -91,12 +91,13 @@ module Reloaded
           ok = run.all_ok?
           y0 = ok ? 110 : 64
           y1 = ok ? 268 : 318
-          P.ui.rbox(o, X0, y0, X1, y1, 8, c[:panel2], shade(border(run), c))
+          edge = shade(border(run), c)   # the popups' Header Plate, in the finding's colour
+          Reloaded::Dialogs.send(:panel, o, c, X0, y0, X1 - X0, y1 - y0, edge)
           title = run.first ? _INTL("Hook Check") : _INTL("KIF Updated")
           sub = run.first ? _INTL("First check on {1}", run.version) : _INTL("{1} to {2}", run.previous, run.version)
-          P.text(o, X0, y0 + 6, X1 - X0, 26, title, c[:title], PF::ROW, 2)
-          P.small(o, X0, y0 + 32, X1 - X0, 16, sub, c[:dim], 2)
-          o.fill_rect(X0 + 12, y0 + 52, X1 - X0 - 24, 1, c[:line])
+          Reloaded::Dialogs.send(:title_bar, o, c, X0, y0, X1 - X0, title, edge, edge, edge)
+          P.small(o, X0, y0 + 38, X1 - X0, 16, sub, c[:dim], 2)
+          o.fill_rect(X0 + 12, y0 + 56, X1 - X0 - 24, 1, c[:line])
           report = _INTL("Report: {1}", Report.short(run.report))
           @hits = []
           if ok
@@ -123,10 +124,10 @@ module Reloaded
             by = y0 + 210
             @hits << [i, bx, by, bx + 130, by + 28]
             if i == choice
-              P.ui.rbox(o, bx, by, bx + 130, by + 28, 6, c[:sel], c[:selb])
+              Reloaded::Dialogs.send(:button, o, c, bx, by, bx + 130, by + 28, true)
               P.text(o, bx, by + 2, 130, 24, label, c[:strong], PF::TEXT, 2)
             else
-              P.ui.rbox(o, bx, by, bx + 130, by + 28, 6, c[:dark], c[:line])
+              Reloaded::Dialogs.send(:button, o, c, bx, by, bx + 130, by + 28, false)
               P.text(o, bx, by + 2, 130, 24, label, c[:txt], PF::TEXT, 2)
             end
           end

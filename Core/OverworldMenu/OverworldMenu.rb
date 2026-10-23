@@ -33,6 +33,7 @@
 #                                             # its own way, ending at x1, in room
 #                                             # (Badges' pips)
 #     :label => proc { "..." },               # words of its own in place of its name
+#     :alert => proc { true },                # glows red, pulsing, when it wants attention
 #     :description => "...",
 #     :handler => proc { |menu| ...; nil })   # nil: the menu stays; :close; or a
 #                                             # proc to run once it has closed
@@ -61,7 +62,7 @@ module Reloaded
     INFINITY = :infinity          # a status's words: the gold ∞ mark (the pixel fonts have no ∞)
 
     Entry = Struct.new(:key, :name, :kind, :icon, :priority, :feature, :condition, :usable, :status,
-                       :description, :handler, :get, :set, :values, :label, :home, :explain, :range, :paint)
+                       :description, :handler, :get, :set, :values, :label, :home, :explain, :range, :paint, :alert)
 
     @entries = {}
     @session = 0
@@ -126,7 +127,8 @@ module Reloaded
         @entries[key] = Entry.new(key, options[:name].to_s, kind, options[:icon], options[:priority] || 100,
                                   options[:feature], options[:condition], options[:usable], options[:status],
                                   options[:description].to_s, options[:handler], options[:get], options[:set], options[:values],
-                                  options[:label], options[:home], options[:explain], options[:range], options[:paint])
+                                  options[:label], options[:home], options[:explain], options[:range], options[:paint],
+                                  options[:alert])
         @layout_checked = false
         return key
       end
@@ -160,6 +162,14 @@ module Reloaded
         return text.empty? ? e.name.to_s : text
       rescue StandardError
         return e.name.to_s
+      end
+
+      # It wants attention now (its :alert says so)
+      def alert?(e)
+        return false unless e.alert
+        return e.alert.call ? true : false
+      rescue StandardError
+        return false
       end
 
       # true, or why it can't be used now

@@ -121,8 +121,12 @@ DP.after_game_data_load
 def rejected?(target, id); DP.patches(target).any? { |p| p[:id] == id && p[:rejected] }; end
 
 item = G::Item::DATA[:KR_TEST_ITEM]
-check("items: added, with its own name and the next free number (#{item && item.id_number} after #{ITEM_MAX})",
-      item && item.name == "Test Item" && item.price == 300 && item.id_number == ITEM_MAX + 1 && G::Item::DATA[item.id_number] == item)
+# Kanto Reloaded's own items (the PokeVial's) are added first
+own = Reloaded::PokeVial::ITEMS.keys.count { |k| G::Item::DATA[k] }
+check("Kanto Reloaded's own items are there, hidden from the Patch Viewer (#{own})",
+      own == Reloaded::PokeVial::ITEMS.length && DP.patches("items").select { |p| p[:internal] }.all? { |p| p[:hidden] })
+check("items: added, with its own name and the next free number (#{item && item.id_number} after #{ITEM_MAX} and our #{own})",
+      item && item.name == "Test Item" && item.price == 300 && item.id_number == ITEM_MAX + 1 + own && G::Item::DATA[item.id_number] == item)
 check("items: a new item without a pocket goes in pocket 1", item && item.pocket == 1)
 check("items: \"potion\" edits POTION (ids in any case); Test B loads last, so its price wins (#{G::Item::DATA[:POTION].price})",
       G::Item::DATA[:POTION].price == 7)
@@ -242,7 +246,7 @@ check("...nothing newly rejected, #{ch[:fixed]} fixed, both mods changed (#{ch[:
       ch[:new_errors].empty? && ch[:fixed] > 0 && ch[:mods].sort == ["Test A", "Test B"])
 check("Hot Reload: built again without a restart (#{(secs * 1000).round} ms)", secs < 30)
 check("Hot Reload: the removed item is gone, Potion's price is the game's again (#{G::Item::DATA[:POTION].price})",
-      !G::Item::DATA.key?(:KR_TEST_ITEM) && !G::Item::DATA.key?(ITEM_MAX + 1) && G::Item::DATA[:POTION].price > 7)
+      !G::Item::DATA.key?(:KR_TEST_ITEM) && !G::Item::DATA.key?(ITEM_MAX + 1 + own) && G::Item::DATA[:POTION].price > 7)
 mv = G::Move::DATA[:KR_TEST_MOVE]
 check("Hot Reload: without the clash, the move is added, by symbol only, numbered after the game's (#{mv && mv.id_number})",
       mv && mv.name == "Test Move" && mv.id_number == MOVE_MAX + 1 && G::Move::DATA.keys.none? { |k| k.is_a?(Integer) })

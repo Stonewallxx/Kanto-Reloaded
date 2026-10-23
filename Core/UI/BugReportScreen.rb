@@ -272,7 +272,7 @@ module Reloaded
     def making
       c = palette
       o = @overlay_sprite.bitmap
-      P.ui.rbox(o, 156, 170, 356, 210, 8, c[:panel2], c[:selb])
+      Reloaded::Dialogs.send(:panel, o, c, 156, 170, 200, 40)
       P.text(o, 156, 178, 200, 24, _INTL("Making the report..."), c[:txt], nil, 2)
       Graphics.update
       o.clear

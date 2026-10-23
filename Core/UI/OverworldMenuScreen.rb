@@ -140,6 +140,7 @@ module Reloaded
       base.clear
       top.clear
       @left.bitmap.clear
+      alerts_clear
       @hits = []
       @cursor_rect = nil
       paint_panel(c)
@@ -1108,6 +1109,7 @@ module Reloaded
       end
       reason = OM.usable(e)
       off = reason != true
+      alert_box(@left, x0, y, x1, y + ROW_H - 2) if !on && !off && OM.alert?(e)
       lx = x0 + 8                       # no icons on the rows (his call, 2026-10-20)
       label = OM.label(e)
       room = x1 - 6 - lx
@@ -1579,7 +1581,7 @@ module Reloaded
       P.text(o, x, y + 118, w, 18, _INTL("Then {1}", words.landing_words(days, hour, now)), tone(:gold), PF::TEXT, 2)
       bx = x + w / 2 - 60
       by = y + h - 30
-      P.ui.rbox(o, bx, by, bx + 120, by + 22, 5, Reloaded::Palette.mix(c[:selb], c[:panel2], 0.55), c[:selb])
+      Reloaded::PartyPaint.chamfer(o, bx, by, bx + 120, by + 22, 6, Reloaded::Palette.mix(c[:selb], c[:panel2], 0.55), c[:selb])
       P.text(o, bx, by, 120, 22, _INTL("Change Time"), c[:txt], PF::TEXT, 2)
       @time_hits << [[:ok], bx, by, bx + 120, by + 22]
     end

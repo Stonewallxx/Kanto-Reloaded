@@ -86,10 +86,14 @@ Reloaded::PauseMenu.register(:pokevial, "PokeVial",
   :pinned      => 2,                          # its Pinned slot (0 to 3)
   :takes_over  => :kif_heal,                  # KIF's entry it replaces while on
   :status      => proc { ["Charges: 3/5", nil, "3/5"] },   # words, :red or nil, short words
-  :condition   => proc { ... },
-  :lock_reason => proc { "..." },
+  :visible     => proc { ... },               # false: not there at all, Pinned slot too
+  :condition   => proc { ... },               # false: its tile locked
+  :lock_reason => proc { "..." },             # why it's locked
+  :alert       => proc { ... },               # true: its tile glows red, pulsing
   :handler     => proc { |scene| ...; :stay })            # :stay or :close
 ```
+
+An alert (the PokeVial's Low HP Reminder) glows around the tile while the cursor is elsewhere, on its own layer (`Frame#alert_box`), pulsing about every two seconds.
 
 ## Tests
 
@@ -106,6 +110,7 @@ It runs PIF's own pause menu code with KIF's own registry, on the preview tool's
 - Y opening the Favorite through KIF's registry, and landing back in the menu
 - an entry of PIF's (Options) and back to the menu on it
 - a locked tile and why
+- the PokeVial's tile in the Pinned row, and its Low HP glow
 - the mouse
 - the Safari Zone's lines, Quit, and Save locked
 - a Pinned entry of Kanto Reloaded's taking over KIF's Heal

@@ -246,6 +246,7 @@ module Reloaded
         top = @top_sprite.bitmap
         base.clear
         top.clear
+        alerts_clear
         @hits = []
         @cursor_rect = nil
         paint_left(c)
@@ -711,9 +712,9 @@ module Reloaded
       end
 
       # A tile: its icon, its name, its status, a star when it's the
-      # Favorite, a lock when it can't be used now. A row's tile shows the
-      # status as a pill; the carousel's big middle tile, in full under the
-      # name.
+      # Favorite, a lock when it can't be used now, a red glow when it wants
+      # attention. A row's tile shows the status as a pill; the carousel's
+      # big middle tile, in full under the name.
       def paint_tile(base, top, c, x, y, it, on, big = false)
         w = big ? SLOTS[0][1] : TILE_W
         h = big ? SLOTS[0][2] : TILE_H
@@ -724,6 +725,7 @@ module Reloaded
         tile_label(top, x + 3, y + (big ? 72 : 64), w - 6, it.label, off ? c[:dim] : (fav?(it) ? tone(:gold) : c[:txt]))
         star(top, x + 5, y + 5) if fav?(it)
         lock(top, x + w - 12, y + 6, c[:dim]) if off
+        alert_box(@sprite, x, y, x + w, y + h) if !on && !off && PM.alert?(it.key)
         st = !off && PM.status(it.key)
         if st
           colour = st[2] == :red ? tone(:red) : nil

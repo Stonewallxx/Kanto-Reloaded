@@ -35,9 +35,14 @@
 #     :icon => "Graphics/...", :small_icon => "menuIcons/POKEMON", :pinned => 2,
 #     :takes_over => :kif_heal, :status => proc { ["Charges: 3/5", nil, "3/5"] },
 #     :condition => proc { ... }, :lock_reason => proc { "..." },
+#     :visible => proc { ... }, :alert => proc { party_hurt? },
 #     :handler => proc { |scene| ...; :stay })
 #
-# A status: [words, :red or nil, short words for a row's pill].
+# :condition false shows its tile locked (lock_reason says why); :visible
+# false hides it altogether, Pinned slot too.
+# A status: [words, :red or nil, short words for a row's pill]. An alert
+# that's true makes its tile glow red, pulsing (Frame#alert_box), while the
+# cursor is elsewhere.
 #==============================================================================
 
 module Reloaded
@@ -160,10 +165,21 @@ module Reloaded
         return key unless defined?(::KIF::PauseMenu)
         feature = options[:feature]
         cond = options[:condition]
+        vis = options[:visible]
         ::KIF::PauseMenu.add(id.to_sym, label, :icon => options[:small_icon] || "menuIcons/OPTIONS",
           :order => options[:order] || 100, :handler => options[:handler],
-          :condition => proc { (feature.nil? || Reloaded::Features.on?(feature)) && (cond.nil? || cond.call) })
+          :condition => proc { (feature.nil? || Reloaded::Features.on?(feature)) && (vis.nil? || vis.call) && (cond.nil? || cond.call) })
         return key
+      end
+
+      # A registered entry wants attention now (its :alert says so)
+      def alert?(key)
+        reg = @registered[key.to_s]
+        return false unless reg && reg[:alert]
+        return false if reg[:feature] && !Reloaded::Features.on?(reg[:feature])
+        return reg[:alert].call ? true : false
+      rescue StandardError
+        return false
       end
 
       # KIF entries a registered entry takes over while its feature is on
@@ -184,6 +200,7 @@ module Reloaded
           slot = e[:pinned]
           next unless slot.is_a?(Integer) && slot >= 0 && slot < PINNED_SLOTS && slots[slot].nil?
           next if e[:feature] && !Reloaded::Features.on?(e[:feature])
+          next if e[:visible] && !(e[:visible].call rescue false)
           slots[slot] = e[:key]
         end
         return slots

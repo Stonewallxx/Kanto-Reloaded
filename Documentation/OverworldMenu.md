@@ -115,6 +115,7 @@ Reloaded::OverworldMenu.register(:pokevial, :name => "PokeVial", :kind => :actio
   :usable => proc { true or "why not" },        # dimmed, and says why, when not
   :status => proc { ["3/5", :green] },          # :green, :gold, :red, :dim or nil
   :label => proc { "..." },                     # words of its own in place of its name
+  :alert => proc { ... },                       # true: the row glows red, pulsing
   :description => "...",
   :handler => proc { |menu| ...; nil })         # nil: stay; :close; or a proc run once it's closed
 ```

@@ -374,20 +374,20 @@ module Reloaded
       o.fill_rect(0, 0, W, H, Color.new(0, 0, 0, 120))
       lines = reload_lines(report)
       errors = report[:new_errors].first(3).flat_map { |e| P.small_wrap(o, e, RELOAD_W - 36).first(2) }
-      h = 58 + lines.length * 24 + (errors.empty? ? 0 : errors.length * 16 + 6) + 46
+      h = 66 + lines.length * 24 + (errors.empty? ? 0 : errors.length * 16 + 6) + 46
       x = (W - RELOAD_W) / 2
       y = (H - h) / 2
-      P.ui.rbox(o, x, y, x + RELOAD_W, y + h, 6, c[:panel2], c[:selb])
-      P.text(o, x, y + 4, RELOAD_W, 26, _INTL("Patches Reloaded"), c[:title], PF::ROW, 2)
+      Reloaded::Dialogs.send(:panel, o, c, x, y, RELOAD_W, h)
+      Reloaded::Dialogs.send(:title_bar, o, c, x, y, RELOAD_W, _INTL("Patches Reloaded"))
       mods = report[:mods]
       who = if mods.length == 1 then mods.first
             elsif mods.empty? then _INTL("Nothing changed")
             else _INTL("{1} mods", mods.length)
             end
       took = seconds < 0.05 ? _INTL("under 0.1 seconds") : _INTL("{1} seconds", format("%.1f", seconds))
-      P.small(o, x, y + 30, RELOAD_W, 16, _INTL("{1}, {2}, no restart", who, took), c[:dim], 2)
-      o.fill_rect(x + 10, y + 50, RELOAD_W - 20, 1, c[:line])
-      ly = y + 56
+      P.small(o, x, y + 38, RELOAD_W, 16, _INTL("{1}, {2}, no restart", who, took), c[:dim], 2)
+      o.fill_rect(x + 10, y + 58, RELOAD_W - 20, 1, c[:line])
+      ly = y + 64
       lines.each do |label, value, colr|
         P.text(o, x + 18, ly, RELOAD_W - 36, 22, label, c[:txt])
         P.text(o, x + 18, ly, RELOAD_W - 36, 22, value, colr, nil, 1)

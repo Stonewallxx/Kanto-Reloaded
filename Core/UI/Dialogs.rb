@@ -38,6 +38,7 @@ module Reloaded
     PICK_MAX = 9
     SCREEN_W = 512
     SCREEN_H = 384
+    CUT      = 12         # the frame's cut corners (top left, bottom right)
 
     class << self
       #------------------------------------------------------------------------
@@ -246,19 +247,45 @@ module Reloaded
         b.fill_rect(0, 0, SCREEN_W, SCREEN_H, Color.new(0, 0, 0, 120))
       end
 
-      def panel(b, c, x, y, w, h)
-        P.ui.rbox(b, x, y, x + w, y + h, 6, c[:panel2], c[:line])
+      #------------------------------------------------------------------------
+      # The popup look: Header Plate (his pick, 2026-10-22, Tools/Designs/popups
+      # design 2, title centred, no accent bar), after the Party Screen's
+      # angled plates
+      #------------------------------------------------------------------------
+      def mix(a, b, t)
+        return Reloaded::Palette.mix(a, b, t)
       end
 
-      def title_bar(b, c, x, y, w, title)
-        P.text(b, x, y + 6, w, 26, title, c[:title], P.pf::ROW, 2)
-        b.fill_rect(x + 10, y + 34, w - 20, 1, c[:line])
+      # A cut-corner plate (edge: a notice's own colour instead)
+      def panel(b, c, x, y, w, h, edge = nil)
+        Reloaded::PartyPaint.chamfer(b, x, y, x + w, y + h, CUT, c[:panel2], edge || mix(c[:line], c[:acc], 0.35))
       end
 
-      # The selected row of a popup list wears the cursor.
+      # The title, centred on a plate of its own across the frame's top, lit
+      # from the top, the Poke red line under it (tint, ink and line: a
+      # notice's own colour). Content starts at y + 40.
+      def title_bar(b, c, x, y, w, title, tint = nil, ink = nil, line = nil)
+        tint ||= c[:acc]
+        Reloaded::PartyPaint.chamfer_grad(b, x + 4, y + 3, x + w - 4, y + 32, 9, mix(c[:panel2], tint, 0.30),
+                                          mix(c[:panel2], tint, 0.12), mix(c[:line], tint, 0.45))
+        P.text(b, x + 8, y + 4, w - 16, 26, P.pf.fit(P.pf::ROW, title.to_s, w - 28), ink || c[:title], P.pf::ROW, 2)
+        b.fill_rect(x + 4, y + 34, w - 8, 2, line || Reloaded::PartyPaint::POKE_RED)
+      end
+
+      # The selected row of a popup list wears the regular cursor (only what
+      # is a plate itself, a button, has cut corners; his call, 2026-10-22).
       def cursor_row(b, c, x0, y0, x1, y1, cursor = nil)
         fill, border = Reloaded::Palette.cursor(cursor, c)
         P.ui.rbox(b, x0, y0, x1, y1, 4, Reloaded::Palette.over(c[:panel2], fill), Reloaded::Palette.over(c[:panel2], border))
+      end
+
+      # A popup's button: the chosen one in the cursor's colours
+      def button(b, c, x0, y0, x1, y1, on)
+        if on
+          Reloaded::PartyPaint.chamfer(b, x0, y0, x1, y1, 7, c[:sel], c[:selb])
+        else
+          Reloaded::PartyPaint.chamfer(b, x0, y0, x1, y1, 7, mix(c[:panel2], c[:bg], 0.45), c[:line])
+        end
       end
 
       def draw_menu(b, c, title, labels, descriptions, index, top)
@@ -294,7 +321,7 @@ module Reloaded
           end
           P.text(b, lx, ry, w - (lx - x) - 18, MENU_ROW - 2, label.to_s, c[:opt])
         end
-        P.ui.tri(b, x + w / 2 - 4, y + 35, :u, c[:dim], 3) if top > 0
+        P.ui.tri(b, x + w / 2 - 4, y + 37, :u, c[:dim], 3) if top > 0
         P.ui.tri(b, x + w / 2 - 4, y + 40 + rows * MENU_ROW, :d, c[:dim], 3) if top + rows < labels.length
         return if lines == 0
         b.fill_rect(x + 10, y + h - desc_h - 4, w - 20, 1, c[:line])
@@ -344,7 +371,7 @@ module Reloaded
             end
           end
         end
-        P.ui.tri(b, x + w / 2 - 4, y + 35, :u, c[:dim], 3) if top > 0
+        P.ui.tri(b, x + w / 2 - 4, y + 37, :u, c[:dim], 3) if top > 0
         P.ui.tri(b, x + w / 2 - 4, y + h - 8, :d, c[:dim], 3) if top + rows < values.length
       end
 
@@ -374,13 +401,8 @@ module Reloaded
         @hits = []
         buttons.each_with_index do |label, i|
           @hits << [i, bx, by, bx + widths[i], by + 24]
-          if i == choice
-            P.ui.rbox(b, bx, by, bx + widths[i], by + 24, 5, c[:selb])
-            P.text(b, bx, by, widths[i], 24, label, c[:dark], nil, 2)
-          else
-            P.ui.rbox(b, bx, by, bx + widths[i], by + 24, 5, c[:dark], c[:line])
-            P.text(b, bx, by, widths[i], 24, label, c[:txt], nil, 2)
-          end
+          button(b, c, bx, by, bx + widths[i], by + 24, i == choice)
+          P.text(b, bx, by, widths[i], 24, label, i == choice ? c[:strong] : c[:txt], nil, 2)
           bx += widths[i] + 10
         end
       end

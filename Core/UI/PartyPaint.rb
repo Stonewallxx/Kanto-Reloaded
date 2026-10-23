@@ -3,9 +3,10 @@
 #==============================================================================
 # His look (His Mix, 2026-10-21): a soft gradient with a dot grid, the
 # header with Poke red under it, cut-corner cards lit in their type's colour
-# with a slash of it behind the sprite, the details panel with its type
-# band, a red line and the big type labels, outlined HP bars. Light (Theme
-# Mode) gives the same in the Light frames' colours (Palette.map_menu).
+# with a slash of it behind the sprite, the details panel with two bands
+# of its type's colour corner to corner, a red line and the big type
+# labels, outlined HP bars. Light (Theme Mode) gives the same in the Light
+# frames' colours (Palette.map_menu).
 # The screen's logic is in PartyScene.rb.
 #==============================================================================
 
@@ -191,7 +192,7 @@ module Reloaded
       return if pkmn.egg?
       (y0 + 2...y1 - 2).each do |y|
         under = mix(top, bottom, (y - y0).to_f / (y1 - y0))
-        b.fill_rect(x0 + 8 + (y1 - y) / 3, y, 30, 1, mix(under, t, 0.45))
+        b.fill_rect(x0 + 4 + (y1 - y) / 3, y, 38, 1, mix(under, t, 0.45))
       end
       b.fill_rect(x0 + 13, y0 + 1, x1 - x0 - 16, 1, mix(t, WHITE, 0.4))
     end
