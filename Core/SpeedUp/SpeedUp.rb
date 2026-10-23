@@ -190,6 +190,7 @@ module Reloaded
         end
         pressed = press?(:speed_up, :X)
         @blocked = false unless pressed
+        @held_since = pressed ? (@held_since || clock) : nil
         if toggle?
           @holding = false
           read_toggle(pressed)
@@ -207,7 +208,17 @@ module Reloaded
         now = [now, SETTINGS_MAX].min if paused?
         @speed = now
         update_title
-        indicate(paused? ? [@chosen, SETTINGS_MAX].min : @chosen)
+        basis = indicator_speed
+        indicate(paused? ? [basis, SETTINGS_MAX].min : basis, basis)
+      end
+
+      # The speed the Speed Indicator goes by: the speed you set, but in
+      # Hold only once the button has been held for Controls' Hold Time (his
+      # call, 2026-10-23: a quick X in a menu, Summary say, doesn't flash it)
+      def indicator_speed
+        return @chosen if toggle? || !@holding
+        return @chosen if @held_since && clock - @held_since >= hold_seconds
+        return setting(:resting).to_i + 1
       end
 
       # Called where PIF's speed-up would draw a frame: whether to draw it
@@ -426,19 +437,20 @@ module Reloaded
 
       # The Speed Indicator says the speed running (in a settings screen, its
       # 2x cap; Messages at 1x aside). It shows when the speed you set
-      # changes; opening or closing a settings screen only brings a box
-      # already showing up to date.
-      def indicate(shown)
+      # changes (indicator_speed: Hold counts once held for Hold Time);
+      # opening or closing a settings screen only brings a box already
+      # showing up to date.
+      def indicate(shown, basis = shown)
         ind = defined?(Reloaded::SpeedUpIndicator) ? Reloaded::SpeedUpIndicator : nil
         return unless ind
         if @last_shown.nil? || paused? != @was_paused
           ind.sync(shown)
-        elsif @chosen != @last_chosen || shown != @last_shown
+        elsif basis != @last_chosen || shown != @last_shown
           ind.show(shown)
         else
           ind.update
         end
-        @last_chosen = @chosen
+        @last_chosen = basis
         @last_shown = shown
         @was_paused = paused?
       end

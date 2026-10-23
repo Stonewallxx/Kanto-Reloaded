@@ -207,6 +207,21 @@ end
 Graphics.update
 check("...closed: the box still showing says X4 now, without a new one", pill_says?("X4"))
 SI.hide
+# Hold: a quick press (X for Summary in a menu) doesn't show it; held for
+# Hold Time it does, and letting go shows 1x again
+S.set(:"speed_up.type", 0)
+$now = 50.0
+SU.singleton_class.send(:define_method, :clock) { $now }
+SU.instance_variable_set(:@last_shown, nil)
+Graphics.update
+def hold(on); SU.instance_variable_set(:@holding, on); SU.instance_variable_set(:@held_since, on ? (SU.instance_variable_get(:@held_since) || $now) : nil); Graphics.update; end
+hold(true); $now += 0.1; hold(true); hold(false)
+check("Hold: a quick press shows nothing (#{SI.sprite.inspect})", SI.sprite.nil?)
+hold(true); $now += 0.6; hold(true)
+check("...held past Hold Time: X4", pill_says?("X4"))
+hold(false)
+check("...let go: X1", pill_says?("X1"))
+SI.hide
 S.set(:"speed_up.type", 0)
 S.set(:"interface.theme_mode", 0)
 

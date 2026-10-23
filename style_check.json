@@ -180,6 +180,11 @@
       "rule": "title_case",
       "file": "Core/Saves/UpdateChecks.rb",
       "text": "UP TO DATE"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/TMVaultScreen.rb",
+      "text": "Pkmn move learnt"
     }
   ]
 }

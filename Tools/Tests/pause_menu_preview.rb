@@ -171,8 +171,10 @@ S = Reloaded::Settings unless defined?(S)
 LAYOUT = File.join(KR_LOCAL_DIR, "Settings", "Pause Menu.json")
 PM.forget_layout
 FileUtils.rm_f(LAYOUT)
-# The PokeVial has its own preview (pokevial_preview.rb): out of these checks' way
+# The PokeVial and the TM Vault have their own previews (pokevial_preview.rb,
+# tm_vault_preview.rb): out of these checks' way
 Reloaded::Features.set(:pokevial, :off)
+Reloaded::Features.set(:tm_vault, :off)
 check("Reloaded Pause Menu is a Reloaded System, On", S.definition(PM::TOGGLE)[:page] == :systems && S.get(PM::TOGGLE) == true)
 check("Menu Animations is on the Interface page (both menus), On", S.definition(PM::ANIMATIONS)[:page] == :interface && S.get(PM::ANIMATIONS) == true)
 check("Open Favorite is a Controls action on the map, with no button at first",

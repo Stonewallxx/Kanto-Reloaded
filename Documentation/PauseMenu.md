@@ -11,7 +11,7 @@ The map stays behind it, dimmed. Its colours follow **Theme Mode** (Kanto Reload
   - **Location:** The map, the day and the time. The clock keeps ticking while the menu is open.
   - **Safari Zone** or **Bug Contest:** Steps and balls (or what you caught) while you're in one.
   - **Favorite:** Y opens it.
-- **Pinned:** Kanto Reloaded's Shop, TM Vault, PokeVial and PC. Each fills its slot when it's built, so the row is empty for now.
+- **Pinned:** Kanto Reloaded's Shop, TM Vault, PokeVial and PC. Each fills its slot once it's built: the TM Vault (in Tutor.net's place, see [TMVault.md](TMVault.md)) and the PokeVial so far.
 - **Your Row:** Up to 4 entries you pick, with an **Add** tile while there's room.
 - **All:** A carousel of every entry you can use now, in the game's order. Kanto Reloaded's and KIF's entries are in it too.
 

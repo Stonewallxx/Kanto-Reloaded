@@ -37,7 +37,7 @@ An event that calls `pbDisallowSpeedup` stops the buttons until it calls `pbAllo
 ## What Shows
 
 - **The window title:** "Kanto Reloaded 2.0.0 · KIF 1.1.0 · PIF 6.8.2 · Speed x4" (the speed now). Kanto Reloaded doesn't support KIF's Auto-Battle or Self-Battle, so their states aren't in it.
-- **The Speed Indicator** (his pick, 2026-10-23: Design 3, the toast, made smaller than Design 1): a small box in the top-right corner, for a moment, when the speed you set changes. A fast-forward mark and the speed in a gold pill; at 1x a play mark and a grey pill. It follows Theme Mode (Dark or Light), shows over the map, battles and menus, and fades in real time. It says the speed running: in a settings screen, the 2x it's held to there (opening or closing one doesn't show it again). Messages at 1x doesn't show.
+- **The Speed Indicator** (his pick, 2026-10-23: Design 3, the toast, made smaller than Design 1): a small box in the top-right corner, for a moment, when the speed you set changes. A fast-forward mark and the speed in a gold pill; at 1x a play mark and a grey pill. It follows Theme Mode (Dark or Light), shows over the map, battles and menus, and fades in real time. It says the speed running: in a settings screen, the 2x it's held to there (opening or closing one doesn't show it again). Messages at 1x doesn't show. In Hold it shows once the button has been held for Controls' Hold Time, so a quick press (X for Summary in a menu) doesn't flash it.
 
 KIF Settings, Options and the Controls screen run at 2x at most (his call, 2026-10-23: faster, a held button repeats too fast for the cursor). Your speed comes back when they close; the Speed-Up button still works there.
 

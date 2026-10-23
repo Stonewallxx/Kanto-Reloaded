@@ -246,8 +246,10 @@ rescue Exception => e
 end
 LAYOUT = File.join(KR_LOCAL_DIR, "Settings", "Overworld Menu.json")
 FileUtils.rm_f(LAYOUT)
-# The PokeVial has its own preview (pokevial_preview.rb): out of these checks' way
+# The PokeVial and the TM Vault have their own previews (pokevial_preview.rb,
+# tm_vault_preview.rb): out of these checks' way
 OM.instance_variable_get(:@entries).delete("pokevial")
+OM.instance_variable_get(:@entries).delete("tm_vault")
 OM.instance_variable_get(:@entries).delete("heal_with_moves")
 OM.forget_layout
 CT = Reloaded::Controls
