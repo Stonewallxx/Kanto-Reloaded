@@ -17,6 +17,8 @@ Everywhere the game shows the party: the pause menu, using an item from the Bag,
 - **An Egg's panel:** The steps left as a number and a bar, with the game's words for how close it is.
 - **The title:** "Party", or what you're choosing for ("Move Pikachu Where?", "Teach Thunderbolt to Which?", "Give to Which Pokémon?").
 
+A feature can take over a field move picked in a Pokémon's menu: `Reloaded::PartyScreen.take_field_move(:SOFTBOILED) { |scene, pkmn, move_id| true }` (true: handled, the game's own code doesn't run). Healing Moves takes over its moves this way.
+
 ## Using It
 
 | Button | On the cards | In the menu |

@@ -6,17 +6,18 @@
 # toasts, 2026-10-22). An icon, what happened, and a pill at its end, or a
 # drawing of the caller's own there (the PokeVial's charges). It fades
 # after about two and a half seconds. The map moves it on, also while a
-# menu or a message is open (miniupdate), and so does the Bag, so an item
-# used from the Bag can say what it did. It shows over the map menus,
-# under popups.
+# menu or a message is open (miniupdate), and so do the Bag and the party
+# screen, so an item used from the Bag or a move used from the party menu
+# can say what it did. It shows over the map menus, under popups.
 #
 #   Reloaded::Toast.show("Used Another Super Repel", :icon => :SUPERREPEL,
 #                        :pill => ["4 LEFT", :gold])
 #   Reloaded::Toast.show("The PokeVial regained a charge.", :icon => "Graphics/PauseMenu/POKEVIAL",
 #                        :paint => [width, proc { |b, x0, y0, colours| ... }])
 #
-# :icon is an item (its Bag icon) or a picture's path; :pill's colour is
-# :gold, :green or :red (the Theme Mode's tone of it).
+# :icon is an item (its Bag icon), a picture's path, or a Bitmap (its first
+# square frame: a Pokémon's icon); :pill's colour is :gold, :green or :red
+# (the Theme Mode's tone of it).
 #==============================================================================
 
 return unless defined?(Reloaded::Pixel) && defined?(::KIF::PixelFont)
@@ -39,6 +40,7 @@ module Reloaded
         h.prepend(nil, "Scene_Map", Update, :id => :toast_map) if defined?(::Scene_Map)
         h.prepend(nil, "Scene_Map", MiniUpdate, :id => :toast_map_menus) if defined?(::Scene_Map) && ::Scene_Map.method_defined?(:miniupdate)
         h.prepend(nil, "PokemonBag_Scene", BagUpdate, :id => :toast_bag) if defined?(::PokemonBag_Scene)
+        h.prepend(nil, "PokemonParty_Scene", Update, :id => :toast_party) if defined?(::PokemonParty_Scene) && ::PokemonParty_Scene.method_defined?(:update)
         return true
       end
 
@@ -96,6 +98,11 @@ module Reloaded
 
       # An item's Bag icon at 24 pixels, or a picture fitted in 24 by 24
       def draw_icon(o, icon, cx, cy)
+        if icon.is_a?(Bitmap)
+          f = [icon.height, 1].max
+          o.stretch_blt(Rect.new(cx - 13, cy - 13, 26, 26), icon, Rect.new(0, 0, [f, icon.width].min, f))
+          return
+        end
         file = icon.is_a?(Symbol) ? (::GameData::Item.icon_filename(icon) rescue "Graphics/Items/#{icon}") : icon.to_s
         path = defined?(pbResolveBitmap) ? (pbResolveBitmap(file) || file) : file
         bm = Bitmap.new(path)

@@ -92,6 +92,7 @@ module Reloaded
       return super if @kr_vanilla
       (@kr_card_icons + @kr_panel_icons.values).each { |s| s.update if s && !s.disposed? && s.respond_to?(:update) }
       update_frame
+      Reloaded::Toast.update if defined?(Reloaded::Toast)     # a toast over the screen (Healing Moves) moves on
     end
 
     # The colours (Theme Mode: Dark, or Light for Light and Frost); its
@@ -392,8 +393,27 @@ module Reloaded
         refresh
         return commands.length - 1          # "Cancel" in the game's list: nothing more to do
       end
+      if !sub && pkmn && what >= 0 && commands[what].is_a?(Array) && taken_field_move(pkmn, raw)
+        @kr_picked = nil
+        refresh
+        return commands.length - 1
+      end
       refresh
       return what
+    end
+
+    # A field move another feature takes over (Reloaded::PartyScreen.
+    # take_field_move): true when its handler dealt with it
+    def taken_field_move(pkmn, label)
+      mv = Array(pkmn.moves).find { |m| m && m.name.to_s == label }
+      handler = mv && Reloaded::PartyScreen.field_move_handler(mv.id)
+      return false unless handler
+      return handler.call(self, pkmn, mv.id) ? true : false
+    rescue StandardError => e
+      Reloaded::Log.exception("A field move's handler failed (#{mv && mv.id})", e, :party_screen)
+      return false
+    ensure
+      build_icons if handler
     end
 
     def raw_label(cmd)

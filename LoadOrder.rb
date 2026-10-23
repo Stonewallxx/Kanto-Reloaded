@@ -128,6 +128,9 @@ module Reloaded
       # The PokeVial: its charges, settings and refills, and its dialogs
       "Core/PokeVial/PokeVial.rb",
       "Core/UI/PokeVialScreen.rb",
+      # Healing Moves: healing moves outside battle, and their screens
+      "Core/HealingMoves/HealingMoves.rb",
+      "Core/UI/HealingMovesScreen.rb",
       # Fixes to the game's own code
       "Core/Fixes/Fixes.rb",
       "Core/Fixes/CommandTextColours.rb",
@@ -145,7 +148,7 @@ module Reloaded
     # to KIF Settings. Dev boots last, when it's there. PauseMenu boots
     # before Profiler and BugReport, so their hooks on the pause menu's
     # scene sit over its screen and still see it open.
-    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :QualityOfLife, :PartyScreen, :PokeVial, :TitleVersions, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
+    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :TitleVersions, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
 
     def self.files
       return FILES

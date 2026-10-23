@@ -21,6 +21,12 @@
 #
 #   Reloaded::PartyScreen.add_command(:walk, :label => proc { |pkmn| "Walk Together" or nil },
 #     :description => "...", :handler => proc { |scene, pkmn, index| ... })
+#
+# A feature can take over a field move picked in a Pokemon's menu (Healing
+# Moves: Soft-Boiled, Recover...): its handler runs in the party screen and
+# returns true when it handled it; false lets the game's own code run.
+#
+#   Reloaded::PartyScreen.take_field_move(:SOFTBOILED) { |scene, pkmn, move_id| true }
 #==============================================================================
 
 module Reloaded
@@ -42,6 +48,7 @@ module Reloaded
 
     Command = Struct.new(:id, :label, :description, :handler)
     @commands = []
+    @field_moves = {}
 
     class << self
       # [move, by a machine?] while the game is choosing who learns a move
@@ -132,6 +139,16 @@ module Reloaded
         @commands.reject! { |c| c.id == id.to_sym }
         @commands << Command.new(id.to_sym, options[:label], options[:description].to_s, options[:handler])
         return id.to_sym
+      end
+
+      # A field move another feature handles (true: handled)
+      def take_field_move(id, &handler)
+        @field_moves[id.to_sym] = handler
+        return id.to_sym
+      end
+
+      def field_move_handler(id)
+        return @field_moves[id.to_sym]
       end
 
       # [[command, label]] for a Pokemon (a nil label hides it)

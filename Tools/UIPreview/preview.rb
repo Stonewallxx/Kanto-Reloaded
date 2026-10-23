@@ -500,6 +500,27 @@ def scr; $screen; end
 def at(&b); [:call, b]; end
 def dmp(name); [:dump, name]; end
 def row_name; r = scr.current; r ? r.label : nil; end
+# Down from the current row to the one named, counted when it runs (so a
+# feature's new row above it changes nothing)
+def down_to(label)
+  at {
+    list = scr.send(:rows)
+    t = scr.send(:opt_rows).index { |ri| list[ri].label == label }
+    raise "no row #{label}" unless t
+    n = t - scr.instance_variable_get(:@sel).to_i
+    Input.queue.unshift(*[I::DOWN] * n) if n > 0
+  }
+end
+# The wheel down until the row named is in view
+def wheel_to(label, tries = 12)
+  step = nil
+  step = at {
+    list = scr.send(:rows)
+    seen = (scr.instance_variable_get(:@row_hits) || []).any? { |li, *| list[li] && list[li].label == label }
+    Input.queue.unshift([:wheel, -1], step) if !seen && (tries -= 1) > 0
+  }
+  step
+end
 # A click on a row a screen drew (found by its label), x pixels in; or on a
 # popup's row or button (Dialogs' hits)
 def click_row(label, dx = 30)
@@ -595,10 +616,7 @@ drive("A", [
   I::RIGHT,
   dmp("07_ocean_kr_rows"),
   at { check("Kanto Reloaded's rows are there (#{row_name})", row_name == "Reloaded Settings") },
-  # Cursor Color: Reloaded Settings, Reloaded Controls, Reloaded Load Screen, Reloaded Pause Menu,
-  # Startup Mod-Check, Overworld Menu, Quality of Life, PokeVial (Features), Global Small Text, Theme,
-  # Theme Mode, Header Color, Settings Color, Cursor Color
-  *[I::DOWN] * 14,
+  down_to("Cursor Color"),
   at { check("on Cursor Color", row_name == "Cursor Color") },
   I::USE,
   dmp("08_cursor_picker"),
@@ -790,7 +808,7 @@ def cs_name; a = $screen.send(:current); a ? a.name : nil; end
 hold = CT.hold_steps
 drive("F settings to controls", [
   at { check("Change Controls is on Kanto Reloaded > Controls", S.definition(:"controls.open")[:type] == :button) },
-  I::RIGHT, *[I::DOWN] * 19,
+  I::RIGHT, down_to("Change Controls"),
   at { check("on Change Controls (#{row_name})", row_name == "Change Controls") },
   at {
     rs = scr.send(:rows)
@@ -834,7 +852,7 @@ drive("G frames", [
       S.reset(:"interface.speech_frame")
     end
   },
-  I::RIGHT, *[I::DOWN] * 15,
+  I::RIGHT, down_to("Cursor Color"), I::DOWN,
   at { check("Global Frame comes after Cursor Color (#{row_name})", row_name == "Global Frame") },
   dmp("80_frames_rows"),
   I::USE,
@@ -880,7 +898,7 @@ drive("H mouse", [
   },
   [:wheel, -1], [:wheel, -1],
   at { check("...and on down (#{scr.instance_variable_get(:@scroll)}, #{row_name})", scr.instance_variable_get(:@scroll) > $top + 18) },
-  [:wheel, 1], [:wheel, -1], [:wheel, -1], [:wheel, -1],   # up one and down again, Theme in view
+  [:wheel, 1], wheel_to("Theme"),                      # up one, then down until Theme is in view
   click_row("Theme"),
   dmp("85_mouse_theme_picker"),
   at { check("one click on Theme opens its picker", Reloaded::Dialogs.instance_variable_get(:@hits).length > 1) },
@@ -1210,7 +1228,7 @@ drive("J dropdowns", [
   I::RIGHT,
   at { check("Right steps over the locked choice (Mid to Max)", S.get(TC) == 3) },
   at { check("Settings.set refuses a locked choice", S.set(TC, 2) == false && S.get(TC) == 3) },
-  I::BACK, [:click, 60, 48], *[I::DOWN] * 10,
+  I::BACK, [:click, 60, 48], down_to("Theme"),
   at { check("on Theme (#{row_name})", row_name == "Theme") },
   I::USE,
   at { check("Theme keeps its own picker", dd.nil? && Reloaded::Dialogs.instance_variable_get(:@hits).length == [Reloaded::Palette::THEME_NAMES.length, Reloaded::Dialogs::PICK_MAX].min) },
@@ -1227,7 +1245,7 @@ def vanilla_dd; $sprites.reverse.find { |sp| sp.z == 10 && !sp.disposed? && sp.v
 S.set(:"systems.reloaded_settings", false)
 tm = S.get(:"interface.theme_mode")
 drive("J vanilla", [
-  I::RIGHT, *[I::DOWN] * 11,
+  I::RIGHT, *[I::DOWN] * 12,
   at { check("KIF Settings as it ships, on Theme Mode (#{row_name})", scr.instance_of?(KifSettingsScreen) && row_name == "Theme Mode") },
   I::USE,
   at { check("A on a Kanto Reloaded choice opens its dropdown", !vanilla_dd.nil? && vanilla_dd.bitmap.ops.length > 5) },

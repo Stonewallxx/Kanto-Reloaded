@@ -248,6 +248,7 @@ LAYOUT = File.join(KR_LOCAL_DIR, "Settings", "Overworld Menu.json")
 FileUtils.rm_f(LAYOUT)
 # The PokeVial has its own preview (pokevial_preview.rb): out of these checks' way
 OM.instance_variable_get(:@entries).delete("pokevial")
+OM.instance_variable_get(:@entries).delete("heal_with_moves")
 OM.forget_layout
 CT = Reloaded::Controls
 

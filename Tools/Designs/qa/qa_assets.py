@@ -6,7 +6,8 @@ from PIL import Image
 G = os.path.join(sys.argv[1], "Graphics")
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "art")
 os.makedirs(OUT, exist_ok=True)
-DEX = {"PIKACHU": 25, "PIDGEOT": 18, "GYARADOS": 130, "EEVEE": 133, "MACHOKE": 67, "GENGAR": 94}
+DEX = {"PIKACHU": 25, "PIDGEOT": 18, "GYARADOS": 130, "EEVEE": 133, "MACHOKE": 67, "GENGAR": 94,
+       "CHANSEY": 113, "ALAKAZAM": 65, "SNORLAX": 143, "ESPEON": 196}     # the last four: Healing Moves' healers
 for sp, n in DEX.items():
     sheet = Image.open(os.path.join(G, "CustomBattlers", "spritesheets", "spritesheets_base", "%d.png" % n)).convert("RGBA")
     frame = sheet.crop((0, 0, 96, 96))
