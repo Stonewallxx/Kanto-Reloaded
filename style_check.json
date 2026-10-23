@@ -145,12 +145,6 @@
       "file": "Core/UI/PokeVialScreen.rb",
       "text": "Mart buy item",
       "why": "An audio file's name (Audio/SE, Audio/ME)"
-    },
-    {
-      "rule": "names",
-      "file": "Core/UI/PokeVialScreen.rb",
-      "text": "Pokemon Healing",
-      "why": "An audio file's name (Audio/SE, Audio/ME)"
     }
   ]
 }

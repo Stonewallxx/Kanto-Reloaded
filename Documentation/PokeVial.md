@@ -9,11 +9,11 @@ Limited party healing in place of KIF's unlimited Heal Pokémon: a few charges, 
 
 Both show while Kuray QoL is On (KIF Settings > Others), as KIF's Heal Pokémon did. **PokeVial** in Kanto Reloaded > Features switches it; Off brings KIF's Heal Pokémon back.
 
-It's locked, saying why, wherever KIF blocks its own Heal (the Elite Four, Victory Road, Mt. Silver and the dream maps: `KIF::PauseMenu.restricted?`), in battle, in the Safari Zone and in the Bug-Catching Contest.
+It's locked, saying why, wherever KIF blocks its own Heal (the Elite Four, Victory Road, Mt. Silver and the dream maps: `KIF::PauseMenu.restricted?`), in battle, in the Safari Zone and in the Bug-Catching Contest, and while PIF's No heals (overworld) challenge is On (Pokémon Centers still refill it).
 
 ## Using It
 
-Choosing it opens a dialog: the vial and the charges on the title plate, then the **Heal Preview**: each Pokémon in the party (not Eggs), its HP, and what a charge would do for it ("+17 HP", "Revived", "+70 HP, Cures Poison", "PP Restored", or "Healthy"). **Use PokeVial** heals the party and uses a charge; the dialog then shows who was healed, and Back becomes Done.
+Choosing it opens a dialog: the vial and the charges on the title plate, then the **Heal Preview**: each Pokémon in the party (not Eggs), its HP, and what a charge would do for it ("+17 HP", "Revived", "+70 HP, Cures Poison", "PP Restored", or "Healthy"). A fainted Pokémon the game won't revive shows **Stays Fainted** (Heal Mode No Revive, or PIF's No reviving challenge, which KIF's Nuzlocke turns on) or **Dead** (fainted in KIF's Nuzlocke); it doesn't count as needing healing or for the Low HP Reminder. **Use PokeVial** heals the party and uses a charge; the dialog then shows who was healed, and Back becomes Done.
 
 Use is dimmed, with the reason on it, when it can't be used:
 
@@ -41,7 +41,7 @@ It holds 3 charges, or with **Progressive Uses** one more for every two Badges, 
 
 At a Pokémon Center, once the nurse heals your party (Recover All, or a nurse made with a script call during her event), **Pokémon Center Refill** decides:
 
-- **Ask:** A dialog, "Refill PokeVial?", with the missing charges, the cost and the money you have; Refill or Not Now. Without enough money, Refill is dimmed.
+- **Ask:** A dialog, "Refill PokeVial?", with the missing charges, the cost and your Money; Refill or Not Now. Without enough money, Refill is dimmed.
 - **Automatic:** It refills by itself, with a toast (and pays, if there's a cost; without enough money, a toast says so).
 - **Never:** Only items and other mods refill it.
 

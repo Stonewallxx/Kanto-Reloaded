@@ -28,7 +28,8 @@
 #                them), used from the Bag; added now, sold once the Shop
 #                adds them
 #   blocked      wherever KIF blocks its Heal (KIF::PauseMenu.restricted?),
-#                in battle, the Safari Zone and the Bug-Catching Contest
+#                in battle, the Safari Zone and the Bug-Catching Contest, and
+#                while PIF's No heals (overworld) challenge is On
 #
 # Balance settings are kept by each save; the Low HP Reminder and Cooldown
 # Wait are a preference for every save. The charges, the capacity last seen
@@ -234,12 +235,14 @@ module Reloaded
       end
 
       # What a charge would do for one Pokémon: [words, tone] (tones: :green,
-      # :pink revived, :blue PP only, :dim nothing)
+      # :pink revived, :blue PP only; :healthy nothing to heal, :dim nothing
+      # it can do)
       def preview(pkmn)
         return [_INTL("Egg"), :dim] if pkmn.egg?
         mode = heal_mode
         if pkmn.hp <= 0
-          return [_INTL("Stays Fainted"), :dim] if mode == :no_revive
+          return [_INTL("Dead"), :dim] if nuzlocke_dead?(pkmn)
+          return [_INTL("Stays Fainted"), :dim] if mode == :no_revive || no_reviving?
           return [_INTL("Revived"), :pink]
         end
         parts = []
@@ -255,8 +258,29 @@ module Reloaded
             return [_INTL("PP Restored"), :blue]
           end
         end
-        return [_INTL("Healthy"), :dim] if parts.empty?
+        return [_INTL("Healthy"), :healthy] if parts.empty?
         return [parts.join(", "), :green]
+      end
+
+      # PIF's No reviving challenge (KIF's Nuzlocke turns it on): the game's
+      # own heal leaves a fainted Pokémon fainted
+      def no_reviving?
+        return $PokemonSystem && $PokemonSystem.respond_to?(:no_reviving) && $PokemonSystem.no_reviving ? true : false
+      rescue StandardError
+        return false
+      end
+
+      # Fainted in KIF's Nuzlocke: dead for good
+      def nuzlocke_dead?(pkmn)
+        return false unless pkmn.respond_to?(:kif_nz_dead) && pkmn.kif_nz_dead
+        return defined?(::KIF::Nuzlocke) && ::KIF::Nuzlocke.respond_to?(:on?) ? (::KIF::Nuzlocke.on? ? true : false) : false
+      rescue StandardError
+        return false
+      end
+
+      # A fainted Pokémon a charge could bring back
+      def revivable?(pkmn)
+        return pkmn.hp <= 0 && !pkmn.egg? && heal_mode != :no_revive && !no_reviving? && !nuzlocke_dead?(pkmn)
       end
 
       def pp_missing?(pkmn)
@@ -265,8 +289,13 @@ module Reloaded
         return false
       end
 
+      # A charge would do something for this one
+      def gains?(pkmn)
+        return [:green, :pink, :blue].include?(preview(pkmn)[1])
+      end
+
       def needs_healing?
-        return party.any? { |p| !p.egg? && [:green, :pink, :blue].include?(preview(p)[1]) }
+        return party.any? { |p| !p.egg? && gains?(p) }
       end
 
       def heal_party
@@ -286,9 +315,10 @@ module Reloaded
         return @healing
       end
 
-      # A Pokémon has fainted, or the party's HP is under half
+      # A Pokémon has fainted (one a charge could bring back), or the party's
+      # HP is under half (the ones that can't be revived left out)
       def party_hurt?
-        mons = party.reject(&:egg?)
+        mons = party.reject { |p| p.egg? || (p.hp <= 0 && !revivable?(p)) }
         return false if mons.empty?
         return true if mons.any? { |p| p.hp <= 0 }
         total = mons.sum { |p| p.totalhp.to_i }
@@ -328,8 +358,17 @@ module Reloaded
       # true, or why it can't be used here (the menus show it locked)
       def usable
         return _INTL("You don't have any Pokémon yet.") if party.reject(&:egg?).empty?
+        return _INTL("The No Heals (Overworld) challenge is On.") if no_overworld_heals?
         return _INTL("The PokeVial can't be used here.") if blocked?
         return true
+      end
+
+      # PIF's No heals (overworld) challenge: no healing outside battle (his
+      # call, 2026-10-23: the PokeVial follows it too)
+      def no_overworld_heals?
+        return $PokemonSystem && $PokemonSystem.respond_to?(:no_healing_items_ow) && $PokemonSystem.no_healing_items_ow ? true : false
+      rescue StandardError
+        return false
       end
 
       # true, or why Use is dimmed in the dialog: [reason, kind]

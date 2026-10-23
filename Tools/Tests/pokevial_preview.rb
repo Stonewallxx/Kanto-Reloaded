@@ -42,6 +42,20 @@ PV.data["max_seen"] = 4
 
 def pv_sprite; PVS.sprite; end
 def pv_says?(word); pv_sprite && drawn_on?(pv_sprite.bitmap, word); end
+# the colour a word was drawn in, [r, g, b]: the pixel font's words as
+# they're drawn, the small font's from the bitmap's text
+$pv_colours = {}
+Reloaded::Pixel.singleton_class.prepend(Module.new {
+  def text(b, x, y, w, h, str, color = nil, *r); $pv_colours[[b.id, str.to_s]] = color if color.is_a?(Color); super; end
+})
+def pv_colour(word)
+  return nil unless pv_sprite
+  hit = $pv_colours.find { |(id, str), _c| id == pv_sprite.bitmap.id && str.include?(word) }
+  return [hit[1].red.to_i, hit[1].green.to_i, hit[1].blue.to_i] if hit
+  op = pv_sprite.bitmap.ops.find { |o| o[0] == "text" && o[5].to_s.include?(word) }
+  op ? op[9][0, 3].map(&:to_i) : nil
+end
+def rgb(col); [col.red.to_i, col.green.to_i, col.blue.to_i]; end
 def to_row(name); at { om.instance_variable_set(:@sel, row_names.index(name)); om.refresh }; end
 
 check("the PokeVial is on the Overworld Menu's Main page (#{OM.pages[0]["entries"].inspect})", OM.pages[0]["entries"].include?("pokevial"))
@@ -101,7 +115,10 @@ PV.set_uses(0)
 on_map("B empty", [
   to_row("PokeVial"), I::USE,
   dmp("pv_06_empty"),
-  at { check("no charges: Use dimmed, No Charges Left", pv_says?("No Charges Left")) },
+  at { c = Reloaded::Palette.map_menu
+       check("no charges: Use dimmed, No Charges Left in red, Healthy in green (#{pv_colour("No Charges Left").inspect})",
+             pv_says?("No Charges Left") && pv_colour("No Charges Left") == rgb(c[:red]) &&
+             pv_colour("Healthy") == rgb(c[:green])) },
   I::BACK,
   at { check("...B closes it", pv_sprite.nil?) },
   I::BACK
@@ -112,14 +129,18 @@ set(:refill_cost, true)
 PV.set_uses(1)
 Input.queue = [dmp("pv_07_refill"),
                at { check("Refill PokeVial?: 3 charges missing, ₽500 each, the money you have",
-                          pv_says?("Refill PokeVial?") && pv_says?("3 Charges Missing") && pv_says?("$500 Each: $1,500 (you have $12,450)")) },
+                          pv_says?("Refill PokeVial?") && pv_says?("3 Charges Missing") && pv_says?("$500") && pv_says?("Each:") && pv_says?("$1,500") && pv_says?("Money:") && pv_says?("$12,450")) },
+               at { c = Reloaded::Palette.map_menu
+                    check("...the costs in red, the money you have in green (#{pv_colour("$1,500").inspect}, #{pv_colour("$12,450").inspect})",
+                          pv_colour("$500") == rgb(c[:red]) && pv_colour("$1,500") == rgb(c[:red]) && pv_colour("$12,450") == rgb(c[:green])) },
                I::USE]
 check("...Refill: yes (#{(r = PVS.ask_refill).inspect})", r == true)
 Input.queue = [I::RIGHT, I::USE]
 check("...Not Now: no", PVS.ask_refill == false)
 $Trainer.money = 300
 Input.queue = [dmp("pv_08_refill_poor"),
-               at { check("not enough money: Refill dimmed, the money in red, the cursor on Not Now", pv_says?("you have $300")) },
+               at { check("not enough money: Refill dimmed, the money in red, the cursor on Not Now",
+                          pv_says?("$300") && pv_colour("$300") == rgb(Reloaded::Palette.map_menu[:red])) },
                I::LEFT, I::USE]
 check("...Left can't reach Refill: A says Not Now", PVS.ask_refill == false)
 $Trainer.money = 12_450

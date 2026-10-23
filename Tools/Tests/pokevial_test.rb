@@ -51,10 +51,10 @@ eval(<<~RUBY, TOPLEVEL_BINDING, "014_Fake_Game.rb", 1)
     def initialize(name, hp, total, status = :NONE, moves = [Move.new(10)]); @name = name; @hp = hp; @totalhp = total; @status = status; @moves = moves; @steps_to_hatch = 0; end
     def egg?; @steps_to_hatch > 0; end
     def fainted?; @hp <= 0; end
-    def heal_HP; @hp = @totalhp unless egg?; end
+    def heal_HP; @hp = @totalhp unless egg? || (fainted? && $PokemonSystem.no_reviving); end
     def heal_status; @status = :NONE; end
     def heal_PP; @moves.each { |m| m.pp = m.total_pp }; end
-    def heal; return if egg?; heal_HP; heal_status; heal_PP; end
+    def heal; return if egg? || (fainted? && $PokemonSystem.no_reviving); heal_HP; heal_status; heal_PP; end
   end
   class Trainer
     attr_accessor :party
@@ -92,7 +92,7 @@ eval(<<~RUBY, TOPLEVEL_BINDING, "014_Fake_Game.rb", 1)
       end
     end
   end
-  class PokemonSystem; attr_accessor :kurayqol; end
+  class PokemonSystem; attr_accessor :kurayqol, :no_reviving, :no_healing_items_ow; end
   class PokemonGlobalMetadata; attr_accessor :pokecenterMapId; end
   class GameMap; attr_accessor :map_id; end
   class GameTemp; attr_accessor :in_battle; end
@@ -215,10 +215,24 @@ check("Full Heal: +HP, Revived, HP and the status cured, PP (#{words.inspect})",
 set(:heal_mode, 1)
 words = pk.first(4).map { |p| PV.preview(p) }
 check("HP Only: HP and revives, status and PP stay (#{words.inspect})",
-      words == [["+17 HP", :green], ["Revived", :pink], ["+70 HP", :green], ["Healthy", :dim]])
+      words == [["+17 HP", :green], ["Revived", :pink], ["+70 HP", :green], ["Healthy", :healthy]])
 set(:heal_mode, 2)
 check("No Revive: a fainted Pokémon stays fainted (#{PV.preview(pk[1]).inspect})", PV.preview(pk[1]) == ["Stays Fainted", :dim])
 set(:heal_mode, 0)
+$PokemonSystem.no_reviving = true
+check("PIF's No reviving (KIF's Nuzlocke turns it on): Stays Fainted, as the game's own heal leaves it (#{PV.preview(pk[1]).inspect})",
+      PV.preview(pk[1]) == ["Stays Fainted", :dim])
+$Trainer.party = [Pokemon.new("Pikachu", 95, 95), Pokemon.new("Gyarados", 0, 120)]
+check("...so a party whose only hurt one can't be revived: All Healthy, no charge used, no glow (#{PV.use_state.inspect})",
+      PV.use_state == ["All Healthy", :healthy] && !PV.low_hp_alert?)
+$Trainer.party[1].instance_variable_set(:@kif_nz_dead, true)
+class Pokemon; attr_accessor :kif_nz_dead; end
+module KIF; module Nuzlocke; def self.on?; true; end; end; end
+check("a Pokémon dead in KIF's Nuzlocke: Dead (#{PV.preview($Trainer.party[1]).inspect})", PV.preview($Trainer.party[1]) == ["Dead", :dim])
+KIF.send(:remove_const, :Nuzlocke)
+$PokemonSystem.no_reviving = false
+$Trainer.party = make_party
+pk = $Trainer.party
 
 #---------------------------------------------------------------- using it
 $events = []
@@ -276,6 +290,10 @@ $game_temp.in_battle = false
 $safari = true
 check("in the Safari Zone: blocked", PV.blocked?)
 $safari = false
+$PokemonSystem.no_healing_items_ow = true
+check("PIF's No heals (overworld) challenge: locked, saying why (#{PV.usable.inspect})",
+      PV.usable == "The No Heals (Overworld) challenge is On." && !pm_ids.include?(:pokevial))
+$PokemonSystem.no_healing_items_ow = false
 check("anywhere else: usable", PV.usable == true)
 
 #---------------------------------------------------------------- the Low HP Reminder

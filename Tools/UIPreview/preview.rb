@@ -368,6 +368,9 @@ module KIF
   def self.save_dir; USERDIR; end
   def self.guard_base(*a); end
   def self.recalc_all_stats; end      # 004_KIF_BattleHelpers (not loaded here); presets call it since 0.21.55
+  # 001_KIF_Core (KIF 1.1.0): verbose logging and setting a damaged file aside
+  def self.verbose(msg); end
+  def self.set_aside(path, what, err = nil); File.rename(path, path + ".bad") rescue nil; log("#{what} unreadable - kept as .bad"); end
   # Every feature belongs to a module; here they are all On
   module Modules
     MODULES = { :shinies => ["Shinies", "Shiny colours and odds.", []], :graphics => ["Graphical Changes", "EBDX, icons, dark mode.", []],

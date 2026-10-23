@@ -15,7 +15,7 @@
 #                    a line filling under it). Cooldown Wait Toast: a toast
 #                    instead of the dialog.
 #   refill           Ask: "Refill PokeVial?" with the missing charges, the
-#                    cost and the money you have, Refill and Not Now
+#                    cost and your Money, Refill and Not Now
 #   charges          little Poké Balls, the empty ones muted
 #   toasts           more capacity (+1, green), an item used from the Bag
 #                    (the charges), already full (FULL, gold)
@@ -38,7 +38,7 @@ module Reloaded
     DIALOG_W = 380
     ROW_H = 34
     REFILL_W = 320
-    TONES = { :green => :green, :pink => :pink, :blue => :blue, :dim => :dim }.freeze
+    TONES = { :green => :green, :pink => :pink, :blue => :blue, :healthy => :green, :dim => :dim }.freeze
 
     @balls = {}
 
@@ -112,7 +112,7 @@ module Reloaded
             pbPlayCancelSE
             break
           end
-          before = @mons.map { |p| PV.preview(p)[1] != :dim }
+          before = @mons.map { |p| PV.gains?(p) }
           if state != true || !PV.use!(:menu)
             pbPlayBuzzerSE
             next
@@ -294,10 +294,12 @@ module Reloaded
         s.y = y
       end
 
+      # The game's healing sound, as the old Kanto Reloaded's and Hoenn
+      # Reloaded's PokeVial played (his pick, 2026-10-23)
       def play_heal
-        pbMEPlay("Pokemon Healing")       # the nurse's jingle (Audio/ME)
+        pbSEPlay("Recovery")
       rescue StandardError
-        pbSEPlay("Recovery") rescue nil
+        nil
       end
 
       def vial(o, x, y, w = 20, h = 24)
@@ -308,9 +310,9 @@ module Reloaded
         nil
       end
 
-      def button(o, c, x0, y0, x1, y1, label, on, off = false)
+      def button(o, c, x0, y0, x1, y1, label, on, off = false, tint = nil)
         DG.send(:button, o, c, x0, y0, x1, y1, on)
-        colour = off ? c[:dim] : (on ? (c[:strong] || c[:white]) : c[:txt])
+        colour = tint || (off ? c[:dim] : (on ? (c[:strong] || c[:white]) : c[:txt]))
         P.text(o, x0, y0 + 2, x1 - x0, 24, PF.fit(PF::TEXT, label, x1 - x0 - 8), colour, PF::TEXT, 2)
         @hits << [@hits.length, x0, y0, x1, y1]
       end
@@ -360,7 +362,9 @@ module Reloaded
         if state == true
           button(o, c, x + 40, by, x + 200, by + 28, _INTL("Use PokeVial"), choice == 0)
         else
-          button(o, c, x + 40, by, x + 200, by + 28, state[0], false, true)
+          # No Charges Left in red (his ask); the rest dimmed
+          tint = state[1] == :empty ? c[:red] : nil
+          button(o, c, x + 40, by, x + 200, by + 28, state[0], false, true, tint)
           if state[1] == :cooldown
             o.fill_rect(x + 52, by + 23, ((200 - 40 - 24) * PV.cooldown_done).round, 2, c[:selb])
           end
@@ -391,10 +395,15 @@ module Reloaded
         words = miss == 1 ? _INTL("1 Charge Missing") : _INTL("{1} Charges Missing", miss)
         P.text(o, x, y + 72, w, 20, words, c[:txt], PF::TEXT, 2)
         cost = PV.refill_cost
-        line = if cost <= 0 then _INTL("Free")
-               else _INTL("${1} Each: ${2} (you have ${3})", money(PV.setting(:cost_per_charge)), money(cost), money(PV.money))
-               end
-        P.small(o, x + 10, y + 94, w - 20, 16, line, afford ? c[:dim] : c[:red], 2)
+        if cost <= 0
+          P.small(o, x + 10, y + 94, w - 20, 16, _INTL("Free"), c[:green], 2)
+        else
+          # the costs in red, your Money in green (red when it's not enough)
+          P.small_rich(o, x + 10, y + 94, w - 20, 16,
+                       [["$#{money(PV.setting(:cost_per_charge))}", c[:red], true], [_INTL(" Each: "), c[:dim]],
+                        ["$#{money(cost)}", c[:red], true], [_INTL(" (Money: "), c[:dim]],
+                        ["$#{money(PV.money)}", afford ? c[:green] : c[:red], true], [")", c[:dim], true]])
+        end
         by = y + h - 40
         button(o, c, x + 30, by, x + w / 2 - 4, by + 28, _INTL("Refill"), choice == 0 && afford, !afford)
         button(o, c, x + w / 2 + 4, by, x + w - 30, by + 28, _INTL("Not Now"), choice == 1)
