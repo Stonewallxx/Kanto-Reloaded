@@ -4,7 +4,8 @@
 # updater and mod catalog that follow KIF's own code and words
 # (C-SYS-06_Updater/Updater.rb, Updater_Startup.rb, F-CORE-04_Mods/
 # ModCatalog.rb): the checks held until the load screen has faded in, then
-# run over it; Checking for Updates, mod updates (Open Updates, Update All,
+# run over it; Checking for Updates (the toast, held while they run, then
+# Everything's Up to Date or Couldn't Check), mod updates (Open Updates, Update All,
 # B), a new KIF (What's New, Later, Skip This Version, Update Now and its
 # download), KIF's first-start questions after them, Updates Off, Startup
 # Mod-Check Off (nothing comes up), and Reloaded Load Screen Off (KIF's own,
@@ -127,6 +128,7 @@ module KIF
   module FirstChoice
     module_function
 
+    def needed?; $first_start ? true : false; end     # only the very first start asks
     def ask; $log << "FIRST CHOICE (checking shown: #{Reloaded::UpdateChecksScreen.checking? ? 'yes' : 'no'})"; end
   end
 end
@@ -194,8 +196,8 @@ startup("A mod updates", [
   at { check("held until the load screen has faded in, then run over it", $held && $log.first == "LOAD SCREEN SHOWN") },
   nil, nil,
   dmp("uc_01_checking"),
-  at { check("Checking for Updates: KIF done (1.1.0 Is the Newest), Mods reading the list with a bar",
-             says?("Checking for Updates") && says?("1.1.0 IS THE NEWEST") && says?("KIF-Mods: 2 of 3")) },
+  at { check("Checking for Updates...: the toast at the top, held while they run (no popup over the menu)",
+             UCS.checking? && Reloaded::Toast.held? && says?("Checking for Updates...") && !says?("IS THE NEWEST")) },
   at { check("...instead of KIF's dark screen (#{$log.grep(/KIF STATUS/).length})", $log.grep(/KIF STATUS/).empty?) },
   nil, nil, nil, nil,
   dmp("uc_02_mods"),
@@ -205,8 +207,29 @@ startup("A mod updates", [
   I::RIGHT, I::USE
 ])
 check("Open Updates: KIF opens Mods > Updates, as its own Yes", $log.include?("OPEN MODS UPDATES"))
-check("...the checking popup gone before KIF's first-start questions (#{$log.grep(/FIRST/).inspect})",
+check("...the toast gone before KIF's first-start questions (#{$log.grep(/FIRST/).inspect})",
       $log.include?("FIRST CHOICE (checking shown: no)") && !UCS.checking?)
+check("...and no Up to Date toast after a question", Reloaded::Toast.sprite.nil?)
+
+#---------------------------------------------------------------- A2: nothing new, no answer
+$ups = []
+$due = true
+startup("A2 nothing new", [*[nil] * 8])
+check("nothing new: Everything's Up to Date, KIF's version in a pill, not held (it fades)",
+      !Reloaded::Toast.held? && !Reloaded::Toast.sprite.nil? && says?("Everything's Up to Date") && says?("KIF 1.1.0"))
+dump("uc_08_up_to_date")
+150.times { Reloaded::Toast.update }
+check("...the menu moves it on: gone after its time", Reloaded::Toast.sprite.nil?)
+$first_start = true
+startup("A2 first start", [*[nil] * 8])
+check("the very first start: no toast, KIF's first-start questions come instead", Reloaded::Toast.sprite.nil?)
+$first_start = false
+$remote = nil                                   # the update server gives no answer
+startup("A2 no answer", [*[nil] * 8])
+check("KIF got no answer: Couldn't Check for Updates", says?("Couldn't Check for Updates") && !Reloaded::Toast.held?)
+$remote = "1.1.0"
+Reloaded::Toast.dispose
+$ups = MODS
 
 #---------------------------------------------------------------- B: Update All, then B
 $due = true
@@ -220,7 +243,7 @@ startup("B update all", [
              says?("Installing EBDX (3 of 3)") && !says?("Checking for Updates")) },
   nil,
   at { check("...then its message as a notice", says?("is ready. It starts working the next time the game starts.") && says?("OK")) },
-  at { check("...the checking popup hidden behind it", !$sprites.any? { |s| !s.disposed? && s.visible && s.bitmap && $pf_texts[s.bitmap.id].include?("Checking for Updates") }) },
+  at { check("...the toast gone once the question came", !UCS.checking? && !says?("Checking for Updates")) },
   dmp("uc_04_ready"),
   I::USE
 ])
@@ -239,8 +262,7 @@ startup("C new KIF", [
   at { check("A new KIF: the Choice List, the versions (1.1.0 to 1.2.0), Update Now first, what it does",
              says?("KIF Update") && says?("1.1.0") && says?("1.2.0") && says?("Update Now") && says?("Skip This Version") &&
              says?("then restarts the game")) },
-  at { check("...Checking for Updates kept behind it, hidden while it's open (Mods: Checked Recently)",
-             UCS.checking? && !says?("Checking for Updates") && $pf_texts.values.flatten.include?("CHECKED RECENTLY")) },
+  at { check("...the toast gone while it's open", !UCS.checking? && !says?("Checking for Updates")) },
   I::DOWN, I::USE,
   dmp("uc_06_notes"),
   at { check("What's New: KIF's notes, a line each", says?("What's New") && says?("Faster start-up.") && says?("Shinies sparkle again.")) },

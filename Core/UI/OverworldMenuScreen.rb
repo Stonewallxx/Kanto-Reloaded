@@ -1535,7 +1535,7 @@ module Reloaded
     def type_icon(b, type, x, y)
       sheet = picture(TYPE_ICONS)
       return unless sheet && defined?(::GameData::Type)
-      row = ::GameData::Type.get(type).icon_position
+      row = defined?(Reloaded::PartyPaint) ? Reloaded::PartyPaint.type_row(type) : ::GameData::Type.get(type).id_number
       b.blt(x, y, sheet, Rect.new(0, row * TYPE_PX, TYPE_PX, TYPE_PX))
     rescue StandardError
       nil

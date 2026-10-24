@@ -26,7 +26,7 @@ Each new move shows a toast ("Added to TM Vault: Ice Beam", the TM's disc in its
 - **The header:** Search on the left (L, or click it: type straight into it; a controller's A opens the naming screen) and Sort on the right (R: Name, Type, Category, Recent, Level Learned). Back clears a search.
 - **The tabs:** Vault, Relearn and Checklist (Action, a controller's X).
 - **The Type Filter:** Up from the top of the list. Left and Right pick a type (only the types the list has), Down goes back.
-- **The list:** each move as a plate lit in its type, Favorites first (a star: Favorite, a controller's Y), NEW, the TM's number (or Tutor) and its type.
+- **The list:** one panel, each move's name in its type's colour, Favorites first (a star: Favorite, a controller's Y), NEW, the TM's number (or Tutor) and the type's icon. The Checklist's rows have the TM's disc too.
 - **The details panel**, lit in the move's type:
   - The party: Knows It, Can Learn or Can't for each. Left and Right pick who.
   - The move: its type, category, power, accuracy, PP and description.

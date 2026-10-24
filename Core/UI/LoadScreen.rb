@@ -267,6 +267,7 @@ module Reloaded
           Input.update
           update_frame
           update_sprites
+          Reloaded::Toast.update if defined?(Reloaded::Toast)     # the startup checks' toast
           result = handle_input
           return result if result
         end

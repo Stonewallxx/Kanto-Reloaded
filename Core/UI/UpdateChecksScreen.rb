@@ -7,9 +7,11 @@
 # are KIF's own and still run before the load screen; UpdateChecks.rb hooks
 # them and calls these.
 #
-#   checking     Checking for Updates (design 1, Header Plate): a row for
-#                KIF and one for Mods, each with a pill once it's done, or
-#                what it's on and a gold bar
+#   checking     Checking for Updates, as Kanto Reloaded's toast at the top
+#                (his ask, 2026-10-23: the popup came and went at once when
+#                the checks were quick; design 1, Then Up to Date): held
+#                while they run, then done says Everything's Up to Date
+#                with KIF's version, and fades while you use the menu
 #   status       KIF's other waits (its own update download, installing
 #                mods, Mods > Browse): the title, what it's on, a gold bar,
 #                and B to cancel where KIF lets you
@@ -71,50 +73,46 @@ module Reloaded
 
     class << self
       #------------------------------------------------------------------------
-      # Checking for Updates
+      # Checking for Updates: the toast
       #------------------------------------------------------------------------
-      # rows: { :kif => row, :mods => row }; a row is [:done, pill, tone]
-      # (tone :green, :gold or :dim), [:busy, what it's on, fraction or nil]
-      # or [:wait, words]. Drawn and shown at once (the check that follows
-      # may hold the game still).
-      def checking(rows, hours = nil)
-        @check = Layer.new(Z) if @check.nil? || @check.disposed?
-        o = @check.overlay
-        c = @check.palette
-        o.clear
-        o.fill_rect(0, 0, W, H, Color.new(0, 0, 0, 120))   # the load screen behind it
-        w = 320
-        h = hours ? 150 : 128
-        x = (W - w) / 2
-        y = (H - h) / 2 - 10
-        D.send(:panel, o, c, x, y, w, h)
-        D.send(:title_bar, o, c, x, y, w, _INTL("Checking for Updates"))
-        check_row(o, c, x + 24, y + 46, w - 48, _INTL("KIF"), rows[:kif])
-        o.fill_rect(x + 12, y + 74, w - 24, 1, c[:line])
-        check_row(o, c, x + 24, y + 82, w - 48, _INTL("Mods"), rows[:mods])
-        P.small(o, x, y + h - 26, w, 16, _INTL("Mods are checked every {1} hours.", hours), c[:dim], 2) if hours
+      # Shown at once and held (the check that follows holds the game still)
+      def checking
+        return if checking?
+        @checking = defined?(Reloaded::Toast) && Reloaded::Toast.show(_INTL("Checking for Updates..."), :icon => ball, :hold => true)
       end
 
       def close_checking
-        @check.dispose if @check
-        @check = nil
+        Reloaded::Toast.dispose if checking?
+        @checking = false
       end
 
       def checking?
-        return @check && !@check.disposed?
+        return @checking && Reloaded::Toast.held? ? true : false
+      end
+
+      # Done with nothing to ask: the toast says so, and fades
+      def done(text, pill = nil)
+        @checking = false
+        Reloaded::Toast.show(text, :icon => ball, :pill => pill) if defined?(Reloaded::Toast)
+      end
+
+      # The toast's Poké Ball
+      def ball
+        return @ball if @ball && !@ball.disposed?
+        @ball = Bitmap.new(13, 13)
+        P.poke_ball(@ball, 0, 0, 13)
+        return @ball
       end
 
       #------------------------------------------------------------------------
       # KIF's other waits
       #------------------------------------------------------------------------
-      # (it takes the checking popup's place while it shows)
       def status(title, line, frac = nil, cancel = false)
-        @check.visible = false if checking?
         @wait = Layer.new(Z + 10) if @wait.nil? || @wait.disposed?
         o = @wait.overlay
         c = @wait.palette
         o.clear
-        o.fill_rect(0, 0, W, H, Color.new(0, 0, 0, 140)) unless checking?
+        o.fill_rect(0, 0, W, H, Color.new(0, 0, 0, 140))
         w = 340
         h = frac ? 104 : 86
         x = (W - w) / 2
@@ -129,7 +127,6 @@ module Reloaded
       def hide_status
         @wait.dispose if @wait
         @wait = nil
-        @check.visible = true if checking?
       end
 
       #------------------------------------------------------------------------
@@ -140,6 +137,7 @@ module Reloaded
         descs = [_INTL("Downloads it now, then restarts the game."), _INTL("What changed in {1}.", new),
                  _INTL("Asks again the next time the game starts."),
                  _INTL("Won't ask about {1} again. Options > System > Check for Updates still finds it.", new)]
+        close_checking                     # the question takes over from the toast
         hide_check = covering
         layer = Layer.new(Z + 20)
         sel = index
@@ -182,6 +180,7 @@ module Reloaded
       # Returns :all, :open or :later (B too).
       #------------------------------------------------------------------------
       def choose_mods(rows)
+        close_checking
         hide_check = covering
         layer = Layer.new(Z + 20)
         sel = 0
@@ -290,11 +289,11 @@ module Reloaded
         uncover(hide_check)
       end
 
-      # A question hides the checking popup (and KIF's wait) behind it
-      # while it's open: true when it did
+      # A question hides KIF's wait behind it while it's open: true when it
+      # did
       def covering
         hid = false
-        [@check, @wait].each do |l|
+        [@wait].each do |l|
           next unless l && !l.disposed?
           l.visible = false
           hid = true
@@ -304,7 +303,7 @@ module Reloaded
 
       def uncover(hid)
         return unless hid
-        [@check, @wait].each { |l| l.visible = true if l && !l.disposed? }
+        [@wait].each { |l| l.visible = true if l && !l.disposed? }
       end
 
       # A popup's loop: Up/Down (vertical) or Left/Right (horizontal) move
@@ -347,24 +346,6 @@ module Reloaded
           yield sel
           pbPlayCursorSE
           draw.call
-        end
-      end
-
-      # One check's row: its name, then a pill (done), what it's on and a bar
-      # (busy), or a word (waiting)
-      def check_row(o, c, x, y, w, name, row)
-        P.text(o, x, y, 120, 22, name, c[:txt], PF::TEXT)
-        kind, a, b = row
-        case kind
-        when :done
-          tone = c[b] || c[:dim]
-          fill = c[:light] ? Reloaded::Palette.mix(c[:panel2], tone, 0.22) : Reloaded::Palette.mix(c[:panel2], tone, 0.25)
-          P.pill(o, x + w, y + 3, a.to_s, fill, tone, true)
-        when :busy
-          P.small(o, x, y, w, 20, a.to_s, c[:dim], 1)
-          bar(o, c, x, y + 26, w, b) if b
-        else
-          P.small(o, x, y, w, 20, a.to_s, c[:dim], 1)
         end
       end
 

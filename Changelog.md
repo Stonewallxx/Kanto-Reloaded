@@ -16,7 +16,7 @@ What's new in each version, newest first. The What's New screen (on the Load Scr
 - Reloaded Pause Menu: Money, where you are and the time beside it, a row of your own, a Favorite one button away (from the map too), and every entry in one carousel
 - Overworld Menu: A quick menu while walking, with 7 Quick Items, quick toggles (the Bicycle too), any setting from KIF Settings (sliders too), your quest, the Pokédex, badges, shiny odds, encounters, the Itemfinder, your party and where you are, and pages of your own
 - The title screen shows PIF's, KIF's and Kanto Reloaded's versions in the top right corner
-- KIF's update checks before the Load Screen in Kanto Reloaded's look: Checking for Updates, a new KIF's choices with its versions, and your mods' updates with Update All
+- KIF's update checks over the Load Screen in Kanto Reloaded's look: A toast at the top while they run (Everything's Up to Date when there's nothing new), a new KIF's choices with its versions, and your mods' updates with Update All
 - Party Screen: Cards and details in a new look, the menu in the panel (other mods' commands too), Switch with a preview, X for the Summary and Y to move, in battle too, Dark or Light
 - PokeVial: In place of KIF's Heal Pokémon, a few charges to heal your party anywhere, refilled at Pokémon Centers. A Heal Preview shows what each Pokémon gets, more charges come with Badges, and it glows when your party is badly hurt
 - Speed-Up: Hold or toggle the game's speed, in its own Speed-Up section of Controls with its buttons. Burst Speed while held, the overworld and battles at their own speeds, the speed kept for next time, Shiny Slowdown, Messages at 1x, the speed in the window title and a small indicator in the corner when it changes

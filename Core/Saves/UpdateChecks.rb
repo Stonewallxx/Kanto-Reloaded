@@ -10,7 +10,9 @@
 # pbStartScene2) instead of running on a black screen before it. How they
 # look (UI/UpdateChecksScreen.rb):
 #
-#   - Checking for Updates (a row for KIF and one for Mods) while they run
+#   - Checking for Updates... as a toast at the top while they run (his
+#     ask, 2026-10-23: the popup came and went at once when they were
+#     quick), then Everything's Up to Date with KIF's version
 #   - a new KIF: the Choice List (Update Now, What's New, Later, Skip This
 #     Version), answering KIF's own question
 #   - mod updates: each mod and its versions, with Update All (KIF's own
@@ -33,7 +35,8 @@ module Reloaded
     MODS_PROMPT = /Open Mods > Updates\?/                      # and about mod updates
 
     @context = nil      # :kif or :mods while one of KIF's startup checks runs
-    @rows = nil         # the checking popup's rows
+    @rows = nil         # what each check found (the toast's words at the end)
+    @asked = false      # a question came up (a new KIF, mod updates): no toast after it
     @waiting = false    # the load screen's checks, held until it has faded in
     @now = false        # running them now
 
@@ -129,7 +132,8 @@ module Reloaded
         end
         if defined?(::KIF::FirstChoice) && ::KIF::FirstChoice.respond_to?(:ask)
           h.around(nil, ::KIF::FirstChoice.singleton_class, :ask, :id => :update_checks_first_choice) do |original, *args|
-            finish
+            fc = ::KIF::FirstChoice
+            finish(!(fc.respond_to?(:needed?) && fc.needed?))   # KIF's first-start questions take over from the toast
             original.call(*args)
           end
         end
@@ -221,14 +225,36 @@ module Reloaded
         return [:done, _INTL("{1} IS OUT", new), :gold]
       end
 
+      # The toast while they run
       def show_rows
-        hours = defined?(::KIF::Startup::MOD_CHECK_HOURS) ? ::KIF::Startup::MOD_CHECK_HOURS : nil
-        screen.checking(@rows, hours)
+        screen.checking
       end
 
-      def finish
-        screen.close_checking
+      # Done: the toast says what they found (unless a question took over,
+      # or result is false), and fades while you use the menu
+      def finish(result = true)
+        rows = @rows
+        asked = @asked
         @rows = nil
+        @asked = false
+        words = result && rows && !asked ? done_words(rows) : nil
+        words ? screen.done(*words) : screen.close_checking
+      end
+
+      # [words, pill]: nothing new, or a check that got no answer
+      def done_words(rows)
+        kif = rows[:kif] || []
+        mods = rows[:mods] || []
+        no_answer = _INTL("NO ANSWER")
+        return [_INTL("Couldn't Check for Updates"), nil] if kif[1] == no_answer
+        version = (::KIF::Updater.current_version rescue nil).to_s
+        pill = version.empty? ? nil : [_INTL("KIF {1}", version), :green]
+        if kif[0] != :done                          # KIF's own updates Off: the mods only
+          return nil unless mods[0] == :done && [_INTL("UP TO DATE"), no_answer].include?(mods[1])
+          return mods[1] == no_answer ? [_INTL("Couldn't Check Your Mods"), nil] : [_INTL("Your Mods Are Up to Date"), nil]
+        end
+        return [_INTL("Couldn't Check Your Mods"), pill] if mods[1] == no_answer
+        return [_INTL("Everything's Up to Date"), pill]
       end
 
       #------------------------------------------------------------------------
@@ -255,11 +281,13 @@ module Reloaded
         text = args[0].to_s
         commands = args[1]
         if commands.is_a?(Array) && commands.length == 4 && (m = text.match(KIF_PROMPT))
+          @asked = true
           @kif_new = m[1]
           @kif_choice = screen.choose_kif(m[2], m[1], @kif_choice == 1 ? 1 : 0)
           return @kif_choice
         end
         if commands.is_a?(Array) && commands.length == 2 && text =~ MODS_PROMPT && @ups && !@ups.empty?
+          @asked = true
           case screen.choose_mods(mod_rows(@ups))
           when :open then return 0
           when :all
@@ -269,6 +297,7 @@ module Reloaded
           return 1
         end
         return original.call(*args, &blk) if commands
+        @asked = true
         screen.notice(title_now, text)
         return 0
       end

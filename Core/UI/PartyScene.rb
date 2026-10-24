@@ -807,7 +807,7 @@ module Reloaded
       sheet = picture(TYPES_SMALL)
       return unless sheet
       types.first(3).each_with_index do |t, k|
-        row = (::GameData::Type.get(t).icon_position rescue 0)
+        row = Reloaded::PartyPaint.type_row(t)
         b.blt(x + k * 18, y, sheet, Rect.new(0, row * 16, 16, 16))
       end
     end
@@ -822,7 +822,7 @@ module Reloaded
       lh = 18
       total = list.length * (lw + 2) - 2
       list.each_with_index do |t, j|
-        row = (::GameData::Type.get(t).icon_position rescue 0)
+        row = Reloaded::PartyPaint.type_row(t)
         b.stretch_blt(Rect.new(x + (w - total) / 2 + j * (lw + 2), y, lw, lh), sheet, Rect.new(0, row * 28, 64, 28))
       end
     end

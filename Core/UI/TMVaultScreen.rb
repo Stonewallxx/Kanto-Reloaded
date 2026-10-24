@@ -7,14 +7,17 @@
 #
 #   the Vault    design 1, Plates: Search (type into it) and Sort in the
 #                header; the Vault, Relearn and Checklist tabs; the Type
-#                Filter's chips; the moves as slim plates lit in their type,
-#                a star on Favorites, NEW on moves added since the last look;
-#                the details panel lit in the move's type: the party (Knows
-#                It, Can Learn, Can't; Left and Right pick who), the move,
+#                Filter's chips; the list as Coloured Names (his pick after
+#                the build, 2026-10-23: no plates): one panel, each move's
+#                name in its type's colour, its TM and type icon, a star on
+#                Favorites, NEW on moves added since the last look; the
+#                details panel lit in the move's type: the party (Knows It,
+#                Can Learn, Can't; Left and Right pick who), the move,
 #                Coverage for the one picked
 #   Relearn      the picked Pokémon's moves to relearn (an Egg Move marked)
-#   Checklist    design 4: each TM not had yet, with the kind of place the
-#                game gives it (GROUND, STORE, GIFT), the Randomizer's note
+#   Checklist    design 4: each TM not had yet (its disc, its name in its
+#                type's colour), with the kind of place the game gives it
+#                (GROUND, STORE, GIFT), the Randomizer's note
 #   Move Compare design 1, Side by Side: the new move, the four it can
 #                replace (the one to forget ringed red), Coverage now and
 #                after
@@ -37,8 +40,9 @@ module Reloaded
     TV = Reloaded::TMVault
     TABS = [:vault, :relearn, :checklist].freeze
     LIST_X = 10
-    LIST_W = 224
-    ROW_H = 28
+    LIST_W = 216            # a row's room (the scroll bar after it)
+    ROW_H = 25
+    TABS_W = 228
     PX0 = 244
     PY0 = 36
     PX1 = W - 6
@@ -152,7 +156,7 @@ module Reloaded
     end
 
     def type_order(t)
-      return (::GameData::Type.get(t).icon_position rescue 99)
+      return PP.type_row(t)
     end
 
     # Favorites first (the Vault), then by the sort
@@ -520,7 +524,7 @@ module Reloaded
 
     def draw_tabs(base, top, c)
       labels = [_INTL("VAULT {1}", TV.moves.length), _INTL("RELEARN"), _INTL("CHECKLIST {1}", TV.checklist.length)]
-      tw = (LIST_W + 4 - 8) / 3
+      tw = (TABS_W - 8) / 3
       @tab_hits = []
       labels.each_with_index do |l, i|
         tx = 8 + i * (tw + 4)
@@ -590,10 +594,14 @@ module Reloaded
       end
     end
 
+    # The list: one panel, each move's name in its type's colour, its TM
+    # (or level) and its type; the highlighted row under the cursor
     def draw_list(base, top, c)
       list = rows
-      y0 = tab == :checklist ? 62 : 84
+      y0 = tab == :checklist ? 64 : 86
+      y1 = H - P::HINT_H - 6
       draw_chips(base, top, c, 60) if tab != :checklist
+      PP.chamfer_grad(base, 6, y0 - 4, 238, y1, 10, c[:panel2], mix(c[:panel2], c[:dark], 0.3), c[:line])
       @row_hits = []
       if list.empty?
         msg = if @query then _INTL("Nothing matches \"{1}\".", @query)
@@ -604,47 +612,47 @@ module Reloaded
         P.small_wrap(top, msg, LIST_W - 8).first(4).each_with_index { |ln, i| P.small(top, LIST_X + 4, y0 + 4 + i * 16, LIST_W - 8, 16, ln, c[:dim]) }
         return
       end
-      visible = (H - P::HINT_H - 6 - y0) / ROW_H
+      visible = (y1 - 4 - y0) / ROW_H
       @scroll = @sel if @sel < @scroll
       @scroll = @sel - visible + 1 if @sel >= @scroll + visible
       @scroll = [[@scroll, list.length - visible].min, 0].max
       list[@scroll, visible].each_with_index do |r, k|
         i = @scroll + k
         y = y0 + k * ROW_H
-        sel = i == @sel && !@chips
-        tab == :checklist ? checklist_row(base, top, c, LIST_X, y, r, sel) : move_row(base, top, c, LIST_X, y, r, sel)
-        @row_hits << [i, LIST_X, y, LIST_X + LIST_W, y + ROW_H - 4]
+        @cursor_rect = [LIST_X - 3, y, LIST_W + 6, ROW_H - 1] if i == @sel && !@chips && !@entry
+        tab == :checklist ? checklist_row(top, c, LIST_X, y, r) : move_row(top, c, LIST_X, y, r)
+        @row_hits << [i, LIST_X, y, LIST_X + LIST_W, y + ROW_H - 1]
       end
       if list.length > visible
-        track = visible * ROW_H - 6
+        track = visible * ROW_H - 2
         bar = [track * visible / list.length, 10].max
         pos = (track - bar) * @scroll / [list.length - visible, 1].max
-        base.fill_rect(LIST_X + LIST_W + 3, y0, 2, track, c[:line])
-        base.fill_rect(LIST_X + LIST_W + 3, y0 + pos, 2, bar, c[:dim])
+        base.fill_rect(LIST_X + LIST_W + 6, y0, 2, track, c[:line])
+        base.fill_rect(LIST_X + LIST_W + 6, y0 + pos, 2, bar, c[:dim])
       end
     end
 
-    def row_plate(base, c, x, y, col, sel, h = 24)
-      PP.chamfer(base, x - 2, y - 2, x + LIST_W + 2, y + h + 2, 8, mix(c[:bg], c[:selb], 0.35), mix(c[:bg], c[:selb], 0.35)) if sel
-      PP.chamfer_grad(base, x, y, x + LIST_W, y + h, 6, mix(c[:panel2], col, sel ? 0.5 : 0.28), mix(c[:panel2], c[:dark], 0.45),
-                      sel ? c[:selb] : mix(c[:line], col, 0.4))
+    # A type's colour for words: brightened to read on Dark, deepened on
+    # Light
+    def type_ink(c, type)
+      col = PP.rgb(Reloaded::PartyScreen.type_rgb(type))
+      return c[:light] ? mix(col, c[:txt], 0.42) : mix(col, PP::WHITE, 0.28)
     end
 
-    def move_row(base, top, c, x, y, m, sel)
+    def move_row(top, c, x, y, m)
       d = md(m)
-      col = PP.rgb(Reloaded::PartyScreen.type_rgb(d.type))
-      row_plate(base, c, x, y, col, sel)
-      base.fill_rect(x + 3, y + 3, 3, 18, col)
-      if tab == :vault
-        star(top, x + 10, y + 8, TV.favorite?(m) ? gold(c) : mix(c[:panel2], c[:line], 0.6))
-      end
-      nx = x + 22
       label = tab == :vault ? TV.label(m) : level_label(m)
-      room = LIST_W - 22 - 70
-      nw = P.text(top, nx, y + 2, room, 20, PF.fit(PF::TEXT, d.name, room), sel ? c[:strong] : c[:txt], PF::TEXT)
-      pill(top, c, nx + nw + 6, y + 4, _INTL("NEW"), :green) if tab == :vault && TV.new?(m) && nx + nw + 40 < x + LIST_W - 66
-      P.text(top, x + LIST_W - 66, y + 4, 40, 16, label, c[:dim], PF::TINY, 1)
-      small_type(top, d.type, x + LIST_W - 22, y + 4)
+      star(top, x, y + 9, gold(c)) if tab == :vault && TV.favorite?(m)
+      nx = x + 11
+      small_type(top, d.type, x + LIST_W - 16, y + 4)
+      right = x + LIST_W - 20
+      lw = P.width(PF::TINY, label)
+      P.text(top, right - lw, y + 5, lw, 16, label, c[:dim], PF::TINY)
+      room = right - lw - 8 - nx
+      fresh = tab == :vault && TV.new?(m)
+      room -= P.width(PF::TINY, _INTL("NEW")) + 18 if fresh
+      nw = P.text(top, nx, y + 2, room, 20, PF.fit(PF::TEXT, d.name, room), type_ink(c, d.type), PF::TEXT)
+      pill(top, c, nx + nw + 6, y + 5, _INTL("NEW"), :green) if fresh
     end
 
     # Relearn: the level it's learned at, else EGG for an Egg Move
@@ -654,17 +662,19 @@ module Reloaded
       return TV.egg_move?(pkmn, m) ? _INTL("EGG") : ""
     end
 
-    def checklist_row(base, top, c, x, y, r, sel)
-      item, m, kind = r
+    def checklist_row(top, c, x, y, r)
+      _item, m, kind = r
       d = md(m)
-      col = PP.rgb(Reloaded::PartyScreen.type_rgb(d.type))
-      row_plate(base, c, x, y, col, sel)
-      disc(top, m, x + 4, y + 1)
+      disc(top, m, x, y + 2, 20)
+      nx = x + 24
+      small_type(top, d.type, x + LIST_W - 16, y + 4)
+      right = x + LIST_W - 20
       pill_label, tone = KIND_PILLS[kind]
-      room = LIST_W - 30 - 26 - (pill_label ? P.width(PF::TINY, pill_label) + 18 : 0)
-      P.text(top, x + 30, y + 2, room, 20, PF.fit(PF::TEXT, d.name, room), sel ? c[:strong] : c[:txt], PF::TEXT)
-      pill(top, c, x + LIST_W - 26, y + 5, _INTL(pill_label), tone, true) if pill_label
-      small_type(top, d.type, x + LIST_W - 22, y + 4)
+      if pill_label
+        right -= pill(top, c, right, y + 5, _INTL(pill_label), tone, true) + 6
+      end
+      room = right - nx - 4
+      P.text(top, nx, y + 2, room, 20, PF.fit(PF::TEXT, d.name, room), type_ink(c, d.type), PF::TEXT)
     end
 
     # The details panel, lit in the move's type with the Party Screen's
@@ -767,9 +777,7 @@ module Reloaded
       by = y + 27
       bx += big_type(top, d.type, bx, y + 26) + 4
       bx += big_category(top, d.category, bx, y + 26) + 6
-      [_INTL("POW {1}", d.base_damage.to_i > 1 ? d.base_damage : "--"),
-       _INTL("ACC {1}", d.accuracy.to_i > 0 ? d.accuracy : "--"),
-       _INTL("PP {1}", d.total_pp)].each do |label|
+      stat_labels(d).each do |label|
         pw = P.width(PF::TINY, label) + 12
         if bx + pw > x + w
           bx = x
@@ -871,8 +879,18 @@ module Reloaded
       pill(top, c, x + w - 8, y + 5, _INTL("FORGET"), :red, true) if forget
       small_type(top, d.type, x + 10, y + h - 20)
       big_category(top, d.category, x + 30, y + h - 21)
-      stats = _INTL("POW {1} ACC {2} PP {3}", d.base_damage.to_i > 1 ? d.base_damage : "--", d.accuracy.to_i > 0 ? d.accuracy : "--", d.total_pp)
-      P.small(top, x + 72, y + h - 21, w - 80, 16, stats, c[:dim])
+      bx = x + 74
+      stat_labels(d).each do |label|
+        break if bx + P.width(PF::TINY, label) + 12 > x + w - 8
+        bx += P.pill(top, bx, y + h - 20, label, c[:pill], c[:txt], false) + 5
+      end
+    end
+
+    # A move's numbers, as the badges say them
+    def stat_labels(d)
+      return [_INTL("POW {1}", d.base_damage.to_i > 1 ? d.base_damage : "--"),
+              _INTL("ACC {1}", d.accuracy.to_i > 0 ? d.accuracy : "--"),
+              _INTL("PP {1}", d.total_pp)]
     end
 
     def hint_pairs

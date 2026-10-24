@@ -29,8 +29,8 @@ end
 module GameData
   class Type
     POS = { :NORMAL => 0, :FIGHTING => 1, :FLYING => 2, :POISON => 3, :GHOST => 7, :WATER => 11, :ELECTRIC => 13, :DARK => 17, :DRAGON => 16, :STEEL => 8, :GROUND => 4 }.freeze
-    attr_reader :icon_position
-    def initialize(t); @icon_position = POS[t] || 0; end
+    attr_reader :id_number          # PIF's (no icon_position)
+    def initialize(t); @id_number = POS[t] || 0; end
     def self.get(t); new(t); end
   end
   class Item

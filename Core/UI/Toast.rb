@@ -17,7 +17,9 @@
 #
 # :icon is an item (its Bag icon), a picture's path, or a Bitmap (its first
 # square frame: a Pokémon's icon); :pill's colour is :gold, :green or :red
-# (the Theme Mode's tone of it).
+# (the Theme Mode's tone of it). :hold keeps it until the next toast (or
+# dispose): the startup checks' "Checking for Updates..." while the game
+# waits on them. The Load Screen moves it on too.
 #==============================================================================
 
 return unless defined?(Reloaded::Pixel) && defined?(::KIF::PixelFont)
@@ -44,7 +46,7 @@ module Reloaded
         return true
       end
 
-      def show(text, icon: nil, pill: nil, paint: nil)
+      def show(text, icon: nil, pill: nil, paint: nil, hold: false)
         dispose
         c = Reloaded::Palette.map_menu   # Theme Mode, as the map menus
         text = text.to_s
@@ -72,7 +74,7 @@ module Reloaded
           fill = c[:light] ? Reloaded::Palette.mix(c[:panel2], tone, 0.22) : (FILLS[pill[1]] || FILLS[:gold])
           P.pill(o, w - 10, 7, pill[0].to_s, fill, tone, true)
         end
-        @left = FRAMES
+        @left = hold ? nil : FRAMES
         return true
       rescue StandardError => e
         Reloaded::Log.exception("A toast couldn't be shown", e, :interface)
@@ -80,8 +82,13 @@ module Reloaded
         return false
       end
 
+      # Shown and kept until the next one (:hold)
+      def held?
+        return @sprite && !@sprite.disposed? && @left.nil? ? true : false
+      end
+
       def update
-        return unless @sprite
+        return unless @sprite && @left
         @left -= 1
         @sprite.opacity = [@left * 255 / FADE, 255].min
         dispose if @left <= 0

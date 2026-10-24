@@ -30,8 +30,8 @@ module GameData
              :FIRE => [:WATER, :GROUND, :ROCK], :WATER => [:ELECTRIC, :GRASS], :GRASS => [:FIRE, :ICE, :FLYING, :POISON, :BUG],
              :ELECTRIC => [:GROUND], :PSYCHIC => [:BUG, :GHOST, :DARK], :ICE => [:FIRE, :FIGHTING, :ROCK, :STEEL],
              :DRAGON => [:ICE, :DRAGON, :FAIRY], :DARK => [:FIGHTING, :BUG, :FAIRY], :FAIRY => [:POISON, :STEEL] }.freeze
-    attr_reader :id, :icon_position, :name, :pseudo_type
-    def initialize(id, pos); @id = id; @icon_position = pos; @name = id == :QMARKS ? "???" : id.to_s.capitalize; @pseudo_type = id == :QMARKS; end
+    attr_reader :id, :id_number, :name, :pseudo_type      # PIF's (no icon_position)
+    def initialize(id, pos); @id = id; @id_number = pos; @name = id == :QMARKS ? "???" : id.to_s.capitalize; @pseudo_type = id == :QMARKS; end
     def self.get(t); DATA[t] || raise("no type #{t}"); end
     def self.try_get(t); DATA[t]; end
     def self.each(&b); DATA.values.each(&b); end
@@ -238,6 +238,9 @@ vault("A the vault", [
   at { check("...Thunderbolt's details and Coverage for Pikachu (adds Flying and Water)",
              top_says?("Thunderbolt") && top_says?("POW 90") && top_says?("ACC 100") && top_says?("PP 15") &&
              top_says?("COVERAGE (PIKACHU)") && top_says?("Thunderbolt adds Flying and")) },
+  at { b = tv_iv(:@top_sprite).bitmap
+       check("...the type icons from PIF's type numbers (Electric's row, 13), the big label too",
+             b.ops.any? { |o| o[0] == "blt" && o[5] == 13 * 16 } && b.ops.any? { |o| o[0] == "sblt" && o[7] == 13 * 28 }) },
   at { check("...the hints: Choose, Party, Favorite, Tabs, Teach, Close (#{hints.inspect})",
              hints == ["Choose", "Party", "Favorite", "Tabs", "Teach", "Close"]) },
   I::RIGHT,
@@ -289,6 +292,7 @@ vault("A the vault", [
   at { check("Gengar (four moves) and Psychic: Move Compare, Teach Psychic to Gengar?, its four, FORGET on the first",
              top_says?("Teach Psychic to Gengar?") && top_says?("NEW MOVE") && top_says?("FORGET") && top_says?("Shadow Ball") &&
              top_says?("Night Shade") && top_says?("Now") && top_says?("After")) },
+  at { check("...the four with the same POW, ACC and PP badges as the new move", top_says?("POW 80") && top_says?("ACC 60") && top_says?("PP 30")) },
   at { check("...the hints: Choose, Forget This, Cancel (#{hints.inspect})", hints == ["Choose", "Forget This", "Cancel"]) },
   I::DOWN, I::DOWN,
   dmp("tv_11_compare_lick"),

@@ -53,6 +53,16 @@ module Reloaded
       return Color.new(*a)
     end
 
+    # A type's row in the game's type pictures (Graphics/Pictures/types, and
+    # the small icons made from its typesSmall): PIF's type number
+    # (id_number; newer Essentials call it icon_position)
+    def type_row(type)
+      t = ::GameData::Type.get(type)
+      return t.respond_to?(:icon_position) ? t.icon_position.to_i : t.id_number.to_i
+    rescue StandardError
+      return 0
+    end
+
     def slot_xy(i)
       return [GX + (i % 2) * (CW + GAP), GY + (i / 2) * (CH + GAP)]
     end
