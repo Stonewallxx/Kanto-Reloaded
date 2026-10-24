@@ -22,6 +22,7 @@ module Reloaded
       "Core/Foundation/Settings.rb",
       "Core/Foundation/ShareCodes.rb",
       "Core/Foundation/Runtime.rb",
+      "Core/Saves/SaveFile.rb",
       "Core/Saves/SafeSave.rb",
       "Core/Saves/Library.rb",
       "Core/Saves/Saves.rb",
@@ -122,9 +123,11 @@ module Reloaded
       "Core/QualityOfLife/Hooks.rb",
       "Core/QualityOfLife/Toast.rb",
       "Core/UI/QualityOfLifeScreens.rb",
-      # The title screen's versions (top right) and Kanto Reloaded's logo
+      # The title screen's versions (top right) and Kanto Reloaded's logo; KIF's
+      # Living title in Kanto Reloaded's look
       "Core/Interface/TitleVersions.rb",
       "Core/Interface/TitleLogo.rb",
+      "Core/Interface/LivingTitle.rb",
       # The Party Screen: its switch and commands, its drawing and its scene
       "Core/PartyScreen/PartyScreen.rb",
       "Core/UI/PartyPaint.rb",
@@ -177,7 +180,7 @@ module Reloaded
     # to KIF Settings. Dev boots last, when it's there. PauseMenu boots
     # before Profiler and BugReport, so their hooks on the pause menu's
     # scene sit over its screen and still see it open.
-    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :TitleVersions, :TitleLogo, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
+    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :TitleVersions, :TitleLogo, :LivingTitle, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
 
     def self.files
       return FILES

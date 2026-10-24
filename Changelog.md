@@ -9,13 +9,15 @@ What's new in each version, newest first. The What's New screen (on the Load Scr
 - Window Frames and Theme Mode for the game's windows and Kanto Reloaded's screens; the Pause Menu and Overworld Menu follow Theme Mode too (Dark, Glass, Light, Frost)
 - Autosave settings in KIF Settings: When healing, catching, after trainer battles, every few steps
 - Data Patches: Mods can add or change items, moves, Pokémon, trainers and more, and the Patch Viewer shows what each changes
-- Save Manager: Notes and color tags for your saves, their health, every backup to restore, and the saves you've deleted
+- The mouse in Kanto Reloaded's screens follows KIF's Mouse option (and a phone's Touch controls), on KIF 1.2's mouse
+- Save Manager: Notes and color tags for your saves, their health, every backup to restore (KIF 1.2's packed backups too), and the saves you've deleted
 - The Load Screen, rebuilt: Your save's note, health and backups, and What's New
 - Safe saving: A save is written in full and checked before it replaces the old one
 - Bug Reports: One file with everything needed to fix a bug, a note and a screenshot, to send in Kanto Reloaded's Discord. After a crash, the game offers one before it closes and says which mod it came from
 - Reloaded Pause Menu: Money, where you are and the time beside it, a row of your own, a Favorite one button away (from the map too), and every entry in one carousel
 - Overworld Menu: A quick menu while walking, with 7 Quick Items, quick toggles (the Bicycle too), any setting from KIF Settings (sliders too), your quest, the Pokédex, badges, shiny odds, encounters, the Itemfinder, your party and where you are, and pages of your own
 - The title screen shows Kanto Reloaded's logo in place of PIF's (Title Screen Logo in Interface switches it), and PIF's, KIF's and Kanto Reloaded's versions in the top right corner
+- KIF 1.2's Living title in Kanto Reloaded's look: the logo, the menu as buttons with the pulsing cursor, the versions on one line under them, and with Alpha Encounters installed an Alpha among the wandering Pokémon now and then, bigger and red (Reloaded Title in Interface switches it)
 - KIF's update checks over the Load Screen in Kanto Reloaded's look: A toast at the top while they run (Everything's Up to Date when there's nothing new), a new KIF's choices with its versions, and your mods' updates with Update All
 - Party Screen: Cards and details in a new look, the menu in the panel (other mods' commands too), Switch with a preview, X for the Summary and Y to move, in battle too, Dark or Light
 - PokeVial: In place of KIF's Heal Pokémon, a few charges to heal your party anywhere, refilled at Pokémon Centers. A Heal Preview shows what each Pokémon gets, more charges come with Badges, and it glows when your party is badly hurt

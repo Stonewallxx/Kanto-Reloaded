@@ -70,6 +70,16 @@
 # The registry keeps each hook's target, method, kind and where in Kanto
 # Reloaded it was made; hooks that were skipped (and why), errors that
 # switched one off, and the needs. Bug reports and the Hook Checker read it.
+#
+# 5. Other mods' aliases: a mod that hooks the old way (alias the method,
+#    then def a new one) after Kanto Reloaded hooked the same method gets a
+#    copy of Kanto Reloaded's hook under its alias (Ruby aliases what the
+#    prepended module gives), so the two call each other for ever (Alpha
+#    Encounters' Graphics.update, 2026-10-25: the game couldn't start).
+#    Kanto Reloaded keeps each method as it was before its first hook on it
+#    (the class's own, past every prepended module); repair_aliases, run
+#    once every mod has loaded (Lifecycle), points each such alias back at
+#    that: what the mod meant to alias. Each hook then runs once, in order.
 #==============================================================================
 
 module Reloaded
@@ -77,6 +87,7 @@ module Reloaded
     @registry = []
     @skipped = []
     @needs = []
+    @before = {}       # [klass, method] => the class's own method before Kanto Reloaded hooked it
     NEED_KINDS = [:field, :kif_option, :kif_setting].freeze   # $PokemonSystem field, KIF::Options key, KIF setting name
 
     # The callable an around hook's block gets for the original method.
@@ -250,6 +261,36 @@ module Reloaded
         return list
       end
 
+      # Another mod's alias that copied one of Kanto Reloaded's hooks goes
+      # back to the method as it was before Kanto Reloaded (see the top).
+      # Returns what was put right: ["Graphics.update via __alias", ...].
+      def repair_aliases
+        fixed = []
+        mine = Reloaded::ROOT.to_s.tr("\\", "/") + "/"
+        @before.each do |(klass, name), original|
+          next unless original
+          (klass.instance_methods(false) + klass.private_instance_methods(false)).each do |m|
+            next if m == name
+            copy = (klass.instance_method(m) rescue nil)
+            next unless copy && copy.original_name == name
+            next if copy.source_location == original.source_location      # already the method as it was
+            file = copy.source_location && copy.source_location[0].to_s.tr("\\", "/")
+            next unless file && file.start_with?(mine)
+            visibility = visibility_of(klass, m)
+            klass.send(:define_method, m, original)
+            klass.send(visibility, m) unless visibility == :public
+            fixed << "#{klass}##{name} via #{m}"
+          end
+        end
+        unless fixed.empty?
+          Reloaded::Log.warning("Another mod's alias copied Kanto Reloaded's hook (a loop), now the method as it was: #{fixed.join(", ")}", :hooks)
+        end
+        return fixed
+      rescue StandardError => e
+        Reloaded::Log.exception("Other mods' aliases couldn't be checked", e, :hooks)
+        return []
+      end
+
       def summary
         return @registry.map do |e|
           state = e[:active] ? (e[:feature].nil? || Reloaded::Features.on?(e[:feature]) ? "on" : "off") : "failed"
@@ -282,6 +323,8 @@ module Reloaded
         if @registry.any? { |e| e[:klass] == klass && e[:method] == method_name }
           Reloaded::Log.debug("#{entry[:id]}: another Kanto Reloaded hook already wraps #{entry[:target]}##{method_name}", :hooks)
         end
+        key = [klass, method_name]
+        @before[key] = own_method(klass, method_name) unless @before.key?(key)
         @registry << entry
         return entry
       end
@@ -313,6 +356,17 @@ module Reloaded
         return :private if klass.private_method_defined?(method_name)
         return :protected if klass.protected_method_defined?(method_name)
         return :public
+      end
+
+      # The class's own method of that name, past every module prepended to
+      # it (nil when it has none of its own)
+      def own_method(klass, name)
+        return nil unless klass.method_defined?(name) || klass.private_method_defined?(name)
+        m = klass.instance_method(name)
+        m = m.super_method while m && m.owner != klass
+        return m
+      rescue StandardError
+        return nil
       end
 
       def ours?(mod)

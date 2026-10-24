@@ -218,9 +218,12 @@ module Reloaded
     # Choosing a Pokemon (the game's innermost pbChoosePokemon)
     #--------------------------------------------------------------------------
     def kr_choose_pokemon(switching = false, initialsel = -1, canswitch = 0)
-      # B in a submenu went back to the Pokemon's menu: it opens again
+      # B in a submenu went back to the Pokemon's menu: it opens again, as
+      # its main menu (not the submenu: B there would only reopen it again)
       if @kr_reopen && !switching && canswitch == 1 && @party[@activecmd]
         @kr_reopen = false
+        @kr_picked = nil
+        @kr_picked_raw = nil
         return @activecmd
       end
       @kr_reopen = false

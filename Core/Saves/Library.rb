@@ -16,8 +16,8 @@
 #   Saves.note / tag                a save's note and color tag
 #
 # A preview reads the whole file (PIF has no small header), with PIF's raw
-# reader (SaveData.get_data_from_file): nothing hooks it and it never
-# rewrites the file, unlike read_from_file. Previews are kept until the file
+# reader (SaveData.get_data_from_file, through SaveFile: a backup KIF packed
+# reads too): it never rewrites the file, unlike read_from_file. Previews are kept until the file
 # changes, and the light part of each (no party) in Kanto Reloaded\Save
 # Previews.json, so the backup lists fill in at once next time.
 #
@@ -123,11 +123,7 @@ module Reloaded
       # The file as the game wrote it, or a preview of what's wrong.
       def read(file)
         return { :health => :damaged, :problem => "The file is empty." } if File.size(file).zero?
-        data = if defined?(::SaveData) && ::SaveData.respond_to?(:get_data_from_file)
-                 ::SaveData.get_data_from_file(file)
-               else
-                 File.open(file, "rb") { |f| Marshal.load(f) }
-               end
+        data = Reloaded::SaveFile.load(file)
         return { :health => :check, :problem => "It's from an older version of the game; it updates when it's loaded." } if data.is_a?(Array)
         return { :health => :damaged, :problem => "It isn't a save the game can read." } unless data.is_a?(Hash) && data[:player]
         return data
@@ -139,7 +135,7 @@ module Reloaded
           return { :health => :check, :problem => "It uses something the game hasn't got (#{m[1]}); a mod that's off or gone, maybe." }
         end
         return { :health => :damaged, :problem => "It's cut short or garbled, so it can't be read." }
-      rescue EOFError, TypeError
+      rescue EOFError, TypeError, Zlib::Error
         return { :health => :damaged, :problem => "It's cut short or garbled, so it can't be read." }
       rescue StandardError => e
         return { :health => :damaged, :problem => "It can't be read: #{e.class}: #{e.message}." }
@@ -232,18 +228,20 @@ module Reloaded
         return target
       end
 
-      # The backup takes the save's place; the save is kept first, as a
-      # backup named "Before Restore".
+      # The backup takes the save's place (unpacked: a save the game plays
+      # from stays plain); the save is kept first, as a backup named "Before
+      # Restore".
       def restore_backup(slot, backup)
         raise ArgumentError, "That's the save being played" if slot.to_s == playing.to_s
         target = path(slot)
         backup_now(slot, "Before Restore") if File.file?(target)
-        copy_safely(backup[:path], target)
+        write_safely(Reloaded::SaveFile.bytes(backup[:path]), target)
         forget(target)
         return true
       end
 
-      # A backup of the save as it is now (named, so the Backup Cap keeps it).
+      # A backup of the save as it is now (named, so the Backup Cap keeps it),
+      # packed as KIF packs its own.
       def backup_now(slot, name = nil)
         source = path(slot)
         return nil unless File.file?(source)
@@ -259,7 +257,7 @@ module Reloaded
           break unless File.exist?(file)
           t += 1
         end
-        copy_safely(source, file)
+        write_safely(Reloaded::SaveFile.pack(Reloaded::SaveFile.bytes(source)), file)
         return file
       end
 
@@ -533,11 +531,19 @@ module Reloaded
         return Dir.children(path) rescue []
       end
 
-      # Copied through a temporary file, then checked whole.
-      def copy_safely(from, to)
+      # Written through a temporary file that must read back as a whole save,
+      # then put in place.
+      def write_safely(bytes, to)
         tmp = to + Reloaded::SafeSave::TMP
-        IO.copy_stream(from, tmp)
-        raise IOError, "the copy came out a different size" unless File.size(tmp) == File.size(from)
+        File.open(tmp, "wb") do |f|
+          f.write(bytes)
+          f.flush
+          f.fsync rescue nil
+        end
+        unless File.size(tmp) == bytes.bytesize && Reloaded::SafeSave.whole?(tmp)
+          File.delete(tmp) rescue nil
+          raise IOError, "the copy didn't read back whole"
+        end
         Reloaded::SafeSave.replace(tmp, to)
       end
 

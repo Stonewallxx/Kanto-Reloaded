@@ -65,7 +65,7 @@ module Reloaded
         # Opens a save; yields its data and the classes stood in for, with
         # the stand-ins in place until the block returns.
         def open(path)
-          bytes = File.binread(path)
+          bytes = Reloaded::SaveFile.bytes(path)          # a backup KIF packed, unpacked
           asked = []
           begin
             data = load(bytes, asked)

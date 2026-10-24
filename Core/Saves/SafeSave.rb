@@ -60,10 +60,11 @@ module Reloaded
         return true
       end
 
-      # A file that reads as a whole save: a Hash with a player.
+      # A file that reads as a whole save: a Hash with a player (packed or
+      # not, Saves/SaveFile.rb).
       def whole?(file)
         return false unless File.file?(file) && File.size(file) > 0
-        data = File.open(file, "rb") { |f| Marshal.load(f) }
+        data = Reloaded::SaveFile.load(file)
         return data.is_a?(Hash) && data.key?(:player)
       rescue StandardError, NameError
         return false

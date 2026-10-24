@@ -4,6 +4,8 @@
 # Core hooks that turn the game's start-up, title screen, loading and saving
 # into Reloaded::Events (see Events.rb for the list).
 #
+#   KIF::ModCompat.after_mods_loaded    -> other mods' aliases of hooked
+#                                          methods put right (Hooks)
 #   Game.set_up_system                  -> :system_ready (after)
 #   PokemonLoadScreen#pbStartLoadScreen -> :title_screen (before)
 #   SaveData.read_from_file             -> remembers which file was read
@@ -25,7 +27,18 @@ module Reloaded
         hooks = Reloaded::Hooks
         # safe saving first: the innermost writer, so :saved still follows it
         Reloaded::Hooks.guard(nil, :safe_save) { Reloaded::SafeSave.install } if defined?(Reloaded::SafeSave)
+        # once every mod has loaded: other mods' aliases that copied a Kanto
+        # Reloaded hook put right (Hooks.repair_aliases); again as the game
+        # sets up, in case a KIF has no after_mods_loaded
+        if defined?(::KIF::ModCompat) && ::KIF::ModCompat.respond_to?(:after_mods_loaded)
+          hooks.around(nil, ::KIF::ModCompat.singleton_class, :after_mods_loaded, :id => :lifecycle_mods_loaded) do |original, *args|
+            result = original.call(*args)
+            Reloaded::Hooks.repair_aliases
+            result
+          end
+        end
         hooks.around(nil, ::Game.singleton_class, :set_up_system, :id => :lifecycle_system) do |original, *args|
+          Reloaded::Hooks.repair_aliases
           result = original.call(*args)
           @system_ready = true
           Reloaded::Events.emit(:system_ready)
