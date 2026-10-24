@@ -86,7 +86,7 @@ Reloaded::Features.on?(:overworld_menu)
 
 `:takes_over => ["F-UI-05_SpeedUp"]` names KIF features ours takes over (KIF 0.21.52's `KIF::Features`, which KIF calls replacing). While ours runs, KIF's acts as if its module were Off: its hooks fall through and its settings hide. KIF's Mods list says Kanto Reloaded replaces it. Switching ours Off, or ours failing, gives KIF's back at once. The feature ids are in `KIF::Features.list`, or in cody's `MOD_REPLACE_API.md`.
 
-Each feature gets an On/Off row on the Features page, and another at the top of its own page (`:page`).
+Each feature gets an On/Off row on the Features page, and another at the top of its own page (`:page`). The Features row goes to that page with Go to Settings (see The settings screen).
 
 ### KIF features Kanto Reloaded turns off
 
@@ -175,6 +175,7 @@ Reloaded::Settings.get(:"overworld_menu.slots")
 | `:reset` | a `Settings.json` schema version: a value stored by an older file is dropped once, so the setting starts at its default |
 | `:remap` | `[schema, { old => new }]`: an `:enum` value stored by an older `Settings.json` moves to its new index once (for values added mid-list) |
 | `:added` | a version: shows "New" until seen (leave it off for the first version) |
+| `:goes_to` | a page id: the switch has its own settings there, and the settings screen's Go to Settings (Y) jumps to that page's heading (Reloaded Controls to Controls, Reloaded Load Screen to Saves; feature switches get it from `:page`) |
 | `:priority` | order on the page |
 
 Save settings are locked at the title screen with "Load a save to change this".
@@ -282,6 +283,8 @@ Kanto Reloaded's settings live in KIF Settings. `KIFBridge` adds a Kanto Reloade
 **Reloaded Settings** picks the screen that Options opens. It is the first row of **Reloaded Systems**, the first heading of the Kanto Reloaded section, which holds the toggles between Kanto Reloaded's version of a system and the game's own. It is On by default:
 
 - **On:** the improved KIF Settings (`Core/UI/SettingsScreen.rb`). It is a subclass of KIF's `KifSettingsScreen`, so it has the same sections, rows, modules, mods, search and defaults. It draws and handles input Kanto Reloaded's way: the theme and colour settings, the pulsing cursor, choices between arrows that step with Left and Right and open a dropdown with A, values (with OPEN, badges and slider numbers) lined up on one column per heading, smaller hints and descriptions, and presets with share codes in the title bar (or R). Search works as KIF's does. A Kanto Reloaded setting another one decides right now (its `:soft_lock`, `:lock` or `:needs`: the other Speed-Up Type's rows, the PokeVial's Max Uses under Progressive Uses) is dimmed with a padlock where its arrows would be; Left, Right, A and the Default button buzz, and its description says why ("Locked: Toggle Only."). The Overworld Menu's setting rows say the same.
+
+**Go to Settings:** On a Reloaded Systems or Features switch that has settings of its own (`:goes_to`), Y (A on a keyboard) jumps to that page's heading: the heading at the top of the list, the cursor on its first setting. The button shows after the highlighted switch's name and in the hints, only while the page is showing (a feature's page hides while it's Off), and a click on either goes too. B goes back to the switch once, then to the sections as before. From a search's results it clears the search first.
 
 **The mouse** works in Kanto Reloaded's own screens and popups, never on the map (`Core/UI/Pointer.rb`):
 

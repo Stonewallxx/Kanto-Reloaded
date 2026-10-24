@@ -28,6 +28,9 @@
 # A setting or page with :feature => :controls is shown only while that
 # feature is On.
 #
+# :goes_to => :speed_up names the page a switch has its own settings on:
+# the settings screen's Go to Settings (Y) jumps to that page's heading.
+#
 # Binds connect a setting to state the game already reads, so the game's
 # own code keeps working:
 #   Bind.system(:field)          $PokemonSystem.field (style :int for 0/1)
@@ -318,6 +321,7 @@ module Reloaded
           :apply       => options[:apply],
           :preview     => options[:preview],
           :on_press    => options[:on_press],
+          :goes_to     => options[:goes_to] ? options[:goes_to].to_sym : nil,
           :commit      => options[:commit],
           :text        => options[:text],
           :added       => options[:added],

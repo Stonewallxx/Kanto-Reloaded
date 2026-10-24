@@ -33,6 +33,10 @@
 #     Speed-Up Type's rows, PokeVial's Max Uses under Progressive Uses) is
 #     dimmed with a padlock, can't be changed, and its description says why
 #   - text centred on its capitals, badges with their text centred
+#   - Go to Settings: Y on a Reloaded Systems or Features switch that has
+#     settings of its own (its :goes_to page) jumps to that page's heading;
+#     B goes back to the switch. The button shows after the highlighted
+#     switch's name (his pick, 2026-10-24: Button on the Row)
 #
 # KIF Settings' methods read its layout constants where they are written,
 # so every method that draws is redone here; its data methods (rows, search,
@@ -160,6 +164,7 @@ module Reloaded
 
     def handle_input
       return :close if @pick_done
+      @came_from = nil if @focus == :side            # out of the list: B no longer goes back to a switch
       return search if Input.trigger?(Input::JUMPUP) || Input.trigger?(Input::SPECIAL) || clicked?(*SEARCH_BOX)
       return open_presets if Input.trigger?(Input::R) || clicked?(*right_box)
       handled, result = mouse_input
@@ -376,6 +381,8 @@ module Reloaded
         press
       elsif Input.trigger?(Input::ACTION)
         reset_default
+      elsif Input.trigger?(Input::X)
+        go_to_settings if goes_to(current)
       elsif Input.trigger?(Input::BACK)
         back_out
       end
@@ -406,6 +413,7 @@ module Reloaded
       return [false, nil] unless pt.left?
       handled, result = hint_click
       return [true, result] if handled
+      return [true, go_to_settings] if @goto_hit && pt.inside?(*@goto_hit)
       if (i = pt.hit(@side_hits))
         click_section(i)
       elsif (li = pt.hit(@row_hits))
@@ -552,10 +560,69 @@ module Reloaded
       elsif @query
         self.query = nil
         @focus = :side
-      else
+      elsif !return_from_jump
         @focus = :side
       end
       refresh
+    end
+
+    #--------------------------------------------------------------------------
+    # Go to Settings (his ask, 2026-10-24)
+    #--------------------------------------------------------------------------
+    # The heading a switch's own settings are under (its :goes_to page), or
+    # nil: none, or that page isn't showing now (its feature Off)
+    def goes_to(r)
+      return nil unless r && r.kind == :opt && r.opt.respond_to?(:kr_key) && r.opt.kr_key
+      d = Reloaded::Settings.definition(r.opt.kr_key)
+      page = d && d[:goes_to] && Reloaded::Settings.page(d[:goes_to])
+      return nil unless page && Reloaded::Settings.page_visible?(page)
+      heading = _INTL(page[:name])
+      shown = (@rows[Reloaded::KIFBridge::SECTION] || []).any? { |x| x.kind == :head && x.label.to_s == heading }
+      return shown ? heading : nil
+    end
+
+    # Y: the page's heading at the top of the list, the cursor on its first
+    # setting (out of a search first); B comes back.
+    def go_to_settings
+      r = current
+      heading = goes_to(r)
+      return pbPlayBuzzerSE unless heading
+      from_scroll = @query ? nil : @scroll
+      self.query = nil if @query
+      @sub = nil
+      @section = @sections.index { |s| s[0] == Reloaded::KIFBridge::SECTION } || @section
+      list = rows
+      head = list.index { |x| x.kind == :head && x.label.to_s == heading }
+      k = head && opt_rows.index { |i| i > head }
+      return pbPlayBuzzerSE unless k
+      @came_from = { :key => r.opt.kr_key, :scroll => from_scroll }
+      @sel = k
+      ys = []
+      y = 0
+      list.each { |x| ys << y; y += row_h(x) }
+      avail = (LIST_Y1 - 4) - (LIST_Y0 + 4)
+      @scroll = [ys[head], ys.find { |v| y - v <= avail } || 0].min       # no further than the list goes
+      @focus = :list
+      pbPlayDecisionSE
+      refresh
+      return nil
+    end
+
+    # B after Go to Settings: back on the switch it came from (once).
+    def return_from_jump
+      back = @came_from
+      @came_from = nil
+      return false unless back && !@query && !@sub && section_id == Reloaded::KIFBridge::SECTION
+      list = rows
+      k = opt_rows.index { |i| list[i].opt.respond_to?(:kr_key) && list[i].opt.kr_key == back[:key] }
+      return false unless k
+      @sel = k
+      @scroll = back[:scroll] if back[:scroll]
+      return true
+    end
+
+    def jump_back?
+      return @came_from && !@query && !@sub && section_id == Reloaded::KIFBridge::SECTION
     end
 
     def open_presets
@@ -721,6 +788,7 @@ module Reloaded
     def paint_list(base, top, c)
       P.ui.rbox(base, LIST_X0, LIST_Y0, LIST_X1, LIST_Y1, 6, c[:panel])
       @row_hits = []
+      @goto_hit = nil
       @value_boxes = {}.compare_by_identity         # where each choice's dropdown drops from
       list = rows
       if list.empty?
@@ -757,6 +825,7 @@ module Reloaded
             label = _INTL("LOCKED")
             P.pill(top, lx, y + 4, label, LOCK_FILL, c[:white], false) if lx + P.width(PF::TINY, label) + 12 <= room
           end
+          goto_button(top, c, r, x + nw + 6, y, mode) if selected && !lock_name(r.opt) && goes_to(r)
         end
         vy = mode == :below ? y + ROW_H : y
         paint_value(top, c, r, vy, selected, value_kind(r)) unless value_hidden?(r, vy)
@@ -772,6 +841,18 @@ module Reloaded
       pos = (track - bar) * @scroll / [total - avail, 1].max
       base.fill_rect(LIST_X1 - 5, LIST_Y0 + 6, 2, track, c[:line])
       base.fill_rect(LIST_X1 - 5, LIST_Y0 + 6 + pos, 2, bar, c[:dim])
+    end
+
+    # Go to Settings' button after the highlighted switch's name, when it
+    # fits before the value (a click on it goes too).
+    def goto_button(top, c, r, x, y, mode)
+      key = button(:X).to_s
+      style = Reloaded::Prompts.style
+      w = Reloaded::Controls::Inputs.valid?(key) ? Reloaded::ButtonIcons.width(key, style) : P.cap_width(key)
+      room = mode == :below ? VAL_X1 : (value_kind(r) == :slider ? slider_x0(r) : value_left(r)) - 6
+      return if x + w > room
+      P.hint_button(top, x, y + 4, key, c, style)
+      @goto_hit = [x, y, x + w, y + ROW_H - 2]
     end
 
     # While a dropdown is open, a value it would cut through isn't drawn
@@ -1052,10 +1133,11 @@ module Reloaded
       if @focus == :side
         return [[:ud, _INTL("Section")], [:lr, _INTL("Open"), :mouse_open], [back, @query ? _INTL("Clear") : _INTL("Close"), :mouse_back]]
       end
-      out = @query ? _INTL("Clear") : (@sub ? _INTL("Back") : _INTL("Sections"))
-      return [[:ud, _INTL("Select")], [button(:C), _INTL("Add to Page")], [back, out, :mouse_back]] if @pick_mode
-      return [[:ud, _INTL("Select")], [:lr, _INTL("Change"), :mouse_change], [button(:A), _INTL("Default"), :reset_default],
-              [back, out, :mouse_back]]
+      out = @query ? _INTL("Clear") : (@sub || jump_back? ? _INTL("Back") : _INTL("Sections"))
+      go = goes_to(current) ? [[button(:X), _INTL("Go to Settings"), :go_to_settings]] : []
+      return [[:ud, _INTL("Select")], [button(:C), _INTL("Add to Page")]] + go + [[back, out, :mouse_back]] if @pick_mode
+      return [[:ud, _INTL("Select")], [:lr, _INTL("Change"), :mouse_change], [button(:A), _INTL("Default"), :reset_default]] +
+             go + [[back, out, :mouse_back]]
     end
   end
 end

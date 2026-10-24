@@ -96,7 +96,7 @@ module Reloaded
       def register_settings
         s = Reloaded::Settings
         s.register(TOGGLE, :page => :systems, :priority => 10,
-          :name => "Reloaded Controls", :type => :toggle, :default => true, :preset => false,
+          :name => "Reloaded Controls", :type => :toggle, :default => true, :preset => false, :goes_to => :controls,
           :description => "Kanto Reloaded's Controls: Rebind every action on keyboard and controller. Off uses the game's own controls (F1).")
         s.register_page(:controls, :group => :general, :name => "Controls", :icon => :controls, :priority => 30,
           :visible => proc { Reloaded::Controls.enabled? },

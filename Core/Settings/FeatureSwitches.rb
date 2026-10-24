@@ -13,8 +13,9 @@ module Reloaded
       def boot
         Reloaded::Features.all.each do |f|
           next if f[:core]
-          register_row(:"features.#{f[:id]}", :features, f, f[:order])
           page = f[:page] && Reloaded::Settings.page(f[:page])
+          # the Features row goes to the feature's own page (Go to Settings)
+          register_row(:"features.#{f[:id]}", :features, f, f[:order], page ? f[:page] : nil)
           register_row(:"#{f[:page]}.enabled", f[:page], f, -1000) if page
         end
         return true
@@ -22,13 +23,13 @@ module Reloaded
 
       private
 
-      def register_row(key, page, feature, priority)
+      def register_row(key, page, feature, priority, goes_to = nil)
         id = feature[:id]
         description = feature[:description].to_s
         description += " " + _INTL("Changes apply after a restart.") if feature[:restart]
         Reloaded::Settings.register(key, :page => page, :priority => priority,
           :name => feature[:name], :type => :toggle, :default => feature[:default] == :on,
-          :description => description, :feature => nil,
+          :description => description, :feature => nil, :goes_to => goes_to,
           :bind => Reloaded::Settings::Bind.direct(
             proc { Reloaded::Features.state(id) == :on },
             proc { |on| Reloaded::Features.set(id, on ? :on : :off) }))

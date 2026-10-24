@@ -58,7 +58,7 @@ module Reloaded
       def register_settings
         s = Reloaded::Settings
         s.register(LOAD_SCREEN, :page => :systems, :priority => 20, :type => :toggle, :default => true, :preset => false,
-          :name => "Reloaded Load Screen",
+          :name => "Reloaded Load Screen", :goes_to => :saves,
           :description => "Kanto Reloaded's Load Screen: Your save's note, health and backups, What's New and the Save Manager, and KIF's update checks before it in Reloaded's look. Off shows the game's own.")
         s.register(MOD_CHECK, :page => :systems, :priority => 40, :type => :toggle, :default => true, :preset => false,
           :name => "Startup Mod-Check",

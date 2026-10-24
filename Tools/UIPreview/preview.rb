@@ -1280,6 +1280,57 @@ drive_cs.call("J feel", [
   I::BACK, I::BACK
 ])
 
+#---------------------------------------------------------------- K: Go to Settings (his pick, 2026-10-24: Button on the Row)
+def hint_labels; (scr.instance_variable_get(:@hint_pairs) || []).map { |p| p[1] }; end
+def first_drawn; i = scr.send(:layout_rows)[0][0][0]; scr.send(:rows)[i]; end
+def on_row?(heading, label); r = scr.current; r && r.heading.to_s == heading && r.label.to_s == label; end
+sp_was = Reloaded::Features.state(Reloaded::SpeedUp::FEATURE)
+Reloaded::Features.set(Reloaded::SpeedUp::FEATURE, :on)
+drive("K go to settings", [
+  I::RIGHT, down_to("Speed-Up"),
+  at { check("on the Features page's Speed-Up: Go to Settings in the hints, its button after the name",
+             on_row?("Features", "Speed-Up") && hint_labels.include?("Go to Settings") && scr.instance_variable_get(:@goto_hit)) },
+  dmp("98_go_to_settings"),
+  I::X,
+  at { check("Y: Speed-Up's own heading at the top, the cursor on its first setting (#{first_drawn.label})",
+             on_row?("Speed-Up", "Speed-Up") && first_drawn.kind == :head && first_drawn.label.to_s == "Speed-Up") },
+  at { check("...and B says Back (#{hint_labels.last})", hint_labels.last == "Back" && !hint_labels.include?("Go to Settings")) },
+  dmp("99_went_to_settings"),
+  I::DOWN, I::BACK,
+  at { check("B: back on the Features switch, still in the list", on_row?("Features", "Speed-Up") && scr.focus == :list) },
+  at { check("...then B says Sections again (#{hint_labels.last})", hint_labels.last == "Sections") },
+  I::UP,
+  at { check("a switch with no settings of its own (#{row_name}): no button, no hint",
+             row_name == "Healing Moves" && !hint_labels.include?("Go to Settings") && scr.instance_variable_get(:@goto_hit).nil?) },
+  I::X,
+  at { check("...and Y does nothing there", on_row?("Features", "Healing Moves")) },
+  I::DOWN,
+  at { h = scr.instance_variable_get(:@goto_hit); Input.queue.unshift([:click, h[0] + 3, h[1] + 5]) },
+  at { check("a click on the row's button goes too", on_row?("Speed-Up", "Speed-Up")) },
+  I::BACK,
+  click_hint("Go to Settings"),
+  at { check("...and a click on the hint", on_row?("Speed-Up", "Speed-Up")) },
+  I::BACK, I::BACK,
+  at { check("B, B: out to the sections", scr.focus == :side) },
+  I::RIGHT,
+  at { check("back in the list, B goes to the sections again (no old jump left)", hint_labels.last == "Sections") },
+  at {
+    scr.query = "Menu"
+    list = scr.send(:rows)
+    k = scr.send(:opt_rows).index { |i| list[i].heading.to_s == "Features" && list[i].label.to_s == "Overworld Menu" }
+    scr.instance_variable_set(:@sel, k.to_i)
+    scr.instance_variable_set(:@focus, :list)
+    scr.refresh
+  },
+  at { check("in a search's results, on Overworld Menu (#{row_name})", row_name == "Overworld Menu" && hint_labels.include?("Go to Settings")) },
+  I::X,
+  at { check("Y: the search clears, Overworld Menu's own heading", scr.instance_variable_get(:@query).nil? && on_row?("Overworld Menu", "Overworld Menu")) },
+  I::BACK,
+  at { check("...B: its Features switch", on_row?("Features", "Overworld Menu")) },
+  I::BACK, I::BACK
+])
+Reloaded::Features.set(Reloaded::SpeedUp::FEATURE, sp_was)
+
 #---------------------------------------------------------------- descriptions that don't fit
 P = Reloaded::Pixel
 probe = Bitmap.new(512, 384)
