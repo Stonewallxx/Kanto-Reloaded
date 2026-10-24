@@ -32,6 +32,14 @@ module Reloaded
       return button?(:MOUSERIGHT)
     end
 
+    # True while the left button is held down (dragging)
+    def held?
+      return false unless ::Input.const_defined?(:MOUSELEFT)
+      return ::Input.press?(::Input::MOUSELEFT) ? true : false
+    rescue StandardError
+      return false
+    end
+
     def button?(name)
       return false unless ::Input.const_defined?(name)
       return ::Input.trigger?(::Input.const_get(name)) ? true : false

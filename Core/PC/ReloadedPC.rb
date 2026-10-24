@@ -58,9 +58,22 @@ module Reloaded
 
       def boot
         register_settings
+        Reloaded::SaveStore.register(:pc)          # Party Presets (Presets.rb)
         install
         add_action(:mark, :label => "Mark", :description => "Mark it with shapes.", :order => 10) do |screen, _pkmn, selected, heldpoke|
           screen.pbMark(selected, heldpoke)
+        end
+        # Step 6 (his pick: Actions Then Pick): the cursor picks the second
+        add_action(:compare, :label => "Compare", :description => "Compare it with another Pokémon.", :order => 20,
+                   :enabled => proc { |pkmn| !pkmn.egg? }, :disabled_reason => "An Egg has no stats to compare.") do |screen, pkmn, _selected, heldpoke|
+          scene = screen.respond_to?(:scene) ? screen.scene : nil
+          scene.kr_compare(heldpoke || pkmn) if scene.respond_to?(:kr_compare)
+        end
+        # Move Whole Boxes (his pick, 2026-10-25: Lifted Tile, UI/PCBoxMove.rb)
+        add_action(:move_box, :label => "Move Box", :description => "Move this box to another place among your boxes.",
+                   :scope => :box, :order => 10, :enabled => proc { |screen| box_scene(screen) && !box_scene(screen).kr_box_move_reason },
+                   :disabled_reason => proc { |screen| box_scene(screen) ? box_scene(screen).kr_box_move_reason : "" }) do |screen|
+          box_scene(screen).kr_move_box if box_scene(screen)
         end
         return true
       end
@@ -68,6 +81,12 @@ module Reloaded
       #------------------------------------------------------------------------
       # Actions (Step 2)
       #------------------------------------------------------------------------
+      # Kanto Reloaded's PC scene behind a screen (nil: the game's own)
+      def box_scene(screen)
+        scene = screen.respond_to?(:scene) ? screen.scene : nil
+        return scene.respond_to?(:kr_move_box) ? scene : nil
+      end
+
       def add_action(id, label:, description: "", group: nil, scope: :pokemon, enabled: nil, disabled_reason: nil, order: 100, &handler)
         @actions.reject! { |a| a.id == id.to_sym }
         @actions << Action.new(id.to_sym, label, description.to_s, group ? group.to_s : nil, scope.to_sym, enabled, disabled_reason,
@@ -98,6 +117,37 @@ module Reloaded
         return nil
       end
 
+      #------------------------------------------------------------------------
+      # NEW marks (his picks, 2026-10-25: NEW Pill, cleared when the PC
+      # closes): the Pokémon in the boxes that weren't there, or in the
+      # party, when the PC last closed. The save keeps their personal IDs
+      # (section "pc", "seen"); the first visit marks nothing.
+      #------------------------------------------------------------------------
+      def fresh_ids(storage)
+        data = Reloaded::SaveStore.section(:pc)
+        return {} unless data && data["seen"]
+        seen = {}
+        data["seen"].each { |pid| seen[pid] = true }
+        fresh = {}
+        each_boxed(storage) { |pk| fresh[pk.personalID] = true unless seen[pk.personalID] }
+        return fresh
+      end
+
+      def remember_seen(storage)
+        data = Reloaded::SaveStore.section(:pc)
+        return unless data
+        ids = storage.party.map { |pk| pk.personalID }
+        each_boxed(storage) { |pk| ids << pk.personalID }
+        data["seen"] = ids.uniq
+      end
+
+      def each_boxed(storage)
+        storage.maxBoxes.times do |b|
+          next unless storage[b]
+          storage.maxPokemon(b).times { |i| (pk = storage[b, i]) && yield(pk) }
+        end
+      end
+
       # Which heading one of KIF's Kuray Actions goes under
       def kif_group(id)
         id = id.to_s.to_sym
@@ -126,6 +176,11 @@ module Reloaded
         return if @installed || !defined?(::PokemonStorageScene)
         @installed = true
         Reloaded::Hooks.prepend(nil, ::PokemonStorageScene.singleton_class, SceneChoice, :id => :reloaded_pc_scene)
+        # Free Picks (Step 4): PIF's multi-select and KIF's multi-select
+        # actions take the picks as the selection
+        if defined?(::PokemonStorageScreen) && ::PokemonStorageScreen.method_defined?(:getMultiSelection)
+          Reloaded::Hooks.prepend(nil, ::PokemonStorageScreen, PicksSelection, :id => :reloaded_pc_picks)
+        end
       end
 
       # Kanto Reloaded's scene class: a subclass of the game's, made the
@@ -172,7 +227,7 @@ module Reloaded
           _INTL("Select") => _INTL("Choose this one."),
           _INTL("Choose") => _INTL("Choose this one."),
           _INTL("Jump") => _INTL("Go to another box."),
-          _INTL("Select All") => _INTL("Select everything in this box."),
+          _INTL("Select All") => _INTL("Pick every Pokémon in this box."),
           _INTL("Wallpaper") => _INTL("Change this box's wallpaper."),
           _INTL("Name") => _INTL("Rename this box."),
           _INTL("Info") => _INTL("How the Transfer Box works."),
@@ -198,6 +253,16 @@ module Reloaded
           _INTL("Cancel") => _INTL("Back to the box.")
         }
         return words[label.to_s] || ""
+      end
+    end
+
+    # PIF's multi-select asks for the selected places: Kanto Reloaded's
+    # scene's picks when it has some in that box (else PIF's rectangle)
+    module PicksSelection
+      def getMultiSelection(box, currentSelected)
+        picks = @scene.respond_to?(:kr_picks_for) ? @scene.kr_picks_for(box) : nil
+        return picks if picks
+        super
       end
     end
 

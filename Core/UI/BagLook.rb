@@ -79,6 +79,15 @@ module Reloaded
       return POCKET_RGB[pocket.to_i] || POCKET_RGB[1]
     end
 
+    # An item's name colour for other screens (the PC's Compare): as the
+    # Bag draws it (the theme's words colour if it can't tell)
+    def self.item_colour(c, id)
+      @colours ||= Object.new.extend(self)
+      return @colours.send(:item_ink, c, id)
+    rescue StandardError
+      return c[:txt]
+    end
+
     def item_rgb(id)
       it = B.item_data(id)
       return Reloaded::PartyScreen.type_rgb(::GameData::Move.get(it.move).type) if machine?(it)

@@ -27,8 +27,9 @@
 # Pokémon held, B puts it back where it came from. Up from the top row
 # reaches the box name (A: the Box Overview, X: the box's actions; the box
 # tools are in UI/PCTools.rb). A held Pokémon floats
-# over the slot under the cursor with a small shadow, its old slot outlined
-# (his pick: Lifted). The mouse: pointing picks, a click does what A does,
+# over the slot under the cursor with a small shadow, a soft patch in its old slot
+# (his pick: Lifted). Y picks several (Free Picks, UI/PCPicks.rb), RS
+# searches (UI/PCSearch.rb). The mouse: pointing picks, a click does what A does,
 # a right click goes back, the wheel over the box changes box.
 #
 # Withdraw, Deposit, choosing from the PC (the ones that can't be chosen
@@ -144,8 +145,25 @@ module Reloaded
       @popup_hints = nil
       @kr_stub = Stub.new(self)
       @kr_focus = start_focus
+      @kr_picks = nil
+      @kr_multi_from = nil
+      @kr_search = nil
+      @kr_match = {}
+      @kr_compare = nil
+      @kr_cmp = nil
+      @kr_drag = nil
+      @kr_fresh = begin                  # NEW marks: here since the last visit
+                    Reloaded::PC.fresh_ids(@storage)
+                  rescue StandardError
+                    {}
+                  end
       frame_init
       open_sprites
+      @kr_marks = layer(3)               # over the icons: Free Picks' ticks, where they'll land
+      @kr_gold = Sprite.new(@viewport)   # Compare: the first one's cursor, in gold (UI/PCCompare.rb)
+      @kr_gold.z = 1
+      @kr_gold.visible = false
+      @overlay_sprite.z = 8              # popups over everything
       checkOpenTransferBox(@storage.currentBox)
       refresh
       pbSEPlay("PC access") if animate
@@ -157,8 +175,19 @@ module Reloaded
     def pbCloseBox(animate = true)
       return fb(:pbCloseBox, animate) if @kr_fb
       Reloaded::PC.last_focus = @kr_focus if quick? && Reloaded::PC.respond_to?(:last_focus=)
+      begin
+        Reloaded::PC.remember_seen(@storage)           # NEW marks clear when the PC closes (his pick)
+      rescue StandardError => e
+        Reloaded::Log.exception("The Reloaded PC couldn't note what's been seen", e, :pc)
+      end
+      @kr_picks = nil
+      @kr_search = nil
+      @kr_compare = nil
       dispose_icons
       dispose_pictures
+      dispose_marks
+      dispose_gold
+      dispose_compare_icons
       dispose_sprites
     end
 
@@ -345,6 +374,7 @@ module Reloaded
     # A Pokémon's look changed (an item, a shiny gamble): its icons again
     def pbHardRefresh
       return fb(:pbHardRefresh) if @kr_fb
+      @kr_match = {}
       dispose_icons
       refresh
     end
@@ -367,6 +397,10 @@ module Reloaded
     def update
       return fb(:update) if @kr_fb
       update_frame if @sprite && !@sprite.disposed?
+      @kr_gold.opacity = P.cursor_opacity(@frame) if @kr_gold && !@kr_gold.disposed? && @kr_gold.visible
+      if @kr_marks && !@kr_marks.disposed?
+        @kr_marks.opacity = @kr_ov && drop_held? ? P.cursor_opacity(@frame) : 255
+      end
       (@kr_icons || {}).each_value { |s, _k| s.update if s && !s.disposed? }
       @kr_detail[0].update if @kr_detail && !@kr_detail[0].disposed?
       Reloaded::Toast.update if defined?(Reloaded::Toast)
@@ -374,7 +408,8 @@ module Reloaded
 
     def sprites
       return fb(:sprites) if @kr_fb
-      list = Sprites.new([@sprite, @cursor_sprite, @top_sprite, @hint_sprite, @overlay_sprite].compact.reject(&:disposed?) +
+      list = Sprites.new([@sprite, @cursor_sprite, @kr_gold, @top_sprite, @kr_marks, @hint_sprite, @overlay_sprite].compact.reject(&:disposed?) +
+                         (@kr_cmp_icons || {}).values.map { |s, _k| s }.reject(&:disposed?) +
                          (@kr_icons || {}).values.map { |s, _k| s }.reject(&:disposed?))
       list.stub = @kr_stub
       return list
@@ -420,6 +455,10 @@ module Reloaded
         return ret
       elsif wallpaper_list?(message, labels)
         ret = wallpaper_grid(labels, index)
+        refresh
+        return ret
+      elsif picks_list?(message, labels)
+        ret = picks_menu(labels)
         refresh
         return ret
       end
@@ -738,14 +777,53 @@ module Reloaded
       labels.each_with_index do |l, i|
         next if i == cancel || l == _INTL("Sort (all Boxes)")
         name = Reloaded::PC.rename(l)
-        rows << [name, Reloaded::PC.describe(name), true, l == _INTL("Sort") ? [:sort] : i]
+        ret = if l == _INTL("Sort") then [:sort]
+              elsif l == _INTL("Select all") then [:pick_all]     # picks every one (his pick: Free Picks)
+              else i
+              end
+        rows << [name, Reloaded::PC.describe(name), true, ret]
       end
       Reloaded::PC.actions(:box, @screen).each { |a, label, on, why| rows << [label, on ? _INTL(a.description) : why, on, [:kr, a]] }
       rows << [_INTL("Cancel"), Reloaded::PC.describe(_INTL("Cancel")), true, cancel]
       ret = pc_menu(PF.fit(PF::TEXT, box.name.to_s, 280), rows, 0)
       return -1 if ret.nil?
       return ret unless ret.is_a?(Array)
-      ret == [:sort] ? sort_popup : ret[1].handler.call(@screen)
+      case ret[0]
+      when :sort then sort_popup
+      when :pick_all then pick_all
+      else ret[1].handler.call(@screen)
+      end
+      return cancel
+    end
+
+    # PIF's list for several (Selected 4 Pokémon.): Pick Up All and Sort are
+    # Kanto Reloaded's, the rest (Release, KIF's Battle Selected and Export)
+    # PIF's and KIF's, on the picks
+    def picks_list?(message, labels)
+      n = kr_picks_for(@storage.currentBox)
+      return n && labels.last == _INTL("Cancel") && labels.include?(_INTL("Move")) &&
+             message.to_s == _INTL("Selected {1} Pokémon.", n.length)
+    end
+
+    def picks_menu(labels)
+      cancel = labels.length - 1
+      notes = { _INTL("Release") => _INTL("Let them go. They won't come back."), _INTL("Battle Selected") => _INTL("Battle with the picked ones."),
+                _INTL("Export") => _INTL("Save the picked ones to files.") }
+      rows = []
+      labels.each_with_index do |l, i|
+        next if i == cancel
+        rows << if l == _INTL("Move") then [_INTL("Pick Up All"), _INTL("Pick them all up."), true, [:pick_up]]
+                elsif l == _INTL("Sort") then [_INTL("Sort"), _INTL("Sort the picked ones in their own places."), true, [:sort]]
+                else
+                  name = Reloaded::PC.rename(l)
+                  [name, notes[l] || Reloaded::PC.describe(name), true, i]
+                end
+      end
+      rows << [_INTL("Cancel"), Reloaded::PC.describe(_INTL("Cancel")), true, cancel]
+      ret = pc_menu(_INTL("{1} Picked", picks_here.length), rows, 0)
+      return -1 if ret.nil?
+      return ret unless ret.is_a?(Array)
+      ret == [:sort] ? sort_popup(:picked) : pick_up_all
       return cancel
     end
 
@@ -953,6 +1031,9 @@ module Reloaded
       begin
         dispose_icons
         dispose_pictures
+        dispose_marks
+        dispose_gold
+        dispose_compare_icons
         dispose_sprites if @viewport
       rescue StandardError
         nil
@@ -1031,6 +1112,7 @@ module Reloaded
     def focused_pokemon
       pk = under_cursor
       return pk if pk
+      return multi_held[0][0] unless multi_held.empty?
       return held if held && !fusing?
       return held if fusing? && @kr_focus[0] != :name
       return nil
@@ -1044,11 +1126,24 @@ module Reloaded
       return [6 + 12 + i * PARTY_STEP + PARTY_STEP / 2, PARTY_Y + 38]
     end
 
+    # The header's middle: the box name, a red padlock and SORT / EXPORT
+    # when it's locked, and a search's pill, centred together
+    def name_group
+      name = PF.fit(PF::ROW, box.name.to_s, 230)
+      tw = P.width(PF::ROW, name)
+      lock = lock_words
+      lock_w = lock.empty? ? 0 : 12 + P.width(PF::TINY, lock) + 8
+      pill = search_on? ? search_pill_words : nil
+      pill_w = pill ? 8 + P.width(PF::TINY, pill) + 12 : 0
+      width = tw + lock_w + pill_w
+      return { :name => name, :tw => tw, :lock => lock, :lock_w => lock_w, :pill => pill, :width => width,
+               :x0 => (W - width) / 2 }
+    end
+
+    # The name and its lock (the box name's cursor and click)
     def name_rect
-      tw = P.width(PF::ROW, box.name.to_s)
-      extra = lock_words.empty? ? 0 : 8 + 12 + P.width(PF::TINY, lock_words)
-      x0 = (W - tw) / 2 - 10
-      return [x0, 3, tw + extra + 20, 25]
+      g = name_group
+      return [g[:x0] - 10, 3, g[:tw] + g[:lock_w] + 20, 25]
     end
 
     def lock_words
@@ -1110,8 +1205,15 @@ module Reloaded
           return :stay
         end
       end
+      if comparing?
+        return compare_choose if Input.trigger?(Input::USE)
+        return compare_cancel if Input.trigger?(Input::BACK)
+        return :stay
+      end
       return choose if Input.trigger?(Input::USE)
       return actions if Input.trigger?(Input::ACTION)
+      return toggle_pick if Input.trigger?(Input::X) && !@kr_party_only        # Y (UI/PCPicks.rb)
+      return open_search if Input.trigger?(Input::SPECIAL) && !@kr_party_only  # RS (UI/PCSearch.rb)
       return back if Input.trigger?(Input::BACK)
       return :stay
     end
@@ -1166,10 +1268,12 @@ module Reloaded
       refresh
     end
 
+    # LB / RB; while a search is on, to the nearest box with a match
     def change_box(dir)
       n = @storage.maxBoxes
       pbPlayCursorSE
-      show_box((@storage.currentBox + dir) % n)
+      to = search_on? ? match_boxes[dir < 0 ? 0 : 1] : nil
+      show_box(to || (@storage.currentBox + dir) % n)
       checkOpenTransferBox(@storage.currentBox)
       refresh
     end
@@ -1184,7 +1288,10 @@ module Reloaded
     # the Box Overview (UI/PCTools.rb)
     def choose
       kind, i = @kr_focus
+      return compare_choose if comparing?
       return i if @kr_party_only
+      return place_all if quick? && !multi_held.empty? && kind != :name
+      return pick_up_all if quick? && kind == :box && picks?
       if kind == :box
         return :stay if quick? && !box[i] && !held && multi_held.empty? && @cursormode != "multiselect"
         return [@storage.currentBox, i]
@@ -1200,14 +1307,24 @@ module Reloaded
     def actions
       kind, i = @kr_focus
       return [-4, -1] if kind == :name
+      if quick? && (picks? || !multi_held.empty?)
+        return picks_actions if picks? && multi_held.empty? && kind == :box
+        pbPlayBuzzerSE
+        return :stay
+      end
       return choose unless quick? && @cursormode == "quickswap"
       return :stay unless under_cursor || held
       @cursormode = "default"
       return kind == :party ? [-1, i] : [@storage.currentBox, i]
     end
 
-    # B: a held Pokémon goes back where it came from; else the game's B
+    # B: a held Pokémon goes back where it came from (several too), picks and
+    # then a search are cleared; else the game's B
     def back
+      return compare_cancel if comparing?
+      return put_picks_back if quick? && !multi_held.empty?
+      return clear_picks if quick? && picks? && !held
+      return clear_search if search_on? && !held
       if quick? && held && !fusing?
         spot = put_back_spot
         unless spot
@@ -1241,17 +1358,28 @@ module Reloaded
     end
 
     # The mouse: pointing picks, a click does A, a right click B, the wheel
-    # over the box changes box
+    # over the box changes box. Drag and drop (his pick: Follows the Mouse
+    # Exactly): a press on a Pokémon picks it up as a click does; moved with
+    # the button held, it floats under the pointer, and letting go puts it
+    # down on the place there (off the places: back where it came from). A
+    # click without moving still just picks up.
     def mouse_input
       pt = Reloaded::Pointer
-      if pt.moved? && !@kr_party_only
+      moved = pt.moved?
+      if moved && !@kr_party_only
         hit = pt.hit(@kr_hits || [])
         hit = nil if hit == [:prev] || hit == [:next]
         if hit && hit != @kr_focus
           @kr_focus = hit
           pbPlayCursorSE
           refresh
+        elsif dragging?
+          refresh                                       # it follows the pointer
         end
+      end
+      if @kr_drag
+        handled, result = drag_input(pt)
+        return [true, result] if handled
       end
       return [true, back] if pt.right?
       w = pt.wheel
@@ -1269,7 +1397,50 @@ module Reloaded
         return [true, :stay]
       end
       @kr_focus = hit
-      return [true, choose]
+      start = drag_start?(hit)
+      result = choose
+      @kr_drag = { :from => pt.pos, :moved => false } if start
+      return [true, result]
+    end
+
+    # A press can start a drag: organising, nothing held, a Pokémon there
+    def drag_start?(hit)
+      return false unless quick? && !fusing? && !comparing? && !held && multi_held.empty?
+      kind, i = hit
+      return kind == :box ? !box[i].nil? : (kind == :party && !@storage.party[i].nil?)
+    end
+
+    def dragging?
+      return @kr_drag && @kr_drag[:moved] && (held || !multi_held.empty?) ? true : false
+    end
+
+    # While the button's held: moved far enough, it's a drag. Let go: put
+    # down where the pointer is (a click, not moved, keeps holding).
+    def drag_input(pt)
+      if pt.held?
+        p = pt.pos
+        f = @kr_drag[:from]
+        if !@kr_drag[:moved] && p && f && (p[0] - f[0]).abs + (p[1] - f[1]).abs > 4
+          @kr_drag[:moved] = true
+          refresh
+        end
+        return [true, :stay]
+      end
+      was = dragging?
+      @kr_drag = nil
+      return [false, nil] unless was
+      hit = pt.hit(@kr_hits || [])
+      if hit.is_a?(Array) && [:box, :party].include?(hit[0])
+        @kr_focus = hit
+        return [true, choose]
+      end
+      return [true, back]
+    end
+
+    def fresh?(pk)
+      return @kr_fresh && @kr_fresh[pk.personalID] ? true : false
+    rescue StandardError
+      return false
     end
 
     #--------------------------------------------------------------------------
@@ -1286,25 +1457,44 @@ module Reloaded
         return [[:ud, _INTL("Choose")], [button(:C), _INTL("Fuse")], [button(:L), _INTL("Box")], [b, _INTL("Stop Fusing")]]
       end
       return overview_hints if @kr_ov
+      return compare_hints if @kr_cmp
+      if comparing?
+        return [[:ud, _INTL("Choose")], [button(:C), _INTL("Compare")], [button(:L), _INTL("Box")], [b, _INTL("Cancel")]]
+      end
+      # while a search is on: LB / RB to the next box with a match, B clears it
+      box_hint = [button(:L), search_on? && match_boxes.any? ? _INTL("Next Match") : _INTL("Box")]
+      search_hint = [button(:Z), _INTL("Search"), :open_search]
+      close_hint = [b, search_on? ? _INTL("Clear Search") : _INTL("Close")]
       if kind == :name
-        return [[:lr, _INTL("Box")], [button(:C), _INTL("Box Overview")], [button(:A), _INTL("Box Actions")],
-                [:d, _INTL("Back to the Box")], [b, _INTL("Close")]]
+        return [[:lr, box_hint[1]], [button(:C), _INTL("Box Overview")], [button(:A), _INTL("Box Actions")],
+                [:d, _INTL("Back to the Box")], close_hint]
       end
       unless quick?
         verb = choosing? ? _INTL("Choose") : _INTL("Actions")
-        return [[:ud, _INTL("Choose")], [button(:C), verb], [button(:L), _INTL("Box")], [b, _INTL("Close")]]
+        return [[:ud, _INTL("Choose")], [button(:C), verb], box_hint, search_hint, close_hint]
       end
-      if held || !multi_held.empty?
+      if held
         act = under_cursor ? _INTL("Swap") : _INTL("Place")
         return [[:ud, _INTL("Choose")], [button(:C), act], [button(:A), _INTL("Actions")], [button(:L), _INTL("Box")],
                 [b, _INTL("Put Back")]]
       end
+      unless multi_held.empty?
+        return [[:ud, _INTL("Choose")], [button(:C), _INTL("Place All")], [button(:L), _INTL("Box")], [b, _INTL("Put Back")]]
+      end
+      if picks?
+        pick = kind == :box && picks_here.include?(@kr_focus[1]) ? _INTL("Unpick") : _INTL("Pick")
+        return [[:ud, _INTL("Choose")], [button(:X), pick], [button(:C), _INTL("Pick Up All")], [button(:A), _INTL("Actions")],
+                [b, _INTL("Clear")]]
+      end
       if @cursormode == "multiselect"
         return [[:ud, _INTL("Choose")], [button(:C), _INTL("Select")], [button(:L), _INTL("Box")], [b, _INTL("Close")]]
       end
-      return [[:ud, _INTL("Choose")], [button(:C), _INTL("Pick Up")], [button(:A), _INTL("Actions")],
-              [button(:L), _INTL("Box")], [b, _INTL("Close")]] if under_cursor
-      return [[:ud, _INTL("Choose")], [button(:L), _INTL("Box")], [b, _INTL("Close")]]
+      if under_cursor
+        list = [[:ud, _INTL("Choose")], [button(:C), _INTL("Pick Up")], [button(:A), _INTL("Actions")]]
+        list << [button(:X), _INTL("Pick")] if kind == :box && can_pick?
+        return list + [box_hint, search_hint, close_hint]
+      end
+      return [[:ud, _INTL("Choose")], box_hint, search_hint, close_hint]
     end
 
     def menu_hints
@@ -1334,60 +1524,84 @@ module Reloaded
       @cursor_rect = nil
       @kr_hits = []
       @kr_used = {}
+      marks.clear if @kr_marks && !@kr_marks.disposed?
       hide_icons
-      if @kr_ov
+      if @kr_ov || @kr_cmp
         @kr_detail[0].visible = false if @kr_detail && !@kr_detail[0].disposed?
-        draw_overview(base, top, c)
+        place_gold(nil)
+        @kr_cmp ? draw_compare(base, top, c) : draw_overview(base, top, c)
         paint_hints(base, c)
         place_cursor
         return
       end
       header(base, top, c)
       box_grid(base, top, c)
+      draw_picks(top, c)
       plate(base, top, c)
-      party_row(base, top, c)
+      search_editing? ? filters_row(base, top, c) : party_row(base, top, c)
       held_over(base, top, c)
       drop_unused_icons
       paint_hints(base, c)
       place_cursor
+      place_gold(gold_rect)
     end
 
     def header(base, top, c)
       PP.paint_background(base, c)
       n = @storage.maxBoxes
       cur = @storage.currentBox
-      prev_b = @storage[(cur - 1) % n]
-      next_b = @storage[(cur + 1) % n]
+      prev_i = (cur - 1) % n
+      next_i = (cur + 1) % n
+      found = search_on? ? match_boxes : [nil, nil]
+      prev_i = found[0] if found[0]
+      next_i = found[1] if found[1]
+      prev_b = @storage[prev_i]
+      next_b = @storage[next_i]
+      side = proc { |j, b| found.include?(j) ? _INTL("{1} ({2})", b.name.to_s, matches_in(j)) : b.name.to_s }
+      plain = !(fusing? && held) && !choosing? && !search_editing? && !@kr_entry
+      # the middle's room (the name with its lock and a search's pill, or a
+      # banner or field): the box names either side fit what's left
+      mid0, mid1 = W / 2 - 115, W / 2 + 115
+      if plain
+        g = name_group
+        mid0, mid1 = g[:x0] - 10, g[:x0] + g[:width] + 10
+      end
       style = Reloaded::Prompts.style
       lk = Reloaded::Prompts.input(:L)
       rk = Reloaded::Prompts.input(:R)
       lw = lk ? Reloaded::ButtonIcons.draw(top, 8, 6, lk, c, style, 18) : 0
       x = 8 + lw + 6
-      pw = P.text(top, x, 4, 120, 22, PF.fit(PF::TEXT, prev_b.name.to_s, 110), c[:dim], PF::TEXT)
+      room = [[mid0 - x - 6, 120].min, 30].max
+      pw = P.text(top, x, 4, room + 10, 22, PF.fit(PF::TEXT, side.call(prev_i, prev_b), room), c[:dim], PF::TEXT)
       @kr_hits << [[:prev], 4, 2, x + pw + 4, 28]
       rw = rk ? Reloaded::ButtonIcons.width(rk, style, 18) : 0
       Reloaded::ButtonIcons.draw(top, W - 8 - rw, 6, rk, c, style, 18) if rk
-      next_name = PF.fit(PF::TEXT, next_b.name.to_s, 110)
+      room = [[W - 14 - rw - mid1 - 6, 120].min, 30].max
+      next_name = PF.fit(PF::TEXT, side.call(next_i, next_b), room)
       nw = P.width(PF::TEXT, next_name)
       P.text(top, W - 14 - rw - nw, 4, nw, 22, next_name, c[:dim], PF::TEXT)
       @kr_hits << [[:next], W - 18 - rw - nw, 2, W - 4, 28]
       if fusing? && held
         banner(base, top, c, _INTL("Fusing with {1}", held.name.to_s).upcase, c[:gold], splicer_file)
+      elsif comparing?
+        banner(base, top, c, _INTL("Compare with {1}", @kr_compare[:first].name.to_s).upcase, c[:acc] || c[:selb], nil)
       elsif choosing?
         banner(base, top, c, _INTL("Choose a Pokémon").upcase, c[:acc] || c[:selb], nil)
+      elsif search_editing?
+        draw_search_field(base, top, c)
       elsif @kr_entry
         draw_entry_field(base, top, c)
       else
-        name = PF.fit(PF::ROW, box.name.to_s, 230)
-        tw = P.width(PF::ROW, name)
-        x0 = (W - tw) / 2
-        P.text(top, x0, 3, tw, 24, name, c[:title], PF::ROW)
-        words = lock_words
-        unless words.empty?
-          lx = x0 + tw + 8
+        g = name_group
+        x0 = g[:x0]
+        P.text(top, x0, 3, g[:tw], 24, g[:name], c[:title], PF::ROW)
+        lx = x0 + g[:tw] + 8
+        unless g[:lock].empty?
           padlock(top, lx + 1, 9, c[:red])
-          P.text(top, lx + 12, 8, 120, 14, words, c[:red], PF::TINY)
+          P.text(top, lx + 12, 8, 120, 14, g[:lock], c[:red], PF::TINY)
+          lx += g[:lock_w]
         end
+        P.pill(top, lx, 8, g[:pill], c[:selb], c[:dark], false) if g[:pill]
         nr = name_rect
         @kr_hits << [[:name], nr[0], nr[1], nr[0] + nr[2], nr[1] + nr[3]] unless @kr_party_only
         @cursor_rect = nr if @kr_focus[0] == :name
@@ -1434,9 +1648,11 @@ module Reloaded
         s.opacity = dimmed?(pk) ? 90 : 255
         s.opacity = 110 if lifted == [:box, i]          # under the one held: what A swaps with
         star(top, sx + 3, sy + 3, c) if shiny?(pk)
+        # NEW (his pick: NEW Pill), over the icon
+        P.pill(marks, sx + CELL_W - 33, sy + CELL_H - 16, _INTL("NEW"), c[:green], c[:dark], false) if fresh?(pk)
       end
       selection_rect(top, c) if @kr_rect
-      outline_origin(base, c)
+      mark_origin(top)
     end
 
     def wallpaper(b)
@@ -1461,17 +1677,25 @@ module Reloaded
       top.fill_rect(x0 + 2, y0 + 2, r.width * CELL_W - 4, r.height * CELL_H - 4, tint)
     end
 
-    # Where the held one came from: outlined while it's held
-    def outline_origin(base, c)
+    # Where the held one came from, while it's held (his pick, 2026-10-25:
+    # Soft Patch): a soft dark patch, like a shadow of where it was;
+    # see-through, so on the text layer
+    def mark_origin(top)
       return unless held && !fusing? && @kr_held_from
       from_box, idx = @kr_held_from
       return unless from_box == @storage.currentBox && idx && box[idx].nil?
       fx, fy, = slot_rect(idx)
-      ol = mix(c[:line], c[:txt], 0.35)
-      base.fill_rect(fx + 8, fy + 4, CELL_W - 16, 1, ol)
-      base.fill_rect(fx + 8, fy + CELL_H - 5, CELL_W - 16, 1, ol)
-      base.fill_rect(fx + 4, fy + 8, 1, CELL_H - 16, ol)
-      base.fill_rect(fx + CELL_W - 5, fy + 8, 1, CELL_H - 16, ol)
+      soft_patch(top, fx, fy, Color.new(0, 0, 0, 45))
+    end
+
+    # A soft patch over a place (rounded off at its corners): where a held
+    # one came from, where held picks will land
+    def soft_patch(b, sx, sy, col)
+      b.fill_rect(sx + 6, sy + 6, CELL_W - 12, CELL_H - 12, col)
+      b.fill_rect(sx + 9, sy + 4, CELL_W - 18, 2, col)
+      b.fill_rect(sx + 9, sy + CELL_H - 6, CELL_W - 18, 2, col)
+      b.fill_rect(sx + 4, sy + 9, 2, CELL_H - 18, col)
+      b.fill_rect(sx + CELL_W - 6, sy + 9, 2, CELL_H - 18, col)
     end
 
     # The details plate, the Party Screen's two bands
@@ -1496,6 +1720,10 @@ module Reloaded
       end
       if (held && pk.equal?(held) && !fusing?)
         P.pill(top, x0 + 10, y0 + 8, _INTL("HOLDING"), c[:gold], c[:dark], false)
+      elsif !multi_held.empty? && pk.equal?(multi_held[0][0])
+        P.pill(top, x0 + 10, y0 + 8, _INTL("HOLDING {1}", multi_held.length), c[:gold], c[:dark], false)
+      elsif picks?
+        P.pill(top, x0 + 10, y0 + 8, _INTL("{1} PICKED", picks_here.length), c[:green], c[:dark], false)
       end
       plate_marks(top, c, pk)
     end
@@ -1605,10 +1833,12 @@ module Reloaded
     def held_over(base, top, c)
       list = []
       list << [held, 0, 0] if held
-      multi_held.each { |pk, dx, dy| list << [pk, dx.to_i, dy.to_i] }
-      return if list.empty?
+      return if list.empty? && multi_held.empty?
       kind, i = @kr_focus
-      cx, cy = if kind == :box
+      pointer = dragging? ? Reloaded::Pointer.pos : nil
+      cx, cy = if pointer
+                 [pointer[0], pointer[1] - 4]               # dragged: right under the pointer
+               elsif kind == :box
                  sx, sy, = slot_rect(i)
                  [sx + CELL_W / 2, sy + CELL_H / 2 - 9]
                elsif kind == :party
@@ -1618,6 +1848,8 @@ module Reloaded
                  nr = name_rect
                  [nr[0] + nr[2] / 2, nr[1] + 34]
                end
+      # several (Free Picks): a small fan (UI/PCPicks.rb)
+      return draw_multi_held(top, c, cx, cy) if list.empty?
       # see-through, so on the clear text layer: a fill there blends over the
       # wallpaper (on the panels' layer it would cut a hole in them)
       shadow = Color.new(0, 0, 0, 60)
@@ -1692,6 +1924,7 @@ module Reloaded
       filter = @screen && @screen.respond_to?(:filterProc) ? @screen.filterProc : nil
       return true if filter && !(filter.call(pk) rescue true)
       return true if !@kr_fusions_on && (pk.isFusion? rescue false)
+      return true if @kr_search && !search_match?(pk)            # Search: Dim the Rest
       return false
     end
 
@@ -1712,6 +1945,13 @@ module Reloaded
     def picture_fit(b, path, x, y, size)
       bm = picture(path)
       b.stretch_blt(Rect.new(x, y, size, size), bm, Rect.new(0, 0, bm.width, bm.height)) if bm
+    end
+
+    def dispose_marks
+      return unless @kr_marks
+      @kr_marks.bitmap.dispose if @kr_marks.bitmap && !@kr_marks.bitmap.disposed?
+      @kr_marks.dispose unless @kr_marks.disposed?
+      @kr_marks = nil
     end
 
     def dispose_pictures

@@ -201,7 +201,7 @@ module Reloaded
     HINT_H = 25           # the hint bar
 
     # The hint line at the bottom, centred: [[button, label], ...]. A button
-    # is :ud, :lr or :d (drawn arrows), an input ("p:2", "k:6") drawn as its
+    # is :ud, :lr, :u or :d (drawn arrows), an input ("p:2", "k:6") drawn as its
     # icon (ButtonIcons, in the controller's style), a key name ("Enter")
     # drawn as a keycap, or nil. The bar is drawn on base, the hints on top.
     def hints(base, top, c, pairs, style = :xbox)
@@ -231,6 +231,9 @@ module Reloaded
         when :d
           ui.tri(b, x, y + 9, :d, c[:txt], 3)
           x += 12
+        when :u
+          ui.tri(b, x, y + 9, :u, c[:txt], 3)
+          x += 12
         when nil
           nil
         else
@@ -248,7 +251,7 @@ module Reloaded
       pairs.each do |button, label|
         case button
         when :ud, :lr then x += 20
-        when :d then x += 12
+        when :d, :u then x += 12
         when nil then nil
         else
           t = button.to_s

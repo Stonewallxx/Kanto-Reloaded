@@ -1,8 +1,8 @@
 # Reloaded PC
 
-A new PC: the whole box with its details, one press to move, in Reloaded's look. This is Roadmap topic reloaded-pc: Hoenn Reloaded's PC screen and old Kanto Reloaded's ideas, rebuilt on the game's own PC logic. The code is in `Core/PC/ReloadedPC.rb` (the switch, handing out the scene, the words), `Core/UI/PCScene.rb` (the screen) and `Core/UI/PCTools.rb` (the box tools).
+A new PC: the whole box with its details, one press to move, in Reloaded's look. This is Roadmap topic reloaded-pc: Hoenn Reloaded's PC screen and old Kanto Reloaded's ideas, rebuilt on the game's own PC logic. The code is in `Core/PC/ReloadedPC.rb` (the switch, handing out the scene, the words), `Core/UI/PCScene.rb` (the screen), `Core/UI/PCTools.rb` (the box tools), `Core/UI/PCPicks.rb` (Free Picks), `Core/UI/PCSearch.rb` (Search), `Core/PC/Presets.rb` and `Core/UI/PCPresets.rb` (Party Presets), `Core/UI/PCCompare.rb` (Compare), `Core/UI/PCBoxMove.rb` (Move Box).
 
-**Reloaded PC** in Kanto Reloaded > Reloaded Systems switches it, On to start. Off gives the game's own PC back. It's built in steps: Step 1 is the box view, Step 2 the Actions, Step 3 the box tools (Sort, Box Overview, Rename, Wallpaper). Search, Party Presets and Compare come in the next steps.
+**Reloaded PC** in Kanto Reloaded > Reloaded Systems switches it, On to start. Off gives the game's own PC back. It's built in steps: Step 1 is the box view, Step 2 the Actions, Step 3 the box tools (Sort, Box Overview, Rename, Wallpaper), Step 4 Free Picks and Search, Step 5 Party Presets, Step 6 Compare.
 
 ## Where It Shows
 
@@ -26,13 +26,14 @@ Old Kanto Reloaded and Hoenn Reloaded ran a PC of their own and copied the game'
 
 One press moves: A picks up and puts down, the game's own Quick Swap, which the PC keeps on.
 
-- **Holding:** the held Pokémon floats over the slot under the cursor with a small shadow, and its old slot is outlined. Over an empty slot the plate shows it under HOLDING; over another Pokémon the plate shows that one (A swaps them), dimmed under the held one.
+- **Holding:** the held Pokémon floats over the slot under the cursor with a small shadow, and its old slot keeps a soft dark patch, like a shadow of where it was. Over an empty slot the plate shows it under HOLDING; over another Pokémon the plate shows that one (A swaps them), dimmed under the held one.
 - **B puts it back:** where it came from, or, if that place has been taken (after a swap), the first free place in the box. The game only said "You're holding a Pokémon!".
 - **X opens the Actions:** the game's list for the one under the cursor or held (Move, Summary, Fuse, Nickname, Withdraw, Item, Release), Kanto Reloaded's (Mark) and mods' before Release, and RLD Actions after it, each explained under it. A long list scrolls.
 - **The box name:** Up from the top row. Left and Right change box there; A opens the Box Overview, X the box's actions (Jump, Select All, Wallpaper, Name, and KIF's).
 - **LB and RB** change box from anywhere. B with nothing held asks the game's question (Continue Box operations?).
 - **Fusing:** the box name gives way to a gold banner, the Splicer and FUSING WITH LAPRAS; a small Splicer rides with the held one, the plate shows the one you'd fuse with, and fusions are dimmed (they can't be fused again). B stops fusing.
 - **The mouse:** pointing at a slot picks it, a click does what A does, a right click what B does, the wheel over the box changes box, a click on the box names either side goes to them.
+- **Drag and drop:** press on a Pokémon (or a picked one, for all the picks) and move with the button held: it floats right under the pointer, and letting go puts it down on the place there (or swaps, as A would). Let go off the places and it goes back where it came from. A click without moving still just picks up.
 
 Withdraw, Deposit, choosing from the PC and the Graveyard run the game's own loops: there A opens the game's list.
 
@@ -46,9 +47,42 @@ Withdraw, Deposit, choosing from the PC and the Graveyard run the game's own loo
 ## The Box Tools
 
 - **Sort:** one popup in place of KIF's Sort and Sort (All Boxes). Three rows: Sort by (KIF's 26 ways; Left and Right step through them, A lists them all), Order (worded for the way: Highest First, A to Z, Newest First) and Boxes (This Box or Every Unlocked Box); Sort or Cancel. The line under the rows says what will happen. KIF's own values are used (Base Stat Total with KIF's fusion rules), Marks sort by how many are on, ties keep their order, Eggs go last, and the Pokémon are packed from the first place. A box locked for sorting is left alone, also when it's the one you're in. The last choice is kept for the session, and a toast says what was done.
-- **Box Overview** (A on the box name): every box three across, each with its name, how full it is (gold when full), its 30 places as dots in their Pokémon's type colours, its shinies and Eggs, and a padlock when it's locked; the box you're in is outlined. Buy Box comes last, its price in green when you have the money, red when you don't. A goes to that box. Holding a Pokémon, the title asks Move Lapras to Which Box?, the highlighted box shows how much room it has with its first free place outlined in green, and A drops it there (the game's own placing, so its rules still apply). The Transfer Box isn't shown, as in the game's Jump.
+- **Box Overview** (A on the box name): every box three across, each with its name, how full it is (gold when full), its 30 places as dots in their Pokémon's type colours, its shinies and Eggs, and a padlock when it's locked; the box you're in is outlined. Buy Box comes last, its price in green when you have the money, red when you don't. A goes to that box. Holding a Pokémon, the title asks Move Lapras to Which Box?, the highlighted box shows how much room it has, the dot of the place it would land in its colour and pulsing, and A drops it there (the game's own placing, so its rules still apply). The Transfer Box isn't shown, as in the game's Jump.
+- **Move Box** (Y on a box in Box Overview, or Move Box in a box's actions): the box comes up, lit, with a MOVING pill and a soft shadow under it, and the tiles show the new order as it moves; A puts it down, B puts it back where it was. It moves with its Pokémon, name, wallpaper and locks, the boxes between shift along, the Transfer Box keeps its place, and the box you're in stays the one you're in. From the box's actions, Box Overview closes once it's put down. Nothing can be held while a box moves.
 - **Rename** (Name in the box's actions): the box name becomes a field where it is. Type straight in on a keyboard, Enter or Down is done; a controller's A opens the naming screen; B cancels.
-- **Wallpaper:** a grid of the wallpapers, five across, instead of the game's list of 200 names (PIF's unlocked ones, then KIF's 160). The highlighted one's name shows under the grid and the box's own has NOW on it; it scrolls. Only the wallpapers in view are loaded.
+- **Wallpaper:** a grid of the wallpapers, five across, instead of the game's list of 200 names (PIF's unlocked ones, then KIF's 160). The highlighted one sits on a plate in the cursor's colours, its name shows under the grid, and the box's own has NOW on it; it scrolls. Only the wallpapers in view are loaded.
+
+## Free Picks
+
+- **Y picks** the Pokémon under the cursor (Y again unpicks it): a green tick in its corner, its place lit, and N PICKED on the plate. Picks are one box's at a time; picking in another box starts afresh, and they wait while you look at other boxes. Select All in the box's actions picks every one. B clears them.
+- **A picks them all up** (PIF's own multi-select pick-up, so its rules hold: none from the Transfer Box). Held, they ride in a small fan over the cursor, the plate says HOLDING 4, and a soft green patch marks each place they'll land: the free places from the cursor on, then from the box's start. A puts them down there, or at the party's end when it has room. LB and RB carry them to another box, Box Overview drops them all into a box from its first free place, and B puts them back where they came from, still picked.
+- **X with picks** opens the list for several: Pick Up All, Sort (the picked ones, sorted in their own places), PIF's Release with DEBUG on, and KIF's Battle Selected, Export and Release, which all take the picks as the selection.
+
+## Search
+
+- **RS** (or a click on the Search hint) opens it. The box name becomes the field: type straight in, or a controller's A opens the naming screen. The filters take the party's place: Type (A picks one), Shiny, Egg, Fusion and Held Item, with what's found under them (2 here, 1 in 1 other box). Down goes to the filters, Up back to the name; RS or Enter is done, B clears it.
+- **More Filters:** MORE ends the filters (MORE: 2 when two of its filters are on); A on it opens the rest as rows. Ability and Knows (a move): type a name straight in (a part of it is enough; a controller's A opens the naming screen), or Left and Right step through the ones your Pokémon have. Nature (A lists yours), Gender, Level (1-10, 11-20 ... 91-100), Perfect IVs (1 or More up to All 6 at 31), Marked (any mark, or one shape) and NEW: Left and Right. What's found shows under the rows as they change; B or Enter is done. An Egg matches none of them but Marked and NEW, as it gives nothing away.
+- **What it finds:** the name or nickname (and the species, but never an Egg's) with every filter that's on. Everything else dims as you type, in the box and the party.
+- **After:** a pill by the box name says what's searched and how many are here (WATER: 3), the box names either side are the nearest boxes with a match and how many, and LB and RB jump to them. RS changes the search; B clears it. It lasts until it's cleared or the PC closes.
+
+## Party Presets
+
+- **Where:** a page of Box Overview. LB and RB switch between Box Overview and Party Presets (while organising, with nothing held). Each preset is a card with its name and its Pokémon; one that's gone (released, traded, fused into another) shows as a red ?, and the preset that is your party now says NOW.
+- **+ Save Current Party** (the last card) saves the party as a new preset, named in place like a box: type straight in, or a controller's A opens the naming screen. An empty name becomes Team 1, Team 2 and so on.
+- **A swaps one in.** Each of its Pokémon in a box trades places with a party member that isn't in it, so the boxes stay as they were; party members left over go to the first free places from the box you're in; your party becomes the preset, in its order. Members that are gone or in the Transfer Box are skipped. A toast says it's done; only when someone wasn't found does a notice say who. It's all worked out before anything moves, and it doesn't happen when none of its Pokémon can battle, when a party member going to a box holds Mail, or when the boxes have no room.
+- **X gives a preset's options:** Swap In, Save the Party Here (after a question), Rename (in place), Delete (after a question; no Pokémon are moved).
+- **Saved in the save:** each member is a reference to that Pokémon (its personal ID), never a copy, so nothing can be duplicated; its name and level at the time are kept only to say who's missing.
+
+## Compare
+
+- **Compare** is in a Pokémon's Actions (not for an Egg). The cursor then picks the second from any box or the party: COMPARE WITH LAPRAS shows in the box name's place, and the first one wears the regular cursor in gold. A on another opens Compare; B stops.
+- **The screen:** the two face each other on top (picture, name, level, types). Under them a row per stat (HP, Attack, Defense, Sp. Atk, Sp. Def, Speed), then the base stat total (KIF's, fusions included), IVs and EVs, each with a bar growing outward. The better one's bar and number are in the row's own colour (HP green, Attack and Sp. Atk red, Defense and Sp. Def blue, Attack and Defense the darker ones and Sp. Def a lighter blue, Speed pink, base total a light tan, IVs orange, EVs purple), the other's bar grey. Then nature (its + stat green, its - stat red), ability and item (in its Bag pocket's colour, as the Reloaded Bag shows it).
+- **X: their moves**, in detail: each with its type, Physical, Special or Status, power, accuracy and PP; the cursor moves over them (Left and Right between the two) and the highlighted move's description shows at the foot.
+- **A** picks another to compare with (the first stays); **B** goes back to the box.
+
+## NEW Marks
+
+Pokémon that came into the boxes since the PC last closed (caught, hatched, imported, sent from a trade) have a small green NEW in their place's corner, and a box's tile in Box Overview says how many (3 NEW). They stay NEW for the whole visit and stop when the PC closes, the TM Vault's way. The save keeps the personal IDs of what was in the boxes and the party when the PC closed; the first visit marks nothing.
 
 ## Messages and Lists
 
@@ -57,13 +91,6 @@ The game's messages show as Kanto Reloaded's notice, its Yes and No questions as
 ## If It Fails
 
 If the Reloaded PC fails during a visit, a held Pokémon goes back first (where it came from, else the first free place), the game's own PC takes over for the rest of the visit, and the log says why; the game's PC opens from then on until the game restarts. If it can't open at all, the game's opens.
-
-## Coming Next
-
-- **Step 4:** Search (matches lit in every box, LB / RB to the next box with one) and multi-select (Y marks any; Sort gets The Selected, and Box Overview drops all of them in).
-- **Step 5:** Party Presets (Swap In trades places).
-- **Step 6:** Compare.
-- **Also picked:** NEW marks on Pokémon that came in since the last visit, and drag and drop with the mouse. The PC already opens on the slot it was on last (this session).
 
 ## For Other Mods
 
@@ -85,4 +112,4 @@ end
 
 ## Tests
 
-`ruby Tools/Tests/reloaded_pc_preview.rb "<KIF Beta>" <work dir with metrics.json>` drives the Reloaded PC with PIF's own storage, scene and screen, 6.8.2's multi-select and KIF Beta's Kuray Actions, box commands, locks and wallpapers on the preview's stand-ins: Organise (pick up, place, swap, B puts back, the Actions, RLD Actions' headings, Mark, the box name and its commands with a mod's, Buy Box, LB and RB, the locks, the party), the box tools (Box Overview with the mouse, Buy Box and dropping a held one in, Sort for one box and every unlocked one with a locked box left alone, Rename by typing and by the naming screen, the wallpaper grid), the fusing banner, Withdraw, Deposit, choosing with the dimmed ones, the mouse, Recent Steps, the fallback and Off.
+`ruby Tools/Tests/reloaded_pc_preview.rb "<KIF Beta>" <work dir with metrics.json>` drives the Reloaded PC with PIF's own storage, scene and screen, 6.8.2's multi-select and KIF Beta's Kuray Actions, box commands, locks and wallpapers on the preview's stand-ins: Organise (pick up, place, swap, B puts back, the Actions, RLD Actions' headings, Mark, the box name and its commands with a mod's, Buy Box, LB and RB, the locks, the party), the box tools (Box Overview with the mouse, Buy Box and dropping a held one in, Sort for one box and every unlocked one with a locked box left alone, Rename by typing and by the naming screen, the wallpaper grid), NEW marks (three new since the last visit, Box Overview's count, cleared after closing), drag and drop (to an empty place, a click still holding, let go off the places), Compare (the action, the gold cursor and banner, the table, the moves in detail, picking another), Party Presets (the page, saving the party named in place, a missing member, Swap In and back with the boxes as they were, NOW, Rename, Delete, the refusals), Free Picks (picking, the list for several, placing in the party, Sort on the picks, picking up, putting down from the cursor, carrying with RB, B putting them back, Box Overview with several, Select All), Search (typing, the filters, a type from the list, the pill, Next Match, clearing), Move Box (Y in Box Overview, the new order before A, A and B, the Pokémon, wallpaper and locks going along, Move Box from the box's actions, the Transfer Box staying) and More Filters (typing an ability, stepping through yours, Knows, Gender, Level, Perfect IVs, MORE: 3, the pill's words), the fusing banner, Withdraw, Deposit, choosing with the dimmed ones, the mouse, Recent Steps, the fallback and Off.

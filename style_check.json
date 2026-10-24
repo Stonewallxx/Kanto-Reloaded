@@ -242,6 +242,36 @@
       "rule": "title_case",
       "file": "Core/UI/PCTools.rb",
       "text": "Z to A"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/PCPicks.rb",
+      "text": "GUI storage put down"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/PCScene.rb",
+      "text": "Select all"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/PCSearch.rb",
+      "text": "Turn On"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/PCPresets.rb",
+      "text": "Swap In"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/PCPresets.rb",
+      "text": "Can't Swap In"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/PCPresets.rb",
+      "text": "GUI storage put down"
     }
   ]
 }

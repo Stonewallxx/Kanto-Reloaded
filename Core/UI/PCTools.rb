@@ -16,8 +16,9 @@
 #                  their Pokémon's type colours, shinies and Eggs, a padlock
 #                  when locked; Buy Box last, its price green or red. A goes
 #                  to the box; holding a Pokémon, A drops it in the box's
-#                  first free place (outlined green), through the game's own
-#                  placing.
+#                  first free place (its dot there in its colour, pulsing),
+#                  through the game's own placing. Y picks a box up to move
+#                  it (UI/PCBoxMove.rb).
 #   Rename         In the Header: the box name becomes a field where it is;
 #                  type straight in, a controller's A opens the naming
 #                  screen, Down or Enter is done, B cancels.
@@ -121,26 +122,37 @@ module Reloaded
       return [_INTL(words[0]), _INTL(words[1]), words[2]]
     end
 
+    # What a sort can take: this box, every unlocked one, and the picked ones
+    # (Free Picks) when there are some here
+    def sort_scopes
+      return picks? ? [:this, :every, :picked] : [:this, :every]
+    end
+
     # The boxes a sort takes: this one, or every one not locked for sorting
-    def sort_boxes(every)
-      return ::KIF::BoxSort.sortable_boxes(@storage) if every
+    # (a locked box is left alone, the picked ones in it too)
+    def sort_boxes(scope)
+      return ::KIF::BoxSort.sortable_boxes(@storage) if scope == :every
       b = box
       return [] if b.respond_to?(:sortlock?) && b.sortlock?
       return [@storage.currentBox]
     end
 
-    def sort_count(boxes)
-      return boxes.sum { |j| @storage.maxPokemon(j).times.count { |k| @storage[j, k] } }
+    def sort_count(scope)
+      return 0 if sort_boxes(scope).empty?
+      return picks_here.length if scope == :picked
+      return sort_boxes(scope).sum { |j| @storage.maxPokemon(j).times.count { |k| @storage[j, k] } }
     end
 
-    def sort_popup
+    # start: the scope to open on (the picks' list opens it on them)
+    def sort_popup(start = nil)
       ways = sort_ways
       return if ways.empty?
       last = Reloaded::PC.sort_choice
       way = last ? ways.index { |a, _n| a == last[0] } : nil
       way ||= ways.index { |a, _n| a == :level } || 0
       desc = last ? last[1] : order_words(ways[way][0])[2]
-      every = last ? last[2] : false
+      scopes = sort_scopes
+      every = start || (last && scopes.include?(last[2]) ? last[2] : :this)
       row = 0
       button_on = 0
       done = false
@@ -178,7 +190,7 @@ module Reloaded
               way = (way + step) % ways.length
               desc = order_words(ways[way][0])[2]
             when 1 then desc = !desc
-            when 2 then every = !every
+            when 2 then every = scopes[(scopes.index(every) + step) % scopes.length]
             else button_on = 1 - button_on
             end
             pbPlayCursorSE
@@ -197,21 +209,20 @@ module Reloaded
             redraw = true
           when :change
             pbPlayCursorSE
-            row == 1 ? desc = !desc : every = !every
+            row == 1 ? desc = !desc : every = scopes[(scopes.index(every) + 1) % scopes.length]
             redraw = true
           when :cancel
             pbPlayCancelSE
             break
           when :sort
-            boxes = sort_boxes(every)
-            if boxes.empty? || sort_count(boxes) == 0
+            if sort_count(every) == 0
               pbPlayBuzzerSE
               redraw = true
               next
             end
             pbPlayDecisionSE
             Reloaded::PC.sort_choice = [ways[way][0], desc, every]
-            run_sort(boxes, ways[way][0], desc)
+            every == :picked ? run_sort_picked(picks_here.sort, ways[way][0], desc) : run_sort(sort_boxes(every), ways[way][0], desc)
             done = ways[way][1]
             break
           end
@@ -233,10 +244,7 @@ module Reloaded
     def run_sort(boxes, attr, desc)
       pokes = []
       boxes.each { |j| @storage.maxPokemon(j).times { |k| pokes << @storage[j, k] if @storage[j, k] } }
-      pairs = pokes.each_with_index.map { |p, i| [sort_value(p, attr), i] }
-      pairs.sort! { |a, b| ::KIF::BoxSort.compare(a, b, desc) }
-      sorted = pairs.map { |_v, i| pokes[i] }
-      sorted = sorted.reject { |p| p.egg? } + sorted.select { |p| p.egg? }
+      sorted = sorted_pokemon(pokes, attr, desc)
       boxes.each { |j| @storage.maxPokemon(j).times { |k| @storage[j, k] = nil } }
       i = 0
       boxes.each do |j|
@@ -246,6 +254,20 @@ module Reloaded
           i += 1
         end
       end
+    end
+
+    # The picked ones sorted among their own places
+    def run_sort_picked(slots, attr, desc)
+      bx = @storage.currentBox
+      sorted = sorted_pokemon(slots.map { |k| @storage[bx, k] }.compact, attr, desc)
+      slots.each_with_index { |k, i| @storage[bx, k] = sorted[i] }
+    end
+
+    def sorted_pokemon(pokes, attr, desc)
+      pairs = pokes.each_with_index.map { |p, i| [sort_value(p, attr), i] }
+      pairs.sort! { |a, b| ::KIF::BoxSort.compare(a, b, desc) }
+      sorted = pairs.map { |_v, i| pokes[i] }
+      return sorted.reject { |p| p.egg? } + sorted.select { |p| p.egg? }
     end
 
     # Marks sort by how many are on (KIF's: the marks' bits as a number)
@@ -261,12 +283,22 @@ module Reloaded
     # will do (in red when it can't)
     def sort_note(c, count, every, row)
       return [_INTL("{1} ways: A shows them all.", count), c[:dim]] if row == 0
-      boxes = sort_boxes(every)
-      return [_INTL("This box is locked for sorting."), c[:red]] if boxes.empty?
-      n = sort_count(boxes)
+      return [_INTL("This box is locked for sorting."), c[:red]] if sort_boxes(every).empty?
+      n = sort_count(every)
       return [_INTL("Nothing to sort."), c[:red]] if n == 0
-      return [_INTL("{1} Pokémon, packed from the first unlocked box, Eggs last. Locked boxes stay as they are.", n), c[:dim]] if every
+      case every
+      when :every then return [_INTL("{1} Pokémon, packed from the first unlocked box, Eggs last. Locked boxes stay as they are.", n), c[:dim]]
+      when :picked then return [_INTL("{1} picked Pokémon, sorted in their own places, Eggs last.", n), c[:dim]]
+      end
       return [_INTL("{1} Pokémon, packed from the first place, Eggs last.", n), c[:dim]]
+    end
+
+    def scope_words(scope)
+      case scope
+      when :every then return _INTL("Every Unlocked Box")
+      when :picked then return _INTL("The Picked Ones")
+      end
+      return _INTL("This Box")
     end
 
     def draw_sort(ways, way, desc, every, row, button_on)
@@ -279,11 +311,15 @@ module Reloaded
       x = (W - w) / 2
       y = (H - h) / 2
       dg.send(:panel, b, c, x, y, w, h)
-      title = every ? _INTL("Sort Your Boxes") : _INTL("Sort {1}", box.name.to_s)
+      title = case every
+              when :every then _INTL("Sort Your Boxes")
+              when :picked then _INTL("Sort the Picked Ones")
+              else _INTL("Sort {1}", box.name.to_s)
+              end
       dg.send(:title_bar, b, c, x, y, w, title)
       attr = ways[way][0]
       lo, hi, = order_words(attr)
-      values = [ways[way][1], desc ? hi : lo, every ? _INTL("Every Unlocked Box") : _INTL("This Box")]
+      values = [ways[way][1], desc ? hi : lo, scope_words(every)]
       keys = [_INTL("Sort by"), _INTL("Order"), _INTL("Boxes")]
       @kr_sort_hits = []
       3.times do |i|
@@ -345,14 +381,15 @@ module Reloaded
     end
 
     # A on the box name: what was chosen, as the game's loop takes it (the
-    # place a held Pokémon drops into), or :stay
-    def box_overview
+    # place a held Pokémon drops into), or :stay. lift: the box you're in
+    # comes up to move (Move Box, UI/PCBoxMove.rb).
+    def box_overview(lift = false)
       tiles = overview_tiles
       sel = tiles.index(@storage.currentBox) || 0
-      @kr_ov = { :tiles => tiles, :sel => sel, :top => 0 }
+      @kr_ov = { :tiles => tiles, :sel => sel, :top => 0, :page => :boxes }
       ov_scroll
       result = :stay
-      pbPlayDecisionSE
+      lift ? ov_pick_up(true) : pbPlayDecisionSE
       refresh
       loop do
         Graphics.update
@@ -360,19 +397,47 @@ module Reloaded
         update
         pt = Reloaded::Pointer
         tiles = @kr_ov[:tiles]
+        moving = ov_moving
         hit = pt.hit(@kr_hits || [])
         if pt.moved? && hit.is_a?(Integer) && hit != @kr_ov[:sel]
-          @kr_ov[:sel] = hit
-          pbPlayCursorSE
-          refresh
+          if moving
+            ov_carry(hit)
+          else
+            @kr_ov[:sel] = hit
+            pbPlayCursorSE
+            refresh
+          end
         end
         go = false
-        if pt.left? && hit.is_a?(Integer)
-          @kr_ov[:sel] = hit
+        if pt.left? && hit.is_a?(Integer) && !(moving && hit >= ov_count)
+          moving ? ov_carry(hit) : @kr_ov[:sel] = hit
           go = true
         elsif pt.right? || Input.trigger?(Input::BACK)
+          if moving
+            ov_put_back
+            break if moving[:once]
+            next
+          end
           pbPlayCancelSE
           break
+        elsif moving
+          # the box moves with the cursor (his pick: Lifted Tile)
+          if (w = pt.wheel) != 0
+            ov_move(w * OV_COLS, false)
+          elsif Input.repeat?(Input::LEFT) || Input.repeat?(Input::RIGHT)
+            ov_move(Input.repeat?(Input::LEFT) ? -1 : 1, Input.trigger?(Input::LEFT) || Input.trigger?(Input::RIGHT))
+          elsif Input.repeat?(Input::UP) || Input.repeat?(Input::DOWN)
+            ov_move(Input.repeat?(Input::UP) ? -OV_COLS : OV_COLS, Input.trigger?(Input::UP) || Input.trigger?(Input::DOWN))
+          elsif Input.trigger?(Input::USE)
+            go = true
+          end
+        elsif Input.trigger?(Input::X) && !drop_held?
+          ov_pick_up                                  # Y: Move Box (UI/PCBoxMove.rb)
+        elsif (Input.trigger?(Input::JUMPUP) || Input.trigger?(Input::JUMPDOWN)) && presets_offered?
+          # LB / RB: the Party Presets page (his pick: A Page of Box Overview, UI/PCPresets.rb)
+          break if presets_page == :close
+          @kr_ov[:tiles] = overview_tiles
+          refresh
         elsif (w = pt.wheel) != 0
           ov_move(w * OV_COLS, false)
         elsif Input.repeat?(Input::LEFT) || Input.repeat?(Input::RIGHT)
@@ -383,6 +448,11 @@ module Reloaded
           go = true
         end
         next unless go
+        if moving
+          ov_put_down
+          break if moving[:once]
+          next
+        end
         tile = tiles[@kr_ov[:sel]]
         if tile == :buy
           pbPlayDecisionSE
@@ -396,6 +466,18 @@ module Reloaded
           ov_scroll
           refresh
           next
+        end
+        if drop_held? && !multi_held.empty?
+          spots = landing_spots(tile, 0, multi_held.length)
+          if spots.length < multi_held.length
+            pbPlayBuzzerSE
+            next
+          end
+          show_box(tile)
+          drop_all_in(tile)
+          @kr_focus = [:box, spots[0]]
+          @selection = spots[0]
+          break
         end
         if drop_held?
           free = (0...@storage.maxPokemon(tile)).find { |k| @storage[tile, k].nil? }
@@ -421,16 +503,25 @@ module Reloaded
       return result
     end
 
-    # Holding one Pokémon to put away (not fusing, not several)
+    # Holding Pokémon to put away: one (not fusing), or several (Free Picks)
     def drop_held?
-      return quick? && held && !fusing? && multi_held.empty?
+      return false unless quick? && !fusing?
+      return held ? multi_held.empty? : !multi_held.empty?
+    end
+
+    def held_count
+      return held ? 1 : multi_held.length
+    end
+
+    def first_held
+      return held || (multi_held[0] && multi_held[0][0])
     end
 
     # Left / Right step through the tiles, Up / Down a row; past the ends a
     # fresh press wraps (a held one stops). Down to a short last row lands
     # on its last tile.
     def ov_move(step, wrap)
-      n = @kr_ov[:tiles].length
+      n = ov_count
       sel = @kr_ov[:sel]
       last_row = (n - 1) / OV_COLS
       to = sel + step
@@ -444,6 +535,7 @@ module Reloaded
              end
       end
       return if to == @kr_ov[:sel]
+      return ov_carry(to) if ov_moving
       @kr_ov[:sel] = to
       ov_scroll
       pbPlayCursorSE
@@ -457,9 +549,15 @@ module Reloaded
     end
 
     def draw_overview(base, top, c)
+      return draw_presets(base, top, c) if @kr_ov[:page] == :presets
       PP.paint_background(base, c)
-      title = drop_held? ? _INTL("Move {1} to Which Box?", held.name.to_s) : _INTL("Box Overview")
-      PP.paint_title(top, c, title)
+      moving = ov_moving
+      title = if moving then _INTL("Move {1} Where?", @storage[@kr_ov[:tiles][@kr_ov[:sel]]].name.to_s)
+              elsif !drop_held? then _INTL("Box Overview")
+              elsif held then _INTL("Move {1} to Which Box?", held.name.to_s)
+              else _INTL("Move {1} Pokémon to Which Box?", held_count)
+              end
+      presets_offered? && !moving ? overview_tabs(top, c, :boxes) : PP.paint_title(top, c, title)
       tiles = @kr_ov[:tiles]
       sel = @kr_ov[:sel]
       first = @kr_ov[:top] * OV_COLS
@@ -471,6 +569,7 @@ module Reloaded
         @kr_hits << [j, tx, ty, tx + OV_TW, ty + OV_TH]
         @cursor_rect = [tx - 1, ty - 1, OV_TW + 3, OV_TH + 3] if j == sel
         tiles[j] == :buy ? buy_tile(base, top, c, tx, ty) : box_tile(base, top, c, tiles[j], tx, ty, j == sel)
+        moving_marks(c, tx, ty, box_locked?(@storage[tiles[j]])) if moving && j == sel
       end
       rows = (tiles.length + OV_COLS - 1) / OV_COLS
       P.ui.tri(top, W / 2 - 4, OV_Y - 5, :u, c[:dim], 3) if @kr_ov[:top] > 0
@@ -490,21 +589,24 @@ module Reloaded
       # the dots go on the text layer, so the cursor's glow doesn't wash them out
       empty = mix(c[:line], c[:panel2], 0.5)
       dropping = chosen && drop_held?
-      free = dropping ? pks.index(nil) : nil
+      # where they'd land: the box's first free places
+      frees = dropping ? (0...size).select { |k| pks[k].nil? }.first(held_count) : []
+      free = frees.length == held_count ? frees.first : nil
+      landing = held ? [held] : multi_held.map { |pk, *_r| pk }
       pks.each_with_index do |p, k|
         dx = tx + 8 + (k % COLS) * OV_DOT_W
         dy = ty + 26 + (k / COLS) * OV_DOT_H
         top.fill_rect(dx, dy, OV_DOT_W - 2, 6, p ? tone(p) : empty)
-        next unless k == free
-        [[dx - 1, dy - 1, OV_DOT_W, 1], [dx - 1, dy + 6, OV_DOT_W, 1], [dx - 1, dy - 1, 1, 8], [dx + OV_DOT_W - 2, dy - 1, 1, 8]].each do |r|
-          top.fill_rect(*r, c[:green])
-        end
+        # where it lands (his pick, 2026-10-25: In Its Colour, Pulsing): the
+        # dot in its type's colour on the marks layer, which pulses
+        next unless free && (at = frees.index(k)) && landing[at]
+        marks.fill_rect(dx, dy, OV_DOT_W - 2, 6, tone(landing[at]))
       end
       sx = tx + 8 + COLS * OV_DOT_W + 6
       if dropping
-        words = free ? _INTL("ROOM FOR {1}", size - n) : _INTL("FULL")
+        words = n >= size ? _INTL("FULL") : _INTL("ROOM FOR {1}", size - n)
         P.text(top, sx, ty + 26, OV_TW - (sx - tx) - 4, 14, words, free ? c[:green] : c[:red], PF::TINY)
-        s = box_icon(held, :held)
+        s = box_icon(first_held, :held)
         place(s, tx + OV_TW - 20, ty + OV_TH - 22, 30)
         s.opacity = 255
         s.z = 2
@@ -521,8 +623,13 @@ module Reloaded
         top.fill_rect(sx + 1, iy + 1, 5, 6, Color.new(150, 200, 140))
         P.text(top, sx + 9, iy - 3, 30, 14, eggs.to_s, c[:dim], PF::TINY)
       end
-      locked = (b.respond_to?(:sortlock?) && b.sortlock?) || (b.respond_to?(:exportlock?) && b.exportlock?)
-      padlock(top, tx + OV_TW - 14, ty + OV_TH - 16, c[:red]) if locked
+      fresh = pks.count { |p| p && fresh?(p) }                     # NEW marks (his pick: NEW Pill)
+      P.pill(top, tx + 8 + COLS * OV_DOT_W + 6, ty + 46, _INTL("{1} NEW", fresh), c[:green], c[:dark], false) if fresh > 0
+      padlock(top, tx + OV_TW - 14, ty + OV_TH - 16, c[:red]) if box_locked?(b)
+    end
+
+    def box_locked?(b)
+      return (b.respond_to?(:sortlock?) && b.sortlock?) || (b.respond_to?(:exportlock?) && b.exportlock?) ? true : false
     end
 
     # Buy Box: its price green when you have the money, red when you don't
@@ -539,12 +646,17 @@ module Reloaded
     end
 
     def overview_hints
+      return presets_hints if @kr_ov[:page] == :presets
+      return moving_hints if ov_moving
       tile = @kr_ov[:tiles][@kr_ov[:sel]]
       verb = if tile == :buy then _INTL("Buy Box")
              elsif drop_held? then _INTL("Drop Here")
              else _INTL("Go to Box")
              end
-      return [[:ud, _INTL("Choose")], [button(:C), verb], [button(:B), _INTL("Back")]]
+      list = [[:ud, _INTL("Choose")], [button(:C), verb]]
+      list << [button(:X), _INTL("Move Box")] if tile.is_a?(Integer) && box_move_ok?
+      list << [button(:R), _INTL("Presets")] if presets_offered?
+      return list + [[button(:B), _INTL("Back")]]
     end
 
     #--------------------------------------------------------------------------
@@ -644,15 +756,18 @@ module Reloaded
         tx = x0 + (slot % WP_COLS) * (WP_TW + WP_GAP)
         ty = y + 44 + (slot / WP_COLS) * (WP_TH + WP_GAP)
         @kr_wp_hits << [i, tx - 3, ty - 3, tx + WP_TW + 3, ty + WP_TH + 3]
+        # the highlighted one sits on a plate in the cursor's colours (his
+        # pick, 2026-10-25: Lit Plate, no frame)
+        if i == sel
+          fill, border = Reloaded::Palette.cursor(nil, c)
+          P.ui.rbox(b, tx - 5, ty - 5, tx + WP_TW + 4, ty + WP_TH + 4, 5, Reloaded::Palette.over(c[:panel2], fill),
+                    Reloaded::Palette.over(c[:panel2], border))
+        end
         wall = wall_picture(ids[i])
         if wall
           b.stretch_blt(Rect.new(tx, ty, WP_TW, WP_TH), wall, Rect.new(*WALL_SRC))
         else
           b.fill_rect(tx, ty, WP_TW, WP_TH, c[:panel])
-        end
-        if i == sel
-          [[tx - 3, ty - 3, WP_TW + 6, 2], [tx - 3, ty + WP_TH + 1, WP_TW + 6, 2], [tx - 3, ty - 3, 2, WP_TH + 6],
-           [tx + WP_TW + 1, ty - 3, 2, WP_TH + 6]].each { |r| b.fill_rect(*r, c[:selb]) }
         end
         P.pill(b, tx + 2, ty + 2, _INTL("NOW"), c[:gold], c[:dark], false) if ids[i] == now
       end

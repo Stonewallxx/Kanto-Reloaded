@@ -122,8 +122,9 @@ module Reloaded
       "Core/QualityOfLife/Hooks.rb",
       "Core/QualityOfLife/Toast.rb",
       "Core/UI/QualityOfLifeScreens.rb",
-      # The title screen's versions, above PRESS ANY KEY
+      # The title screen's versions (top right) and Kanto Reloaded's logo
       "Core/Interface/TitleVersions.rb",
+      "Core/Interface/TitleLogo.rb",
       # The Party Screen: its switch and commands, its drawing and its scene
       "Core/PartyScreen/PartyScreen.rb",
       "Core/UI/PartyPaint.rb",
@@ -150,8 +151,14 @@ module Reloaded
       "Core/Bag/UseSeveral.rb",
       # The Reloaded PC: its switch and words, its scene and the box tools
       "Core/PC/ReloadedPC.rb",
+      "Core/PC/Presets.rb",
       "Core/UI/PCScene.rb",
       "Core/UI/PCTools.rb",
+      "Core/UI/PCPicks.rb",
+      "Core/UI/PCSearch.rb",
+      "Core/UI/PCPresets.rb",
+      "Core/UI/PCCompare.rb",
+      "Core/UI/PCBoxMove.rb",
       # Fixes to the game's own code
       "Core/Fixes/Fixes.rb",
       "Core/Fixes/CommandTextColours.rb",
@@ -170,7 +177,7 @@ module Reloaded
     # to KIF Settings. Dev boots last, when it's there. PauseMenu boots
     # before Profiler and BugReport, so their hooks on the pause menu's
     # scene sit over its screen and still see it open.
-    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :TitleVersions, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
+    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :TitleVersions, :TitleLogo, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
 
     def self.files
       return FILES
