@@ -202,6 +202,46 @@
       "file": "Core/UI/BagListScreen.rb",
       "text": "NOT IN THE BAG",
       "why": "A pill: all capitals"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/PCScene.rb",
+      "text": "PC access"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/PCScene.rb",
+      "text": "GUI storage pick up"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/PCScene.rb",
+      "text": "GUI storage put down"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/PC/ReloadedPC.rb",
+      "text": "Sort (all Boxes)"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/PCScene.rb",
+      "text": "Gamble for new Color"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/PC/ReloadedPC.rb",
+      "text": "Export this Box"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/PCScene.rb",
+      "text": "Sort (all Boxes)"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/PCTools.rb",
+      "text": "Z to A"
     }
   ]
 }

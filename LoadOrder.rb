@@ -148,6 +148,10 @@ module Reloaded
       "Core/UI/BagScene.rb",
       "Core/UI/BagListScreen.rb",
       "Core/Bag/UseSeveral.rb",
+      # The Reloaded PC: its switch and words, its scene and the box tools
+      "Core/PC/ReloadedPC.rb",
+      "Core/UI/PCScene.rb",
+      "Core/UI/PCTools.rb",
       # Fixes to the game's own code
       "Core/Fixes/Fixes.rb",
       "Core/Fixes/CommandTextColours.rb",
@@ -166,7 +170,7 @@ module Reloaded
     # to KIF Settings. Dev boots last, when it's there. PauseMenu boots
     # before Profiler and BugReport, so their hooks on the pause menu's
     # scene sit over its screen and still see it open.
-    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :TitleVersions, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
+    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :TitleVersions, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
 
     def self.files
       return FILES

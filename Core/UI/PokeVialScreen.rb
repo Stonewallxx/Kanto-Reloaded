@@ -398,11 +398,13 @@ module Reloaded
         if cost <= 0
           P.small(o, x + 10, y + 94, w - 20, 16, _INTL("Free"), c[:green], 2)
         else
-          # the costs in red, your Money in green (red when it's not enough)
+          # money in green when you have enough, red when you don't (his
+          # rule, 2026-10-24: everywhere money shows)
+          tone = afford ? c[:green] : c[:red]
           P.small_rich(o, x + 10, y + 94, w - 20, 16,
-                       [["$#{money(PV.setting(:cost_per_charge))}", c[:red], true], [_INTL(" Each: "), c[:dim]],
-                        ["$#{money(cost)}", c[:red], true], [_INTL(" (Money: "), c[:dim]],
-                        ["$#{money(PV.money)}", afford ? c[:green] : c[:red], true], [")", c[:dim], true]])
+                       [["$#{money(PV.setting(:cost_per_charge))}", tone, true], [_INTL(" Each: "), c[:dim]],
+                        ["$#{money(cost)}", tone, true], [_INTL(" (Money: "), c[:dim]],
+                        ["$#{money(PV.money)}", tone, true], [")", c[:dim], true]])
         end
         by = y + h - 40
         button(o, c, x + 30, by, x + w / 2 - 4, by + 28, _INTL("Refill"), choice == 0 && afford, !afford)
