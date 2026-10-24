@@ -185,6 +185,23 @@
       "rule": "title_case",
       "file": "Core/UI/TMVaultScreen.rb",
       "text": "Pkmn move learnt"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/BagScene.rb",
+      "text": "Sort bag"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/BagListScreen.rb",
+      "text": "IN THE BAG",
+      "why": "A pill: all capitals"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/BagListScreen.rb",
+      "text": "NOT IN THE BAG",
+      "why": "A pill: all capitals"
     }
   ]
 }

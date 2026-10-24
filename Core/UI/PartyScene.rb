@@ -557,6 +557,7 @@ module Reloaded
     # Hints
     #--------------------------------------------------------------------------
     def hint_pairs
+      return @kr_popup_hints if @kr_popup_hints
       return [[button(:C), _INTL("Continue"), :hint_use]] if @kr_message
       if @kr_mode == :menu
         return [[:ud, _INTL("Choose")], [button(:C), _INTL("Select"), :hint_use], [button(:B), _INTL("Back"), :hint_back]]
@@ -646,6 +647,17 @@ module Reloaded
         used[key] = true
       end
       @kr_panel_icons.each { |k, s| s.visible = false if s && !used[k] }
+    end
+
+    # A popup's own hints on the hint line while it shows (the Bag's Use
+    # Several at Once draws on this screen): redrawn, then the block
+    def with_popup_hints(pairs)
+      before = @kr_popup_hints
+      @kr_popup_hints = pairs
+      refresh
+      return yield
+    ensure
+      @kr_popup_hints = before
     end
 
     #--------------------------------------------------------------------------

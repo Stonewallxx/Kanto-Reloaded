@@ -337,11 +337,12 @@ module Reloaded
       #------------------------------------------------------------------------
       # Opening it
       #------------------------------------------------------------------------
-      # tab: :vault, :relearn or :checklist; pkmn: whose moves (Relearn)
-      def open(tab: :vault, pkmn: nil)
+      # tab: :vault, :relearn or :checklist; pkmn: whose moves (Relearn);
+      # focus: a move to start on (the Bag's Teach)
+      def open(tab: :vault, pkmn: nil, focus: nil)
         return false unless defined?(Reloaded::TMVaultScreen)
         sync!
-        Reloaded::TMVaultScreen.open(tab, pkmn)
+        Reloaded::TMVaultScreen.open(tab, pkmn, focus)
         return true
       rescue StandardError => e
         Reloaded::Log.exception("The TM Vault couldn't open", e, :tm_vault)

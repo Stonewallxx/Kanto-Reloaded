@@ -123,7 +123,7 @@ module Reloaded
     def self.show(text, icon: nil, pill: nil, paint: nil); $toasts << [text, icon, pill]; true; end
   end
   class TMVaultScreen
-    def self.open(tab, pkmn); $opened << [tab, pkmn && pkmn.name]; true; end
+    def self.open(tab, pkmn, focus = nil); $opened << [tab, pkmn && pkmn.name]; true; end
   end
 end
 $opened = []

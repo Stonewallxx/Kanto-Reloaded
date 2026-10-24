@@ -35,7 +35,8 @@ module KIF; PORT_VERSION = "0.21.57"; end
 
 # A save, as PIF keeps one
 Dex = Struct.new(:owned_count, :seen_count)
-Player = Struct.new(:name, :money, :badge_count, :pokedex, :last_time_saved, :selected_difficulty, :id, :party, :girl, :save_slot) do
+Player = Struct.new(:name, :money, :badge_count, :pokedex, :last_time_saved, :selected_difficulty, :id, :party, :girl, :save_slot,
+                    :lowest_difficulty) do
   def female?; girl; end
   def male?; !girl; end
 end
@@ -137,6 +138,14 @@ check("a preview: #{pv[:name]}, #{pv[:map]}, #{pv[:seconds] / 3600}h #{pv[:secon
       pv[:name] == "Red" && pv[:map] == "Cerulean City" && pv[:seconds] == 2 * 3600 + 12 * 60 && pv[:badges] == 3 &&
       pv[:owned] == 41 && pv[:mode] == "Classic" && pv[:health] == :healthy && pv[:party] == [])
 check("Remix from its switch (#{S.preview(SaveData.get_full_path("File C"))[:mode]})", S.preview(SaveData.get_full_path("File C"))[:mode] == "Remix")
+lowered = write_save("File F", "Lowered")
+lowered[:player].selected_difficulty = 2
+lowered[:player].lowest_difficulty = 0
+File.open(SaveData.get_full_path("File F"), "wb") { |f| Marshal.dump(lowered, f) }
+lp = S.preview(SaveData.get_full_path("File F"))
+check("the difficulty shown: the lowest the save has used, as PIF's own load screen (on Hard, once Easy: #{lp[:difficulty]})",
+      lp[:difficulty_index] == 0 && lp[:difficulty] == "Easy")
+File.delete(SaveData.get_full_path("File F"))
 reads = $raw_reads
 S.preview(SaveData.get_full_path("File A"))
 check("read once until the file changes", $raw_reads == reads)

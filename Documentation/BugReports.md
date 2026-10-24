@@ -39,7 +39,7 @@ Kanto Reloaded keeps the last 100 things that happened, in memory only:
 
 - map changes
 - battles (who you fought and how it ended)
-- menus opened
+- menus opened (Kanto Reloaded's own Party Screen and Bag too)
 - saves, loads and new games
 - the title screen
 - errors

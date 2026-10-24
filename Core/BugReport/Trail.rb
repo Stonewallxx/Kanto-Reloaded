@@ -51,19 +51,24 @@ module Reloaded
           hooks = Reloaded::Hooks
           hooks.prepend(nil, "PokeBattle_Battle", BattleSteps, :id => :trail_battles) if has?("PokeBattle_Battle", :pbStartBattle)
           hooks.prepend(nil, "Scene_Map", MapSteps, :id => :trail_maps) if has?("Scene_Map", :transfer_player)
+          # (watchers: Kanto Reloaded's own Party and Bag scenes are seen too)
           MENUS.each do |target, method, name|
             next unless has?(target, method)
+            key = :"trail_menu_#{name.downcase.gsub(/[^a-z]+/, "_")}"
             mod = Module.new do
               define_method(method) do |*args, **kwargs, &blk|
-                Reloaded::BugReport::Trail.add(:menu, name)
-                # This Screen: the map behind the Pause Menu (Settings, at the title)
-                if name == "Pause Menu" || name == "Settings"
-                  Reloaded::BugReport.remember_screen(name == "Settings" ? :settings : :pause) rescue nil
+                return super(*args, **kwargs, &blk) if Reloaded::Hooks.watching?(self, key)
+                Reloaded::Hooks.watching(self, key) do
+                  Reloaded::BugReport::Trail.add(:menu, name)
+                  # This Screen: the map behind the Pause Menu (Settings, at the title)
+                  if name == "Pause Menu" || name == "Settings"
+                    Reloaded::BugReport.remember_screen(name == "Settings" ? :settings : :pause) rescue nil
+                  end
+                  super(*args, **kwargs, &blk)
                 end
-                super(*args, **kwargs, &blk)
               end
             end
-            hooks.prepend(nil, target, mod, :id => :"trail_menu_#{name.downcase.gsub(/[^a-z]+/, "_")}")
+            hooks.watch(target, mod, :id => key)
           end
           ev = Reloaded::Events
           ev.on(:saved, :trail_saved) { |c| add(:save, File.basename(c[:path].to_s, ".rxdata")) }

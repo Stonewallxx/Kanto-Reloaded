@@ -53,6 +53,56 @@ module Reloaded
       return Color.new(*a)
     end
 
+    # Coloured words (the Bag's and the TM Vault's names), Vivid (his pick,
+    # 2026-10-23: the old ones, mixed with white, weren't saturated
+    # enough): the colour's hue at least 80% saturated, at one lightness
+    # for the theme so every name reads alike. A grey (Normal, Steel) stays
+    # grey.
+    INK_SATURATION = 0.80
+    INK_LIGHTNESS = { :dark => 0.65, :light => 0.38 }.freeze
+
+    # lift: a little lighter than the rest (the Bag's Medicine, his ask)
+    def ink(c, rgb_a, lift = 0.0)
+      h, s, _l = hsl(*rgb_a)
+      s = [s, INK_SATURATION].max if s >= 0.25
+      return hsl_color(h, s, (INK_LIGHTNESS[c[:light] ? :light : :dark] + lift).clamp(0.0, 0.9))
+    end
+
+    # [hue 0-360, saturation 0-1, lightness 0-1]
+    def hsl(r, g, b)
+      r /= 255.0
+      g /= 255.0
+      b /= 255.0
+      mx = [r, g, b].max
+      mn = [r, g, b].min
+      l = (mx + mn) / 2
+      return [0.0, 0.0, l] if mx == mn
+      d = mx - mn
+      s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn)
+      h = if mx == r then (g - b) / d + (g < b ? 6 : 0)
+          elsif mx == g then (b - r) / d + 2
+          else (r - g) / d + 4
+          end
+      return [h * 60, s, l]
+    end
+
+    def hsl_color(h, s, l)
+      q = l < 0.5 ? l * (1 + s) : l + s - l * s
+      p = 2 * l - q
+      hue = h / 360.0
+      channel = proc do |t|
+        t += 1 if t < 0
+        t -= 1 if t > 1
+        v = if t < 1 / 6.0 then p + (q - p) * 6 * t
+            elsif t < 1 / 2.0 then q
+            elsif t < 2 / 3.0 then p + (q - p) * (2 / 3.0 - t) * 6
+            else p
+            end
+        (v * 255).round.clamp(0, 255)
+      end
+      return Color.new(channel.call(hue + 1 / 3.0), channel.call(hue), channel.call(hue - 1 / 3.0))
+    end
+
     # A type's row in the game's type pictures (Graphics/Pictures/types, and
     # the small icons made from its typesSmall): PIF's type number
     # (id_number; newer Essentials call it icon_position)

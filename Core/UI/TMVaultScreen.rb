@@ -11,8 +11,8 @@
 #                the build, 2026-10-23: no plates): one panel, each move's
 #                name in its type's colour, its TM and type icon, a star on
 #                Favorites, NEW on moves added since the last look; the
-#                details panel lit in the move's type: the party (Knows It,
-#                Can Learn, Can't; Left and Right pick who), the move,
+#                details panel lit in the move's type: the party (Learned,
+#                Able, Not Able; Left and Right pick who), the move,
 #                Coverage for the one picked
 #   Relearn      the picked Pokémon's moves to relearn (an Egg Move marked)
 #   Checklist    design 4: each TM not had yet (its disc, its name in its
@@ -49,19 +49,20 @@ module Reloaded
     CATEGORY = "Graphics/Pictures/category"
     MAX_CHIPS = 11
     KIND_PILLS = { :ground => ["GROUND", :green], :store => ["STORE", :gold], :gift => ["GIFT", :blue] }.freeze
-    CHECK_WORDS = { :knows => ["Knows It", :blue], :learn => ["Can Learn", :green], :cant => ["Can't", :dim] }.freeze
+    # PIF's own words (his ask, 2026-10-24: Learned, Able)
+    CHECK_WORDS = { :knows => ["Learned", :blue], :learn => ["Able", :green], :cant => ["Not Able", :dim] }.freeze
     SEARCH_BOX = [6, 4, 132, 26].freeze
     SORT_BOX = [W - 132, 4, W - 6, 26].freeze
 
-    def self.open(tab = :vault, pkmn = nil)
-      screen = new(tab, pkmn)
+    def self.open(tab = :vault, pkmn = nil, focus = nil)
+      screen = new(tab, pkmn, focus)
       defined?(pbFadeOutIn) ? pbFadeOutIn { screen.main } : screen.main
       return screen
     end
 
     attr_reader :entry, :sel, :member, :type_filter, :query
 
-    def initialize(tab = :vault, pkmn = nil)
+    def initialize(tab = :vault, pkmn = nil, focus = nil)
       frame_init
       @tab = TABS.index(tab) || 0
       @party = ($Trainer && $Trainer.party ? $Trainer.party : []).compact
@@ -75,6 +76,7 @@ module Reloaded
       @pictures = {}
       @icons = []
       @rows = nil
+      @sel = rows.index(focus) || 0 if focus && tab == :vault
     end
 
     def main
@@ -635,8 +637,7 @@ module Reloaded
     # A type's colour for words: brightened to read on Dark, deepened on
     # Light
     def type_ink(c, type)
-      col = PP.rgb(Reloaded::PartyScreen.type_rgb(type))
-      return c[:light] ? mix(col, c[:txt], 0.42) : mix(col, PP::WHITE, 0.28)
+      return PP.ink(c, Reloaded::PartyScreen.type_rgb(type))
     end
 
     def move_row(top, c, x, y, m)
@@ -921,7 +922,7 @@ module Reloaded
     # The party's icons (Big Pokémon Icons as the player has them)
     #--------------------------------------------------------------------------
     def make_icons
-      @icons = @party.map { |p| Reloaded::PartyIcons.icon(p, @viewport, 3) }
+      @icons = @party.map { |p| Reloaded::PartyIcons.icon(p, @viewport, 2) }   # under the popups (the overlay is 3)
       @icon_rects = @icons.map { |s| s && s.bitmap ? Reloaded::PartyIcons.art_rect(s.bitmap, [s.src_rect.height, 1].max) : nil }
       @icons.each { |s| s.visible = false if s }
     end

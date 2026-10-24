@@ -1019,8 +1019,16 @@ module Reloaded
       item = nil
       hidden do
         pbFadeOutIn do
-          screen = ::PokemonBagScreen.new(::PokemonBag_Scene.new, $PokemonBag)
-          item = screen.pbChooseItemScreen(proc { |it| OM.quick_item?(it) })
+          pick = proc do
+            screen = ::PokemonBagScreen.new(::PokemonBag_Scene.new, $PokemonBag)
+            item = screen.pbChooseItemScreen(proc { |it| OM.quick_item?(it) })
+          end
+          # the Reloaded Bag's banner says what's being picked
+          if defined?(Reloaded::BagScreen)
+            Reloaded::BagScreen.during(:@title, [_INTL("Pick a Quick Item for Slot {1}", @slot + 1), _INTL("Pick")], &pick)
+          else
+            pick.call
+          end
         end
       end
       OM.set_quick_item(@slot, item) if item

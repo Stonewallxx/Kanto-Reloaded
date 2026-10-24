@@ -58,7 +58,7 @@ A save's note and color tag are kept in `Kanto Reloaded\Save Notes.json`, by slo
 
 **Reloaded Load Screen** (Reloaded Systems, On by default) rebuilds PIF's load screen:
 
-- **Continue:** The save's trainer (its outfit, standing on the left), note, badges, difficulty and mode, play time, Pokédex, money, backups, health and party, in the Save Manager's colors (play time gold, money green; Easy green, Normal blue, Hard red). Left / Right switch save file.
+- **Continue:** The save's trainer (its outfit, standing on the left), note, badges, difficulty (the lowest the save has used, as PIF's own load screen shows it) and mode, play time, Pokédex, money, backups, health and party, in the Save Manager's colors (play time gold, money green; Easy green, Normal blue, Hard red). Left / Right switch save file.
 - **Rows:** New Game, What's New (NEW until read), Mystery Gift, Options, Save Manager, KIF Beta's links, Quit. The list scrolls like PIF's.
 - **The top:** Kanto Reloaded's and KIF Beta's versions, centred above the Continue panel in charcoal.
 - **On Continue:** Y edits the note, holding Y opens the [Save Checker](SaveChecker.md); holding A lists the save's backups to go back to; a damaged save offers its newest good backup.

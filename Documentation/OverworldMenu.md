@@ -73,7 +73,7 @@ With the mouse, pointing picks, a click uses, a click on a tab turns to it, the 
 
 ## Quick Items
 
-Seven slots, kept in each save. A slot takes any item with a use outside battle: Potions, Repels, the Bicycle, Rods, TMs. The game's own Bag picks it, showing only those.
+Seven slots, kept in each save. A slot takes any item with a use outside battle: Potions, Repels, the Bicycle, Rods, TMs. The game's own Bag picks it, showing only those (the Reloaded Bag's banner says which slot). The Reloaded Bag's actions add an item to the first empty slot or take it out (`quick_slot`, `add_quick_item`, `remove_quick_item`).
 
 Using one:
 

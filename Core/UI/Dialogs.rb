@@ -14,7 +14,13 @@
 #   Dialogs.confirm(scene, title, text, yes, no)      true / false
 #   Dialogs.notice(scene, title, text)                shows it until OK
 #   Dialogs.number(scene, title, value, min, max, step, unit)
-#                                                     the value, or nil
+#                                                     the value, or nil; icon:
+#                                                     an item's picture beside
+#                                                     it, note: proc(value) a
+#                                                     line under it
+#   Dialogs.frame(bitmap, colours, x, y, w, h, title) a popup of a screen's own
+#                                                     (dimmed behind, the
+#                                                     plate, its title)
 #   Dialogs.picker(scene, title, values, index, swatch)
 #                                                     index, or nil; swatch
 #                                                     :text or :cursor draws
@@ -130,7 +136,7 @@ module Reloaded
       #------------------------------------------------------------------------
       # A number: Left/Right one step, Up/Down ten steps
       #------------------------------------------------------------------------
-      def number(scene, title, value, min, max, step = 1, unit = "")
+      def number(scene, title, value, min, max, step = 1, unit = "", icon: nil, note: nil)
         min ||= 0
         max ||= 999_999
         step = [step.to_i, 1].max
@@ -138,7 +144,7 @@ module Reloaded
         redraw = true
         loop do
           if redraw
-            draw_number(scene.overlay, scene.palette, title, value, min, max, unit)
+            draw_number(scene.overlay, scene.palette, title, value, min, max, unit, icon, note)
             redraw = false
           end
           Graphics.update
@@ -172,6 +178,23 @@ module Reloaded
         end
       ensure
         clear(scene)
+      end
+
+      # A popup a screen draws itself (the Bag's Quick Items slots): the
+      # screen dimmed, the plate and its title; content starts at y + 40
+      def frame(b, c, x, y, w, h, title)
+        dim(b)
+        panel(b, c, x, y, w, h)
+        title_bar(b, c, x, y, w, title)
+      end
+
+      # Where a popup's clicks land: [[index, x0, y0, x1, y1], ...]
+      def hits=(list)
+        @hits = list
+      end
+
+      def hit
+        return Reloaded::Pointer.hit(@hits || [])
       end
 
       private
@@ -415,20 +438,42 @@ module Reloaded
         return n
       end
 
-      def draw_number(b, c, title, value, min, max, unit)
+      # With an icon (an item, the Bag's Toss): its picture in a box on the
+      # left, the number centred on the rest, the note under it
+      def draw_number(b, c, title, value, min, max, unit, icon = nil, note = nil)
         dim(b)
-        w = 280
-        h = 130
+        w = icon || note ? 300 : 280
+        h = icon || note ? 150 : 130
         x = (SCREEN_W - w) / 2
         y = (SCREEN_H - h) / 2
         panel(b, c, x, y, w, h)
         title_bar(b, c, x, y, w, title)
+        nx = x
+        nw = w
+        if icon
+          P.ui.rbox(b, x + 16, y + 46, x + 72, y + 102, 6, c[:light] ? mix(c[:panel2], Reloaded::PartyPaint::WHITE, 0.5) : mix(c[:dark], c[:panel], 0.3), c[:line])
+          item_picture(b, icon, x + 20, y + 50, 48)
+          nx = x + 72
+          nw = w - 72
+        end
         label = value.to_s + unit.to_s
         tw = P.width(P.pf::ROW, label)
-        P.text(b, x, y + 46, w, 30, label, c[:txt], P.pf::ROW, 2)
-        P.ui.tri(b, x + w / 2 - tw / 2 - 16, y + 56, :l, value > min ? c[:selb] : c[:line], 5)
-        P.ui.tri(b, x + w / 2 + tw / 2 + 6, y + 56, :r, value < max ? c[:selb] : c[:line], 5)
+        cx = nx + nw / 2
+        P.text(b, nx, y + 46, nw, 30, label, c[:txt], P.pf::ROW, 2)
+        P.ui.tri(b, cx - tw / 2 - 16, y + 56, :l, value > min ? c[:selb] : c[:line], 5)
+        P.ui.tri(b, cx + tw / 2 + 6, y + 56, :r, value < max ? c[:selb] : c[:line], 5)
+        P.small(b, nx, y + 82, nw, 16, note.call(value).to_s, c[:dim], 2) if note
         P.text(b, x, y + h - 30, w, 20, _INTL("{1} to {2}", min.to_s + unit.to_s, max.to_s + unit.to_s), c[:dim], nil, 2)
+      end
+
+      def item_picture(b, id, x, y, size)
+        file = (::GameData::Item.icon_filename(id) rescue "Graphics/Items/#{id}")
+        path = defined?(pbResolveBitmap) ? (pbResolveBitmap(file) || file) : file
+        bm = Bitmap.new(path)
+        b.stretch_blt(Rect.new(x, y, size, size), bm, Rect.new(0, 0, bm.width, bm.height))
+        bm.dispose
+      rescue StandardError
+        nil
       end
     end
   end

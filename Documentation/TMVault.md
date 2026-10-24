@@ -28,7 +28,7 @@ Each new move shows a toast ("Added to TM Vault: Ice Beam", the TM's disc in its
 - **The Type Filter:** Up from the top of the list. Left and Right pick a type (only the types the list has), Down goes back.
 - **The list:** one panel, each move's name in its type's colour, Favorites first (a star: Favorite, a controller's Y), NEW, the TM's number (or Tutor) and the type's icon. The Checklist's rows have the TM's disc too.
 - **The details panel**, lit in the move's type:
-  - The party: Knows It, Can Learn or Can't for each. Left and Right pick who.
+  - The party: Learned, Able or Not Able for each (PIF's own words). Left and Right pick who.
   - The move: its type, category, power, accuracy, PP and description.
   - **Coverage** for the one picked: the types its moves hit for super-effective damage now, and (+) what this move adds.
 

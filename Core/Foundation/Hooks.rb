@@ -44,7 +44,24 @@
 # A feature of nil means a core hook: it can't be switched off, and if it
 # fails only that hook stops (it falls through to the original).
 #
-# 3. needs: something of the game's Kanto Reloaded reads by name without
+# 3. watch: a prepend that only watches (Recent Steps, the Timing
+#    Profiler). Kanto Reloaded's own Party and Bag scenes are subclasses of
+#    the game's that replace its methods without calling up, so a module
+#    on the game's class alone never sees them. A watcher goes on the
+#    game's class and on every scene class Kanto Reloaded makes from it
+#    (Hooks.scene_class), now or later. Its methods check
+#    Hooks.watching? first, so a scene that falls back to the game's own
+#    (and so calls up) isn't seen twice:
+#
+#      mod = Module.new do
+#        def pbStartScene(*args)
+#          return super if Reloaded::Hooks.watching?(self, :my_step)
+#          Reloaded::Hooks.watching(self, :my_step) { note_it; super }
+#        end
+#      end
+#      Reloaded::Hooks.watch("PokemonParty_Scene", mod, :id => :my_step)
+#
+# 4. needs: something of the game's Kanto Reloaded reads by name without
 #    hooking it (a $PokemonSystem field, a KIF option key, a KIF setting's
 #    name), so a check after a game update can say it's gone:
 #
@@ -142,6 +159,38 @@ module Reloaded
         return true
       end
 
+      # A watcher: on the game's class and on Kanto Reloaded's scene classes
+      # made from it (see the top)
+      def watch(target, mod, options = {})
+        return false unless prepend(nil, target, mod, options)
+        klass = resolve(target)
+        (@watchers ||= []) << [klass, mod, options]
+        (@scene_classes ||= []).each { |base, sub| mirror(sub, mod, options) if base == klass }
+        return true
+      end
+
+      # A scene class of Kanto Reloaded's (a subclass of the game's base):
+      # the watchers on base go on it too
+      def scene_class(base, sub)
+        (@scene_classes ||= []) << [base, sub]
+        (@watchers || []).each { |klass, mod, options| mirror(sub, mod, options) if klass == base }
+        return sub
+      end
+
+      # Inside a watcher already, for this object (a scene's fallback calls
+      # up to the game's class, where the same watcher sits)
+      def watching?(obj, key)
+        return obj.instance_variable_get(:"@kr_watching_#{key}") ? true : false
+      end
+
+      def watching(obj, key)
+        flag = :"@kr_watching_#{key}"
+        obj.instance_variable_set(flag, true)
+        return yield
+      ensure
+        obj.instance_variable_set(flag, nil)
+      end
+
       # Runs the block; an error switches the feature off for the session and
       # returns fallback instead.
       def guard(feature, where = nil, fallback = nil)
@@ -235,6 +284,11 @@ module Reloaded
         end
         @registry << entry
         return entry
+      end
+
+      def mirror(sub, mod, options)
+        return if sub.ancestors.take_while { |a| a != sub }.include?(mod)
+        prepend(nil, sub, mod, options.merge(:id => "#{options[:id] || mod}_kr_scene"))
       end
 
       def skip(feature, target, method_name, options, reason, where = nil)

@@ -115,6 +115,9 @@ module Reloaded
             @kr_vanilla ? super(*args, &blk) : send(ours, *args, &blk)
           end
         end
+        # what watches the game's party scene (Recent Steps, the Timing
+        # Profiler) watches ours too
+        Reloaded::Hooks.scene_class(base, k)
         return @scene_class = k
       end
 

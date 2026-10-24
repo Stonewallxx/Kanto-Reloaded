@@ -119,6 +119,8 @@ end
 
 For code that runs every frame (input, drawing), use `Hooks.prepend(feature, target, Module)`. Its methods call `super` and check `Reloaded::Features.on?(feature)` themselves; `Hooks.guard(feature, where) { ... }` wraps the risky part. A feature of `nil` is a core hook that can't be switched off.
 
+A module that only watches a game scene (Recent Steps, the Timing Profiler) uses `Hooks.watch(target, Module)`. Kanto Reloaded's own Party and Bag scenes are subclasses of the game's that replace its methods without calling up, so a plain prepend on the game's class never sees them; a watcher goes on every scene class Kanto Reloaded makes from that class too (`Hooks.scene_class(base, sub)`, now or later). Its methods check `Hooks.watching?(self, key)` and run inside `Hooks.watching(self, key) { ... }`, so a scene that falls back to the game's own isn't seen twice.
+
 The registry keeps, for each hook, its target, method, kind and where in Kanto Reloaded it was made (`:where`, "Core/Settings/KIFBridge.rb:87"), and the error that switched one off (`:error`). `Hooks.skipped` lists the hooks skipped at boot and why (target or method not found).
 
 Something of the game's that Kanto Reloaded reads by name without hooking it is declared with `Hooks.needs`, so a check after a game update can say it's gone:
@@ -316,7 +318,7 @@ The screen is built from these parts, which later Kanto Reloaded screens reuse:
 | `ButtonIcons` | Inputs drawn as icons: keycaps, and Xbox, PlayStation or Nintendo buttons, sticks, triggers and the d-pad (Button Style) |
 | `SplitScreen` | The Patch Viewer's and the Timing Profiler's layout: the sidebar of entries, the list of headings and rows, the description box with badges and scrolling |
 | `Frame` | What every settings-like screen shares: the layers, the pulsing cursor, the centred hint line that scrolls when it's too long, the title-bar boxes with their buttons beside them, the description box, running a dropdown, and alerts (`alert_box`: a red glow around a box, pulsing, on its own layer; the PokeVial's Low HP Reminder) |
-| `Dialogs` | Popups: `menu` (rows can lead with an input's icon), `picker`, `confirm`, `notice`, `ask` and `number` |
+| `Dialogs` | Popups: `menu` (rows can lead with an input's icon), `picker`, `confirm`, `notice`, `ask` and `number` (with an item's picture and a line under it, `icon:` and `note:`), and `frame` for a popup a screen draws itself. A settings button's popups draw on `SettingsScreen.showing` |
 | `Toast` | A short line at the top for a moment, no button: an icon, the words, a pill or a drawing of its own. The map moves it on (menus and messages too) and so does the Bag; it shows over the map menus |
 | `Dropdown` | A choice's values, dropped down from its value (Option Dropdowns) |
 | `TextEntry` | Typing into a field, as KIF Settings' search does: the keyboard types straight in, and a controller's A opens the game's naming screen |
@@ -358,6 +360,8 @@ No test or preview ever clears a folder. Each takes its work folder through `KRW
 | `ruby Tools/Tests/speed_up_preview.rb "<KIF Beta>" <work dir with metrics.json>` | Drives the Controls screen's Speed-Up section, Search, KIF Settings and the Speed Indicator on the preview's stand-ins |
 | `ruby Tools/Tests/tm_vault_test.rb "<KIF Beta>" <empty temp folder>` | The TM Vault on stand-ins for the game's classes: what comes in (the Bag, tutors, Tutor.net), NEW, Favorites, who can learn what, Relearn, Coverage, teaching, the Checklist's kinds read from map files, the party menu's Relearn Moves and Off (see [TMVault.md](TMVault.md)) |
 | `ruby Tools/Tests/tm_vault_preview.rb "<KIF Beta>" <work dir with metrics.json>` | Drives the Vault, Search, Sort, the Type Filter, teaching, Move Compare, Relearn, the Checklist, the mouse and the toast on the preview's stand-ins, Dark and Light |
+| `ruby Tools/Tests/bag_test.rb "<KIF Beta>" <empty temp folder>` | The Reloaded Bag on the game's own Bag with stand-ins for its items: Auto-Sort, NEW, New Items, Favorites, views, moving by hand, headings, Defaults, Export and Import, Kanto Reloaded Legacy's lists and Off (see [Bag.md](Bag.md)) |
+| `ruby Tools/Tests/bag_preview.rb "<KIF Beta>" <work dir with metrics.json>` | Drives the Bag through the game's own Bag screen: the pockets, views, the actions, Teach, Move, Toss, Quick Items, Search, pickers' banners, the mouse, Light, the Bag pages in KIF Settings, the Custom List editor |
 | `ruby Tools/Tests/title_versions_preview.rb "<KIF Beta>" <work dir with metrics.json>` | The title screen's versions (PIF, KIF and KR one to a line in the top right) on a stand-in of PIF's title screen |
 | `ruby Tools/Tests/profiler_preview.rb "<KIF Beta>" <work dir with metrics.json>` | Drives the Report Viewer, Mod Timings and the profiler's settings headings on the preview's stand-ins |
 | `ruby Tools/PatchChecker/patch_check.rb "<KIF Beta>" "<mod folder>" [more mods]` | The Patch Checker: a mod's DataPatches against KIF Beta's real data, every error and warning by file and patch (see [DataPatches.md](DataPatches.md)) |

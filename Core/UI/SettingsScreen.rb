@@ -128,7 +128,13 @@ module Reloaded
     #--------------------------------------------------------------------------
     # Running
     #--------------------------------------------------------------------------
+    class << self
+      attr_accessor :showing     # the screen open now: a button's popups draw on it (the Bag's Import)
+    end
+
     def main
+      before = SettingsScreen.showing
+      SettingsScreen.showing = self
       open_sprites
       refresh
       loop do
@@ -146,6 +152,7 @@ module Reloaded
       dispose_sprites
       return Reloaded::KIFBridge.vanilla { ::KifSettingsScreen.new(@inloadscreen).main }
     ensure
+      SettingsScreen.showing = before
       dispose_sprites
       # a module or a mod switched here can change the Overworld Menu's setting rows
       Reloaded::OverworldMenu::SettingRows.forget if defined?(Reloaded::OverworldMenu::SettingRows) && !@pick_mode

@@ -422,6 +422,24 @@ module Reloaded
         save_data["quick_items"] = list
       end
 
+      # The item's slot (0 first), or nil (the Bag's Quick Items actions)
+      def quick_slot(item)
+        return quick_items.index(item.to_s.to_sym)
+      end
+
+      # Into the first empty slot: the slot, or nil when all are full
+      def add_quick_item(item)
+        i = quick_items.index(nil)
+        set_quick_item(i, item) if i
+        return i
+      end
+
+      def remove_quick_item(item)
+        i = quick_slot(item)
+        set_quick_item(i, nil) if i
+        return i
+      end
+
       # Items that can go in a slot: anything with a use outside battle.
       def quick_item?(item)
         return false unless defined?(::ItemHandlers) && defined?(::GameData::Item) && ::GameData::Item.exists?(item)

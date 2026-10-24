@@ -172,6 +172,32 @@ check("missing method is skipped", H.around(:demo, Widget, :nope) { } == false)
 check("registry lists hooks", H.summary.any? { |s| s.start_with?("double: Widget#value") })
 H.around(nil, Widget, :value, :id => :core_value) { |orig, x, **kw| raise "core bug" }
 check("a failing core hook only turns itself off", w.value(2) == 4 && !H.registry.find { |e| e[:id] == "core_value" }[:active] && F.on?(:demo))
+# watch: a watcher on the game's scene sees Kanto Reloaded's scene class too
+# (its methods don't call up, unless it falls back to the game's), once
+class WatchBase; def pbStartScene(_x); $wlog << :base; end; end
+module WatchOurs; def pbStartScene(_x); return super if @vanilla; $wlog << :ours; end; end
+WatchSub = Class.new(WatchBase) { include WatchOurs; attr_accessor :vanilla }
+$wlog = []
+watcher = Module.new do
+  def pbStartScene(*a)
+    return super if Reloaded::Hooks.watching?(self, :test_watch)
+    Reloaded::Hooks.watching(self, :test_watch) { $wlog << :seen; super }
+  end
+end
+H.scene_class(WatchBase, WatchSub)                    # a scene class made before the watcher
+H.watch(WatchBase, watcher, :id => :test_watch)
+WatchSub.new.pbStartScene(1)
+fallback = WatchSub.new
+fallback.vanilla = true
+fallback.pbStartScene(1)
+WatchBase.new.pbStartScene(1)
+check("watch: the game's scene and Kanto Reloaded's are both seen, a fallback to the game's only once (#{$wlog.inspect})",
+      $wlog == [:seen, :ours, :seen, :base, :seen, :base])
+$wlog = []
+WatchSub2 = Class.new(WatchBase) { include WatchOurs }
+H.scene_class(WatchBase, WatchSub2)                   # ...and one made after it
+WatchSub2.new.pbStartScene(1)
+check("...a scene class made after the watcher is seen too (#{$wlog.inspect})", $wlog == [:seen, :ours])
 
 #---------------------------------------------------------------- Lifecycle + SaveStore
 events = []

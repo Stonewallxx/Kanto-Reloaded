@@ -67,17 +67,23 @@ module Reloaded
         # Times target#method as a section of the session running then
         # (while kind is timed). owner: whose code it is (by default, the
         # file the method is in now).
-        def section(target, method, label, kind, about: nil, owner: nil)
+        # watch: Kanto Reloaded's own scenes made from target are timed too
+        # (Hooks.watch)
+        def section(target, method, label, kind, about: nil, owner: nil, watch: false)
           klass = method_target(target, method)
           return false unless klass
           owner ||= owner_of(klass, method)
+          key = :"profiler_#{label.downcase.gsub(/[^a-z]+/, "_")}_#{method}"
           mod = Module.new do
             define_method(method) do |*args, **kwargs, &blk|
               return super(*args, **kwargs, &blk) unless Reloaded::Profiler.times?(kind)
-              Reloaded::Profiler.measure(label, :owner => owner, :about => about) { super(*args, **kwargs, &blk) }
+              return super(*args, **kwargs, &blk) if Reloaded::Hooks.watching?(self, key)
+              Reloaded::Hooks.watching(self, key) do
+                Reloaded::Profiler.measure(label, :owner => owner, :about => about) { super(*args, **kwargs, &blk) }
+              end
             end
           end
-          return add(klass, method, mod, label)
+          return add(klass, method, mod, label, watch)
         end
 
         # Times target#method as a session: the block gives its name (and
@@ -126,15 +132,20 @@ module Reloaded
           klass = method_target(target, start)
           return false unless klass && method_target(target, finish)
           owner = owner_of(klass, start)
+          open_key = :"profiler_open_#{name.downcase.gsub(/[^a-z]+/, "_")}"
+          close_key = :"profiler_close_#{name.downcase.gsub(/[^a-z]+/, "_")}"
           opener = Module.new do
             define_method(start) do |*args, **kwargs, &blk|
               return super(*args, **kwargs, &blk) unless Reloaded::Profiler.times?(:menu)
-              old = instance_variable_get(:@kr_profile)
-              Reloaded::Profiler.finish_session(old) if old && Reloaded::Profiler.running?(old)
-              s = Reloaded::Profiler.start_session(:menu, name)
-              instance_variable_set(:@kr_profile, s)
-              Reloaded::Profiler.measure("Open", :owner => owner, :about => "Opening the #{name}: its graphics and the first draw.") do
-                super(*args, **kwargs, &blk)
+              return super(*args, **kwargs, &blk) if Reloaded::Hooks.watching?(self, open_key)
+              Reloaded::Hooks.watching(self, open_key) do
+                old = instance_variable_get(:@kr_profile)
+                Reloaded::Profiler.finish_session(old) if old && Reloaded::Profiler.running?(old)
+                s = Reloaded::Profiler.start_session(:menu, name)
+                instance_variable_set(:@kr_profile, s)
+                Reloaded::Profiler.measure("Open", :owner => owner, :about => "Opening the #{name}: its graphics and the first draw.") do
+                  super(*args, **kwargs, &blk)
+                end
               end
             end
           end
@@ -142,17 +153,23 @@ module Reloaded
             define_method(finish) do |*args, **kwargs, &blk|
               s = instance_variable_get(:@kr_profile)
               return super(*args, **kwargs, &blk) unless s && Reloaded::Profiler.running?(s)
-              begin
-                Reloaded::Profiler.measure("Close", :owner => owner, :about => "Closing the #{name}.") { super(*args, **kwargs, &blk) }
-              ensure
-                instance_variable_set(:@kr_profile, nil)
-                Reloaded::Profiler.finish_session(s)
+              return super(*args, **kwargs, &blk) if Reloaded::Hooks.watching?(self, close_key)
+              Reloaded::Hooks.watching(self, close_key) do
+                begin
+                  Reloaded::Profiler.measure("Close", :owner => owner, :about => "Closing the #{name}.") { super(*args, **kwargs, &blk) }
+                ensure
+                  instance_variable_set(:@kr_profile, nil)
+                  Reloaded::Profiler.finish_session(s)
+                end
               end
             end
           end
-          add(klass, start, opener, "#{name} open")
-          add(klass, finish, closer, "#{name} close")
-          section(target, :pbRefresh, "Refresh", :menu, :about => "Redrawing the #{name}.") if klass.method_defined?(:pbRefresh)
+          # (watchers: Kanto Reloaded's own Party and Bag scenes are timed too)
+          add(klass, start, opener, "#{name} open", true)
+          add(klass, finish, closer, "#{name} close", true)
+          if klass.method_defined?(:pbRefresh)
+            section(target, :pbRefresh, "Refresh", :menu, :about => "Redrawing the #{name}.", :watch => true)
+          end
           return true
         end
 
@@ -195,11 +212,15 @@ module Reloaded
           return Owners::PIF
         end
 
-        def add(klass, method, mod, what)
+        def add(klass, method, mod, what, watch = false)
           mod.send(:private, method) if klass.private_method_defined?(method)
           mod.send(:protected, method) if klass.protected_method_defined?(method)
           id = :"profiler_#{klass.name.to_s.downcase.gsub(/[^a-z0-9]+/, "_")}_#{method}_#{@installed.length}"
-          Reloaded::Hooks.prepend(nil, klass, mod, :id => id)
+          if watch
+            Reloaded::Hooks.watch(klass, mod, :id => id)
+          else
+            Reloaded::Hooks.prepend(nil, klass, mod, :id => id)
+          end
           @installed << "#{klass}##{method} (#{what})"
           return true
         end

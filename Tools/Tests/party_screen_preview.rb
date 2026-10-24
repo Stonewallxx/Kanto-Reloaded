@@ -187,6 +187,9 @@ Bitmap.prepend(Module.new { def clear(*a); $pf_texts.delete(id); super; end })
 $ps = nil
 Reloaded::PartyScene.prepend(Module.new { def pbStartScene(*a); $ps = self; super; end }) rescue nil
 PS.scene_class.prepend(Module.new { def pbStartScene(*a); $ps = self; super; end })
+# Recent Steps, as the game boots it (here the game's party scene comes after Kanto Reloaded)
+Reloaded::BugReport::Trail.install
+def party_steps; Reloaded::BugReport::Trail.lines.count { |l| l.end_with?("Menu  Party") }; end
 def ps_iv(n); $ps.instance_variable_get(n); end
 def said?(sprite, word)
   b = ps_iv(sprite).bitmap
@@ -300,6 +303,8 @@ party_screen("A main", [
 check("B closed it", !$ps.nil? && ps_iv(:@sprite).nil? || ps_iv(:@sprite).disposed?)
 $Trainer.party = make_party
 
+check("Recent Steps saw Kanto Reloaded's party screen open, once (#{party_steps})", party_steps == 1)
+
 #---------------------------------------------------------------- B: a question, the Egg, the mouse
 party_screen("B egg and mouse", [
   at { $ps.pbSelect(5) },
@@ -370,6 +375,7 @@ end
 $game_temp.in_battle = false
 
 #---------------------------------------------------------------- E: Light and Frost, Big Pokemon Icons
+RUN_MODE = S.get(Reloaded::Palette::MODE)     # the run's own Theme Mode (KR_THEME_MODE), back after
 S.set(Reloaded::Palette::MODE, 2)
 $big_icons = true
 party_screen("E light", [
@@ -383,8 +389,141 @@ S.set(Reloaded::Palette::MODE, 3)
 party_screen("E frost", [at { check("Frost: Light too (a full screen isn't see-through)", $ps.palette[:light] == true && Reloaded::Palette.menu_alpha(232) < 232) }, I::BACK])
 S.set(Reloaded::Palette::MODE, 1)
 party_screen("E glass", [at { check("Glass: Dark", !$ps.palette[:light]) }, I::BACK])
-S.set(Reloaded::Palette::MODE, 0)
+S.set(Reloaded::Palette::MODE, RUN_MODE)
 $big_icons = false
+
+#---------------------------------------------------------------- G: Use Several at Once (his picks: Number With Both, A Notice)
+# The game's item handlers as stand-ins (013_Items/002_Item_Effects.rb: Protein
+# raises Attack EVs by 10 up to 100, then "It won't have any effect"; Rare
+# Candy one level), the Bag's count, and the level-up
+class PkP
+  attr_writer :ev
+  attr_accessor :happiness
+  def ev; @ev ||= { :HP => 0, :ATTACK => 40, :DEFENSE => 0, :SPECIAL_ATTACK => 0, :SPECIAL_DEFENSE => 0, :SPEED => 0 }; end
+  def happiness; @happiness ||= 120; end
+  def changeHappiness(_why); @happiness = [happiness + 5, 255].min; end
+  def calc_stats; end
+  def shadowPokemon?; false; end
+end
+module GameData
+  class Stat
+    NAMES = { :HP => "HP", :ATTACK => "Attack" }.freeze
+    Row = Struct.new(:id, :name)
+    def self.get(s); Row.new(s, NAMES[s] || s.to_s); end
+  end
+end
+unless defined?(GameData::Item)
+  module GameData
+    class Item
+      Row = Struct.new(:id, :name, :name_plural)
+      NAMES = { :PROTEIN => ["Protein", "Proteins"], :RARECANDY => ["Rare Candy", "Rare Candies"] }.freeze
+      def self.get(i); n = NAMES[i] || [i.to_s, i.to_s + "s"]; Row.new(i, *n); end
+      def self.icon_filename(i); "Graphics/Items/#{i}"; end
+    end
+  end
+end
+module ItemHandlers
+  UseOnPokemon = {}
+  def self.triggerUseOnPokemon(item, pkmn, scene)
+    return false unless UseOnPokemon[item]
+    return UseOnPokemon[item].call(item, pkmn, scene)
+  end
+end
+ItemHandlers::UseOnPokemon[:PROTEIN] = proc do |_item, pkmn, scene|
+  if pkmn.ev[:ATTACK] >= 100
+    scene.pbDisplay("It won't have any effect.")
+    next false
+  end
+  pkmn.ev[:ATTACK] = [pkmn.ev[:ATTACK] + 10, 100].min
+  scene.pbDisplay("#{pkmn.name}'s Attack increased.")
+  pkmn.changeHappiness("vitamin")
+  next true
+end
+# a Potion as pbHPItem (013_Items/001_Item_Utilities.rb): 20 HP, nothing when fainted or full
+ItemHandlers::UseOnPokemon[:POTION] = proc do |_item, pkmn, scene|
+  if !pkmn.able? || pkmn.hp == pkmn.totalhp
+    scene.pbDisplay("It won't have any effect.")
+    next false
+  end
+  pkmn.hp = [pkmn.hp + 20, pkmn.totalhp].min
+  scene.pbRefresh
+  scene.pbDisplay("#{pkmn.name}'s HP was restored by 20 points.")
+  next true
+end
+ItemHandlers::UseOnPokemon[:RARECANDY] = proc { |_item, pkmn, scene| pbChangeLevel(pkmn, pkmn.level + 1, scene); next true }
+def pbChangeLevel(pkmn, level, _scene); $log << "LEVEL #{pkmn.name} #{level}"; pkmn.level = level; end
+class BagU
+  def initialize; @q = { :PROTEIN => 8, :RARECANDY => 20, :POTION => 10 }; end
+  def pbQuantity(i); @q[i].to_i; end
+  def pbDeleteItem(i, n = 1); @q[i] -= n; true; end
+end
+$PokemonBag = BagU.new
+Reloaded::UseSeveral.send(:install)
+$Trainer.party = make_party
+pika = $Trainer.party[0]
+used = nil
+party_screen("G use several", [
+  at {
+    screen = $ps.instance_variable_get(:@kr_screen) || PokemonPartyScreen.new($ps, $Trainer.party)
+    Input.queue.unshift(I::RIGHT, I::RIGHT, I::RIGHT, I::RIGHT, dmp("ps_20_use_how_many"),
+                        at { check("Use How Many? (his pick: Number With Both): Protein on Pikachu, what it makes, the most that helps (6)",
+                                   over_says?("Use How Many?") && over_says?("on Pikachu") && over_says?("90") && over_says?("1 to 6")) },
+                        I::USE, dmp("ps_21_use_result"),
+                        at { check("...then what it did (his pick: A Notice): Pikachu's Attack Rose, 40 to 90", over_says?("Pikachu's Attack Rose") && over_says?("Used 5")) },
+                        I::USE)
+    used = ItemHandlers.triggerUseOnPokemon(:PROTEIN, pika, screen)
+  },
+  at { check("...5 used: Attack EVs 90, the Bag gives 4 more up (the game takes the last one) (#{pika.ev[:ATTACK]}, #{$PokemonBag.pbQuantity(:PROTEIN)})",
+             used == true && pika.ev[:ATTACK] == 90 && $PokemonBag.pbQuantity(:PROTEIN) == 4) },
+  at {
+    screen = PokemonPartyScreen.new($ps, $Trainer.party)
+    Input.queue.unshift(*[I::UP] * 1, at { check("Rare Candy: Up adds ten (#{over_says?("Lv. 45")})", over_says?("Lv. 45")) }, I::USE)
+    used = ItemHandlers.triggerUseOnPokemon(:RARECANDY, pika, screen)
+  },
+  at { check("...11 Rare Candies: one level-up to Lv. 45, the game's own (#{$log.grep(/LEVEL/).last}), 10 more from the Bag",
+             $log.grep(/LEVEL/).last == "LEVEL Pikachu 45" && $PokemonBag.pbQuantity(:RARECANDY) == 10) },
+  at {
+    screen = PokemonPartyScreen.new($ps, $Trainer.party)
+    Input.queue.unshift(I::BACK)
+    used = ItemHandlers.triggerUseOnPokemon(:PROTEIN, $Trainer.party[2], screen)
+  },
+  at { check("...B on Use How Many?: nothing used (#{used.inspect})", used == false && $Trainer.party[2].ev[:ATTACK] == 40) },
+  at {
+    screen = PokemonPartyScreen.new($ps, $Trainer.party)
+    Input.queue.unshift(I::USE)                 # the game's own "Pikachu's Attack increased."
+    used = ItemHandlers.triggerUseOnPokemon(:PROTEIN, pika, screen)
+  },
+  at { check("...only one more would help (Attack EVs 90): no popup, the game's own use (#{pika.ev[:ATTACK]})", used == true && pika.ev[:ATTACK] == 100) },
+  at {
+    gyara = $Trainer.party[2]
+    screen = PokemonPartyScreen.new($ps, $Trainer.party)
+    Input.queue.unshift(I::RIGHT, I::RIGHT, dmp("ps_22_use_potions"),
+                        at { check("HP Items (his pick): Potion on Gyarados, HP 20 to 80, the most that fills it (5)",
+                                   over_says?("on Gyarados") && over_says?("80") && over_says?("1 to 5")) },
+                        I::USE, dmp("ps_23_potions_result"),
+                        at { check("...then Gyarados's HP Was Restored, Used 3", over_says?("HP Was Restored") && over_says?("Used 3")) },
+                        I::USE)
+    used = ItemHandlers.triggerUseOnPokemon(:POTION, gyara, screen)
+  },
+  at { check("...3 used: HP 80, 2 more from the Bag (#{$Trainer.party[2].hp}, #{$PokemonBag.pbQuantity(:POTION)})",
+             used == true && $Trainer.party[2].hp == 80 && $PokemonBag.pbQuantity(:POTION) == 8) },
+  at {
+    us = Reloaded::UseSeveral
+    gyara = $Trainer.party[2]
+    hp = gyara.hp
+    gyara.hp = 0
+    fainted = us.most(:POTION, gyara)
+    gyara.hp = 110
+    full = us.most(:POTION, gyara)
+    gyara.hp = 10
+    sitrus = us.most(:SITRUSBERRY, gyara)
+    max = us.most(:MAXPOTION, gyara)
+    gyara.hp = hp
+    check("...none when fainted or full (#{fainted}, #{full}); Sitrus a quarter: 4 (#{sitrus}); a Max Potion one (#{max})",
+          fainted == 0 && full == 0 && sitrus == 4 && max == 1)
+  },
+  I::BACK
+])
 
 #---------------------------------------------------------------- F: Off
 S.set(PS::TOGGLE, false)

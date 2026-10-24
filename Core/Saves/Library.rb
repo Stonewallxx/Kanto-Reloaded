@@ -160,7 +160,7 @@ module Reloaded
         pv[:map] = map_name(pv[:map_id])
         pv[:saved_at] = (p.last_time_saved rescue nil)
         pv[:difficulty] = difficulty(p)
-        pv[:difficulty_index] = ((p.selected_difficulty rescue nil) || (p.lowest_difficulty rescue nil))
+        pv[:difficulty_index] = ((p.lowest_difficulty rescue nil) || (p.selected_difficulty rescue nil))
         switches = data[:switches]
         sw = ->(id) { switches.respond_to?(:[]) && (switches[id] rescue false) ? true : false }
         pv[:mode] = if sw.call(SWITCH_EXPERT) then "Expert"
@@ -568,8 +568,10 @@ module Reloaded
         return name.to_s.empty? ? "Map #{id}" : name.to_s
       end
 
+      # The lowest difficulty the save has used, as PIF's own load screen
+      # shows it (013_UI_Load.rb), else the one it's on
       def difficulty(p)
-        index = (p.selected_difficulty rescue nil) || (p.lowest_difficulty rescue nil)
+        index = (p.lowest_difficulty rescue nil) || (p.selected_difficulty rescue nil)
         return nil if index.nil?
         return (getDisplayDifficultyFromIndex(index) rescue nil) || ["Easy", "Normal", "Hard"][index.to_i]
       end
