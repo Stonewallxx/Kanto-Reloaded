@@ -224,19 +224,20 @@ module Reloaded
       end
 
       # The types a Pokémon's damaging moves hit for super effective damage:
-      # [now, with move (forgetting the one at forget, when given)]
+      # [now, with move (forgetting the one at forget, when given)]. Hidden
+      # Power counts as its own type.
       def coverage(pkmn, move = nil, forget = nil)
         ids = Array(pkmn ? pkmn.moves : []).map(&:id)
-        now = hits(ids)
+        now = hits(ids, pkmn)
         return [now, now] unless move
         after = ids.dup
         forget ? after[forget] = move_id(move) : after << move_id(move)
-        return [now, hits(after)]
+        return [now, hits(after, pkmn)]
       end
 
-      def hits(move_ids)
+      def hits(move_ids, pkmn = nil)
         out = []
-        attack = move_ids.map { |m| ::GameData::Move.try_get(m) }.compact.select { |m| m.base_damage.to_i > 0 }.map(&:type).uniq
+        attack = move_ids.map { |m| ::GameData::Move.try_get(m) }.compact.select { |m| m.base_damage.to_i > 0 }.map { |m| move_type(pkmn, m) }.uniq
         ::GameData::Type.each do |t|
           next if t.respond_to?(:pseudo_type) && t.pseudo_type
           out << t.id if attack.any? { |a| t.effectiveness(a) == ::Effectiveness::SUPER_EFFECTIVE_ONE }
@@ -376,8 +377,21 @@ module Reloaded
         return ""
       end
 
+      # A move's type and power for this Pokémon: Hidden Power's are its own
+      # (HiddenPower/Summary.rb); with no Pokémon, the move's
+      def move_type(pkmn, move)
+        return Reloaded::HiddenPower::Summary.type_for(pkmn, move) if defined?(Reloaded::HiddenPower::Summary)
+        return (move.is_a?(Symbol) ? ::GameData::Move.get(move) : move).type
+      end
+
+      def move_power(pkmn, move)
+        return Reloaded::HiddenPower::Summary.power_for(pkmn, move) if defined?(Reloaded::HiddenPower::Summary)
+        return (move.is_a?(Symbol) ? ::GameData::Move.get(move) : move).base_damage
+      end
+
       # The machine's disc for a move, in its type (an HM's own disc when
-      # the game has one for that type)
+      # the game has one for that type). A machine is nobody's yet: the
+      # move's own type, Hidden Power's Normal too.
       def disc_icon(move)
         type = ::GameData::Move.get(move_id(move)).type
         plain = "Graphics/Items/machine_#{type}"

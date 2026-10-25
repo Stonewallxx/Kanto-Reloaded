@@ -293,13 +293,13 @@ module Reloaded
         moves.each_with_index do |m, k|
           y = CMP_Y + k * CMP_MOVE_H
           @cursor_rect = [x0 - 4, y - 2, side_w + 8, CMP_MOVE_H - 2] if @kr_cmp[:msel] == [side, k]
-          type = (m.type rescue nil)
+          type = (cmp_move_type(pk, m) rescue nil)
           top.stretch_blt(Rect.new(x0, y + 1, 36, 16), sheet, Rect.new(0, PP.type_row(type) * 28, 64, 28)) if sheet && type
           P.text(top, x0 + 42, y, side_w - 42, 18, PF.fit(PF::TEXT, m.name.to_s, side_w - 42), c[:txt])
           cat = (m.category rescue 2).to_i
           words, tint = [[_INTL("PHYSICAL"), c[:red]], [_INTL("SPECIAL"), c[:blue]], [_INTL("STATUS"), c[:dim]]][cat.clamp(0, 2)]
           pw = P.pill(top, x0, y + 18, words, tint, c[:dark], false).to_i
-          power = (m.base_damage rescue 0).to_i
+          power = (cmp_move_power(pk, m) rescue 0).to_i
           acc = (m.accuracy rescue 0).to_i
           facts = [_INTL("POW {1}", power > 1 ? power : "-"), _INTL("ACC {1}", acc > 0 ? acc : "-"),
                    _INTL("PP {1}/{2}", (m.pp rescue 0), (m.total_pp rescue 0))]
@@ -318,6 +318,18 @@ module Reloaded
       P.wrap((m.description rescue "").to_s, W - 48).first(3).each_with_index do |line, i|
         P.text(top, 24, y0 + 19 + i * 17, W - 48, 17, line, c[:dim])
       end
+    end
+
+    # A move's type and power for its Pokémon: Hidden Power's are its own
+    # (HiddenPower/Summary.rb)
+    def cmp_move_type(pk, m)
+      return Reloaded::HiddenPower::Summary.type_for(pk, m) if defined?(Reloaded::HiddenPower::Summary)
+      return m.type
+    end
+
+    def cmp_move_power(pk, m)
+      return Reloaded::HiddenPower::Summary.power_for(pk, m) if defined?(Reloaded::HiddenPower::Summary)
+      return m.base_damage
     end
 
     # On the moves: Up / Down through a side's moves, Left / Right between

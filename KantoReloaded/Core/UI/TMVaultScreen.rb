@@ -141,12 +141,26 @@ module Reloaded
       return ::GameData::Move.get(move)
     end
 
+    # A move's type and power as shown: Hidden Power's are the picked
+    # Pokémon's own (the Checklist's machines are nobody's yet)
+    def whose
+      return tab == :checklist ? nil : pkmn
+    end
+
+    def shown_type(move, p = whose)
+      return TV.move_type(p, move)
+    end
+
+    def shown_power(move, p = whose)
+      return TV.move_power(p, move)
+    end
+
     def build_rows
       if tab == :checklist
         return TV.checklist.select { |_it, mv, _k| match?(mv) }
       end
       list = tab == :vault ? TV.moves : TV.relearnable(pkmn)
-      list = list.select { |m| match?(m) && (@type_filter.nil? || md(m).type == @type_filter) }
+      list = list.select { |m| match?(m) && (@type_filter.nil? || shown_type(m) == @type_filter) }
       return sorted(list)
     end
 
@@ -167,7 +181,7 @@ module Reloaded
       keyed = list.map do |m|
         d = md(m)
         key = case TV::SORTS[TV.sort]
-              when "Type" then [type_order(d.type), d.name]
+              when "Type" then [type_order(shown_type(m)), d.name]
               when "Category" then [d.category.to_i, d.name]
               when "Recent" then [-TV.added_at(m), d.name]
               when "Level Learned" then [TV.level_learned(p, m) || 999, d.name]
@@ -182,7 +196,7 @@ module Reloaded
     # The types the list has (for the chips), in the game's order
     def types_present
       list = tab == :vault ? TV.moves : TV.relearnable(pkmn)
-      return list.select { |m| match?(m) }.map { |m| md(m).type }.uniq.sort_by { |t| type_order(t) }
+      return list.select { |m| match?(m) }.map { |m| shown_type(m) }.uniq.sort_by { |t| type_order(t) }
     end
 
     #--------------------------------------------------------------------------
@@ -642,17 +656,18 @@ module Reloaded
 
     def move_row(top, c, x, y, m)
       d = md(m)
+      type = shown_type(m)
       label = tab == :vault ? TV.label(m) : level_label(m)
       star(top, x, y + 9, gold(c)) if tab == :vault && TV.favorite?(m)
       nx = x + 11
-      small_type(top, d.type, x + LIST_W - 16, y + 4)
+      small_type(top, type, x + LIST_W - 16, y + 4)
       right = x + LIST_W - 20
       lw = P.width(PF::TINY, label)
       P.text(top, right - lw, y + 5, lw, 16, label, c[:dim], PF::TINY)
       room = right - lw - 8 - nx
       fresh = tab == :vault && TV.new?(m)
       room -= P.width(PF::TINY, _INTL("NEW")) + 18 if fresh
-      nw = P.text(top, nx, y + 2, room, 20, PF.fit(PF::TEXT, d.name, room), type_ink(c, d.type), PF::TEXT)
+      nw = P.text(top, nx, y + 2, room, 20, PF.fit(PF::TEXT, d.name, room), type_ink(c, type), PF::TEXT)
       pill(top, c, nx + nw + 6, y + 5, _INTL("NEW"), :green) if fresh
     end
 
@@ -706,7 +721,7 @@ module Reloaded
 
     def draw_panel(base, top, c)
       m = current
-      col = m ? PP.rgb(Reloaded::PartyScreen.type_rgb(md(m).type)) : c[:line]
+      col = m ? PP.rgb(Reloaded::PartyScreen.type_rgb(shown_type(m))) : c[:line]
       if tab == :checklist
         @icons.each { |s| s.visible = false }
         panel_plate(base, c, col, PY0 + 34)
@@ -776,9 +791,9 @@ module Reloaded
       P.text(top, x, y, w, 22, PF.fit(PF::ROW, d.name, w), c[:strong], PF::ROW)
       bx = x
       by = y + 27
-      bx += big_type(top, d.type, bx, y + 26) + 4
+      bx += big_type(top, shown_type(m), bx, y + 26) + 4
       bx += big_category(top, d.category, bx, y + 26) + 6
-      stat_labels(d).each do |label|
+      stat_labels(d, m).each do |label|
         pw = P.width(PF::TINY, label) + 12
         if bx + pw > x + w
           bx = x
@@ -842,7 +857,7 @@ module Reloaded
       p, m, sel = @cmp
       d = md(m)
       PP.paint_title(top, c, _INTL("Teach {1} to {2}?", d.name, p.name))
-      col = PP.rgb(Reloaded::PartyScreen.type_rgb(d.type))
+      col = PP.rgb(Reloaded::PartyScreen.type_rgb(shown_type(m, p)))
       x0 = 8; y0 = 36; x1 = 250; y1 = 262
       cut = 16
       topc = mix(c[:panel], col, 0.4)
@@ -872,24 +887,28 @@ module Reloaded
 
     def old_plate(base, top, c, x, y, w, h, move, forget)
       d = md(move)
-      col = PP.rgb(Reloaded::PartyScreen.type_rgb(d.type))
+      p = @cmp ? @cmp[0] : whose
+      type = shown_type(move, p)
+      col = PP.rgb(Reloaded::PartyScreen.type_rgb(type))
       PP.chamfer(base, x - 2, y - 2, x + w + 2, y + h + 2, 9, mix(c[:bg], c[:red], 0.4), mix(c[:bg], c[:red], 0.4)) if forget
       PP.chamfer_grad(base, x, y, x + w, y + h, 8, mix(c[:panel2], col, forget ? 0.45 : 0.28), mix(c[:panel2], c[:dark], 0.45),
                       forget ? c[:red] : mix(c[:line], col, 0.4))
       P.text(top, x + 10, y + 3, w - 80, 20, d.name, forget ? c[:strong] : c[:txt], PF::TEXT)
       pill(top, c, x + w - 8, y + 5, _INTL("FORGET"), :red, true) if forget
-      small_type(top, d.type, x + 10, y + h - 20)
+      small_type(top, type, x + 10, y + h - 20)
       big_category(top, d.category, x + 30, y + h - 21)
       bx = x + 74
-      stat_labels(d).each do |label|
+      stat_labels(d, move, p).each do |label|
         break if bx + P.width(PF::TINY, label) + 12 > x + w - 8
         bx += P.pill(top, bx, y + h - 20, label, c[:pill], c[:txt], false) + 5
       end
     end
 
-    # A move's numbers, as the badges say them
-    def stat_labels(d)
-      return [_INTL("POW {1}", d.base_damage.to_i > 1 ? d.base_damage : "--"),
+    # A move's numbers, as the badges say them (Hidden Power's power the
+    # Pokémon's own)
+    def stat_labels(d, m = d.id, p = whose)
+      power = shown_power(m, p).to_i
+      return [_INTL("POW {1}", power > 1 ? power : "--"),
               _INTL("ACC {1}", d.accuracy.to_i > 0 ? d.accuracy : "--"),
               _INTL("PP {1}", d.total_pp)]
     end

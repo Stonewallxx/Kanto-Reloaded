@@ -1228,7 +1228,7 @@ module Reloaded
       py0 = DETAILS_Y
       py1 = H - P::HINT_H - 5
       plate(base, c, PP.rgb(item_rgb(id)), 6, py0, W - 6, py1, 12)
-      if machine?(it) || stone?(it) || heal_kind(id)
+      if machine?(it) || stone?(it) || heal_kind(id) || plate_type(id)
         party_details(top, c, py0, id, it)
       else
         P.text(top, 18, py0 + 5, 300, 22, PF.fit(PF::ROW, it.name, 340), c[:strong], PF::ROW)
@@ -1262,8 +1262,36 @@ module Reloaded
       end
       if heal_kind(id)
         heal_grid(top, c, 308, py0 + 6, id)
+      elsif (to = plate_type(id))
+        plate_grid(top, c, 308, py0 + 6, to)
       else
         party_grid(top, c, 308, py0 + 6, 3, 64, 50, 26, it)
+      end
+    end
+
+    # A plate (Hidden Power): the type it sets, or nil
+    def plate_type(id)
+      return nil unless defined?(Reloaded::HiddenPower::Plates)
+      return Reloaded::HiddenPower::Plates.type_of(id)
+    end
+
+    # Each Pokémon's Hidden Power type now, in its colour; "Already Ice"
+    # where the plate would change nothing (his pick, Q11 Design 1)
+    def plate_grid(top, c, x, y, to)
+      party.each_with_index do |p, i|
+        cx = x + (i % 3) * 64 + 32
+        cy = y + (i / 3) * 50
+        fit_icon(i, cx, cy + 14, 26)
+        if p.egg?
+          word, col = _INTL("Egg"), c[:dim]
+        elsif Reloaded::HiddenPower.unown?(p)
+          word, col = _INTL("Neutral"), c[:dim]
+        elsif (t = Reloaded::HiddenPower.type_of(p)) == to
+          word, col = _INTL("Already {1}", ::GameData::Type.get(to).name), c[:dim]
+        else
+          word, col = ::GameData::Type.get(t).name, PP.ink(c, Reloaded::PartyScreen.type_rgb(t))
+        end
+        P.text(top, cx - 32, cy + 28, 64, 12, word, col, PF::TINY, 2)
       end
     end
 

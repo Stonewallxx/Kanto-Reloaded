@@ -920,7 +920,7 @@ module Reloaded
     def moves(top, c, pkmn, y0)
       Array(pkmn.moves).compact.first(4).each_with_index do |m, j|
         yy = y0 + j * 17
-        top.fill_rect(DX + 8, yy + 3, 4, 10, rgb(Reloaded::PartyScreen.type_rgb(m.type)))
+        top.fill_rect(DX + 8, yy + 3, 4, 10, rgb(Reloaded::PartyScreen.type_rgb(move_type_of(pkmn, m))))
         P.text(top, DX + 17, yy, DW - 66, 16, PF.fit(PF::TEXT, m.name.to_s, DW - 66), c[:txt], PF::TEXT)
         total = (m.total_pp rescue 0).to_i
         pp = total > 0 ? "#{m.pp}/#{total}" : "---"
@@ -968,7 +968,10 @@ module Reloaded
       move = (::GameData::Move.get(teaching[0]) rescue nil)
       return paint_details(base, top, c, pkmn) unless move
       line = GY + LINE_Y
-      panel_plate(base, c, rgb(Reloaded::PartyScreen.type_rgb(move.type)), line)
+      # Hidden Power's type and power: the highlighted one's own
+      type = move_type_of(pkmn, move)
+      power = move_power_of(pkmn, move).to_i
+      panel_plate(base, c, rgb(Reloaded::PartyScreen.type_rgb(type)), line)
       # the top half (his ask): the name (the TM's icon beside it), the
       # type, the power and accuracy, then what the move does
       icon = teaching[1] ? machine_icon(move.id) : nil
@@ -980,9 +983,9 @@ module Reloaded
         nx += 28
       end
       P.text(top, nx, GY + 8, nw, 18, name, c[:txt], PF::TEXT)
-      big_types(top, [move.type], DX, GY + 30, DW)
-      power = if move.base_damage.to_i > 1 then _INTL("POWER {1}", move.base_damage)
-              elsif move.base_damage.to_i == 1 then _INTL("POWER ---")
+      big_types(top, [type], DX, GY + 30, DW)
+      power = if power > 1 then _INTL("POWER {1}", power)
+              elsif power == 1 then _INTL("POWER ---")
               else _INTL("STATUS")
               end
       acc = move.accuracy.to_i > 0 ? _INTL("ACC {1}", move.accuracy) : _INTL("ACC ---")
@@ -1026,6 +1029,18 @@ module Reloaded
         end
       end
       return out.reject(&:empty?)
+    end
+
+    # A move's type and power for this Pokémon: Hidden Power's are its own
+    # (HiddenPower/Summary.rb)
+    def move_type_of(pkmn, move)
+      return Reloaded::HiddenPower::Summary.type_for(pkmn, move) if defined?(Reloaded::HiddenPower::Summary)
+      return move.type
+    end
+
+    def move_power_of(pkmn, move)
+      return Reloaded::HiddenPower::Summary.power_for(pkmn, move) if defined?(Reloaded::HiddenPower::Summary)
+      return move.base_damage
     end
 
     # the TM's own icon for a move, or nil
