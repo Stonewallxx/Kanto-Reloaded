@@ -6,8 +6,8 @@
 # Free Picks (Y picks any Pokémon in the box, A picks up every picked one,
 # they land in the free places from where they're put, LB / RB carry them)
 # drawn as Tick Badges (a green tick in each one's corner, its place lit;
-# held, a small fan over the cursor and the places they'll land outlined
-# green).
+# held, a small fan over the cursor and the places they'll land in soft
+# gold patches).
 #
 # The picks are one box's places at a time: picking in another box starts
 # afresh, and they wait while you look at other boxes. PIF's multi-select
@@ -210,15 +210,16 @@ module Reloaded
     end
 
     # Held: a small fan over the cursor (the first in front, +n for more)
-    # and, over a box, a soft green patch in each place they'll land (his
-    # pick, 2026-10-25: Soft Patches, no outlines)
+    # and, over a box, a soft gold patch in each place they'll land (his
+    # pick, 2026-10-25: Soft Patches, no outlines; gold, his ask: green
+    # didn't show on green wallpapers)
     def draw_multi_held(top, c, cx, cy)
       list = multi_held
       kind, i = @kr_focus
       if kind == :box && !in_transfer?
         spots = landing_spots(@storage.currentBox, i, list.length)
         if spots.length == list.length
-          patch = Color.new(c[:green].red, c[:green].green, c[:green].blue, 70)
+          patch = Color.new(c[:gold].red, c[:gold].green, c[:gold].blue, 120)    # strong enough to show on a green wallpaper
           spots.each do |k|
             sx, sy, = slot_rect(k)
             soft_patch(top, sx, sy, patch)

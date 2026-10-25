@@ -227,13 +227,28 @@ module Reloaded
       #------------------------------------------------------------------------
       # Groups and pages
       #------------------------------------------------------------------------
+      # :section => [r, g, b]: the group is a KIF Settings section of its own
+      # (its name, a tile in that colour), after Kanto Reloaded's; else its
+      # pages are headings in Kanto Reloaded's. :ball => [r, g, b]: the
+      # improved screen marks it with a Poke Ball with that top instead of a
+      # tile. :visible hides it all.
       def register_group(id, options = {})
         @groups[id.to_sym] = {
           :id          => id.to_sym,
           :name        => options[:name] || titleize(id),
           :priority    => options[:priority] || 100,
-          :description => options[:description].to_s
+          :description => options[:description].to_s,
+          :section     => options[:section],
+          :ball        => options[:ball],
+          :visible     => options[:visible]
         }
+      end
+
+      def group_visible?(id)
+        g = @groups[id.to_sym]
+        return false unless g
+        return true unless g[:visible]
+        return !!safe_call(g[:visible])
       end
 
       def register_page(id, options = {})
@@ -274,6 +289,7 @@ module Reloaded
       def page_visible?(page)
         page = @pages[page] if page.is_a?(Symbol)
         return false unless page
+        return false unless group_visible?(page[:group])
         return false if page[:feature] && !Reloaded::Features.on?(page[:feature])
         return false if page[:visible] && !safe_call(page[:visible])
         return keys(page[:id]).any?

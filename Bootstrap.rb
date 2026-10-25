@@ -27,13 +27,43 @@ module Reloaded
   end
 
   # KIF's DEBUG option (Settings > Advanced) is on, or the game runs in
-  # debug mode. KIF copies the option into $DEBUG only when it's changed and
-  # while you're on the map, so the option itself is asked too (at the title
-  # screen $DEBUG can still be off with the option on).
+  # debug mode: the tools a modder might use show (in the Kanto Reloaded
+  # section: the Timing Profiler, Hot Reload, the Save Checker's Inspector).
+  # KIF copies the option into $DEBUG only when it's changed and while you're
+  # on the map, so the option itself is asked too (at the title screen
+  # $DEBUG can still be off with the option on).
   def self.debug?
     return true if $DEBUG
     ps = $PokemonSystem
     return ps.respond_to?(:debug) && (ps.debug rescue 0).to_i == 1
+  end
+
+  # The Kanto Reloaded Debug mod is installed: the KR Debug section, which
+  # is Stonewall's alone (his ask, 2026-10-25), shows.
+  def self.debug_mod?
+    return DebugMod.attached?
+  end
+
+  # The Kanto Reloaded Debug mod says it's here (its main.rb):
+  #   Reloaded::DebugMod.attach(:name => "Kanto Reloaded Debug", :version => "1.0.0")
+  module DebugMod
+    class << self
+      attr_reader :info
+
+      def attach(name: "Kanto Reloaded Debug", version: nil)
+        @info = { :name => name.to_s, :version => version.to_s }
+        Reloaded::Log.info("#{name} #{version} attached: the KR Debug section is on", :bootstrap) if defined?(Reloaded::Log)
+        return true
+      end
+
+      def detach
+        @info = nil
+      end
+
+      def attached?
+        return !@info.nil?
+      end
+    end
   end
 
   module Bootstrap

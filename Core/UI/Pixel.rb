@@ -159,14 +159,17 @@ module Reloaded
     # one fill per run of a colour.
     BALL_COLOURS = { :ink => [28, 24, 30], :red => [238, 64, 64], :white => [248, 248, 248] }.freeze
 
-    def poke_ball(b, x, y, size = 13)
+    # top: the top half's colour ([r, g, b]) in place of the red (KR
+    # Debug's purple ball)
+    def poke_ball(b, x, y, size = 13, top = nil)
       size.times do |row|
         start = 0
         prev = ball_pixel(0, row, size)
         1.upto(size) do |col|
           now = col < size ? ball_pixel(col, row, size) : :end
           next if now == prev
-          b.fill_rect(x + start, y + row, col - start, 1, Color.new(*BALL_COLOURS[prev])) if prev
+          rgb = prev == :red && top ? top : BALL_COLOURS[prev]
+          b.fill_rect(x + start, y + row, col - start, 1, Color.new(*rgb)) if prev
           start = col
           prev = now
         end

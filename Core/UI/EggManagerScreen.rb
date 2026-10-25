@@ -654,7 +654,7 @@ module Reloaded
               else PF.fit(PF::TINY, EG.box_name(e.box), 70)
               end
       nw = P.text(top, x + 4, y + 3, 40, 20, _INTL("Egg"), col, PF::TEXT)
-      P.small(top, x + 4 + nw + 8, y + 4, 90, 16, where, c[:dim])
+      P.small(top, x + 4 + nw + 8, y + 6, 90, 16, where, c[:dim])     # its capitals centred on Egg's
       show_icon(:"row#{e.pkmn.object_id}", e.pkmn, x + LIST_W - 12, y + 11, 20)
       if !e.party? && e.pkmn.steps_to_hatch.to_i <= 1
         pill(top, c, x + LIST_W - 28, y + 5, _INTL("READY"), :gold, true)
@@ -666,7 +666,7 @@ module Reloaded
       bx = x + LIST_W - 28 - sw - 20
       blue = c[:blue]
       P.ui.rbox(top, bx, y + 5, bx + 14, y + 19, 3, c[:light] ? mix(c[:panel2], blue, 0.22) : mix(c[:panel2], blue, 0.28), blue)
-      P.text(top, bx, y + 6, 14, 14, n.to_s, blue, PF::TINY, 2)
+      P.text(top, bx + 1, y + 6, 14, 14, n.to_s, blue, PF::TINY, 2)   # the glyph's spacing column is on its right
     end
 
     def fmt(n)

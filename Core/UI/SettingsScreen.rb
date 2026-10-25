@@ -765,8 +765,11 @@ module Reloaded
         active = i == @section && !@query
         @cursor_rect = [9, y - 1, SIDE_X1 - 3 - 9 + 1, SIDE_DY] if active && @focus == :side && !@entry
         name = PF.utf8(_INTL(label))
+        own = Reloaded::Settings.group(id)
         if id == Reloaded::KIFBridge::SECTION
           P.poke_ball(top, 14, y + 2, 15)        # Kanto Reloaded: a Poke Ball instead of a tile
+        elsif own && own[:ball]
+          P.poke_ball(top, 14, y + 2, 15, own[:ball])   # a group's own section: its ball (KR Debug's purple, his pick)
         else
           P.ui.rbox(top, 14, y + 2, 28, y + 16, 3, Color.new(*col))
           P.glyph(top, 14, y + 2, 15, 15, name[0], TILE_TEXT)

@@ -70,6 +70,8 @@ module Reloaded
 
       def register_settings
         s = Reloaded::Settings
+        # a tool modders use too: last in the Kanto Reloaded section, with
+        # KIF's DEBUG option on (his rule, 2026-10-25)
         debug = proc { Reloaded.debug? }
         s.register_page(:profiler, :group => :general, :name => "Timing Profiler", :icon => :system, :priority => 1000,
           :visible => debug,

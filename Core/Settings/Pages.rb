@@ -19,12 +19,16 @@ module Reloaded
       :description => "Switch each Kanto Reloaded feature on or off. Off features leave the game as it was.")
     register_page(:interface, :group => :general, :name => "Interface", :icon => :interface, :priority => 20,
       :description => "Text, colors and the look of Kanto Reloaded's screens.")
-    # Tools for making Kanto Reloaded and mods, last in the Kanto Reloaded
-    # section and shown only with KIF's DEBUG option on (Settings >
-    # Advanced): the Timing Profiler's headings (Core/Profiler), then
-    # Developer Tools (the Hook Check, Dev).
-    register_page(:developer, :group => :general, :name => "Developer Tools", :icon => :system, :priority => 1100,
-      :visible => proc { Reloaded.debug? },
-      :description => "Tools for making Kanto Reloaded. Shown while KIF's DEBUG option is on.")
+    # KR Debug (his ask, 2026-10-25): Stonewall's alone, a section of its
+    # own after Kanto Reloaded's, there only with the Kanto Reloaded Debug
+    # mod installed (Reloaded.debug_mod?): the mod's pages (Debug Mode),
+    # then Developer Tools (the Hook Check, Dev). What a modder might use
+    # stays in the Kanto Reloaded section, shown with KIF's DEBUG option on
+    # (Reloaded.debug?): the Timing Profiler's headings (Core/Profiler).
+    register_group(:kr_debug, :name => "KR Debug", :priority => 900, :section => [150, 96, 220], :ball => [150, 96, 220],
+      :visible => proc { Reloaded.debug_mod? },
+      :description => "Kanto Reloaded's own debug tools, from the Kanto Reloaded Debug mod.")
+    register_page(:developer, :group => :kr_debug, :name => "Developer Tools", :icon => :system, :priority => 1100,
+      :description => "Tools for making Kanto Reloaded.")
   end
 end

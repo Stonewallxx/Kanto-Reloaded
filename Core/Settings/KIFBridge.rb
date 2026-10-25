@@ -21,10 +21,11 @@
 #   - KIF works out defaults by reading each option with a new
 #     $PokemonSystem; Kanto Reloaded's options give their own default
 #
-# Everything Kanto Reloaded adds lives in this one section. Pages shown only
-# with KIF's DEBUG option on (the Timing Profiler's headings, Developer
-# Tools) come last, and an open screen gains or loses them when it rebuilds
-# (DEBUG switched in Settings, Advanced).
+# Everything Kanto Reloaded adds lives in this one section, but for a group
+# with a section of its own: KR Debug, after it, Stonewall's alone, there
+# only with the Kanto Reloaded Debug mod installed (Debug Mode, Developer
+# Tools). Pages a modder might use (the Timing Profiler's headings) stay in
+# Kanto Reloaded's, last, shown with KIF's DEBUG option on.
 #==============================================================================
 
 module Reloaded
@@ -98,33 +99,86 @@ module Reloaded
       end
 
       # The Kanto Reloaded section, first in the sidebar: one heading per
-      # page with a visible setting, its rows in page order.
+      # page with a visible setting, its rows in page order. A group with a
+      # section of its own (KR Debug, while the Kanto Reloaded Debug mod is
+      # here) follows it, and goes while it has nothing to show.
       def refresh_section
         add_missing_builders
         headings = []
+        own = []
         @names = {}
         renames = ::KIF::SettingsScreen.const_defined?(:RENAMES) ? ::KIF::SettingsScreen::RENAMES : nil
         Reloaded::Settings.groups.each do |g|
+          list = g[:section] ? [] : headings
           Reloaded::Settings.pages(g[:id]).each do |page|
             names = Reloaded::Settings.keys(page[:id]).map do |key|
               name = unique_name(key, page)
               renames[name] = _INTL(Reloaded::Settings.definition(key)[:name]) if renames && name != base_name(key)
               name
             end
-            headings << [_INTL(page[:name]), names] unless names.empty?
+            list << [_INTL(page[:name]), names] unless names.empty?
           end
+          own << [g, list] if g[:section]
         end
         sections = ::KIF::SettingsScreen::SECTIONS
         entry = [SECTION, LABEL, COLOUR, headings]
         index = sections.index { |s| s[0] == SECTION }
         index ? sections[index] = entry : sections.insert(0, entry)
+        at = sections.index { |s| s[0] == SECTION }
+        own.each do |g, list|
+          i = sections.index { |s| s[0] == g[:id] }
+          if list.empty?
+            sections.delete_at(i) if i
+            next
+          end
+          e = [g[:id], _INTL(g[:name]), g[:section], list]
+          if i
+            sections[i] = e
+            at = i
+          else
+            at += 1
+            sections.insert(at, e)
+          end
+        end
       end
 
-      # KIF Settings, open on the Kanto Reloaded section at a heading's
-      # first row (the Timing Profiler's Settings box).
-      def open_heading(heading)
+      # A screen copies the sections when it opens, before its first rebuild:
+      # a group's own section (KR Debug) that came or went since is put in
+      # its list (after Kanto Reloaded's) or taken out, the cursor kept on
+      # the section it was on. The rest of its list stays as the screen
+      # made it (the improved screen leaves Presets out).
+      def sync_sections(screen)
+        list = screen.instance_variable_get(:@sections)
+        return unless list.is_a?(Array)
+        on = screen.instance_variable_get(:@section).to_i
+        current = list[on] && list[on][0]
+        Reloaded::Settings.groups.each do |g|
+          next unless g[:section]
+          entry = ::KIF::SettingsScreen::SECTIONS.find { |x| x[0] == g[:id] }
+          i = list.index { |x| x[0] == g[:id] }
+          if entry && !i
+            at = (list.index { |x| x[0] == SECTION } || -1) + 1
+            list.insert(at, [entry[0], entry[1], entry[2]])
+          elsif !entry && i
+            list.delete_at(i)
+          end
+        end
+        k = list.index { |x| x[0] == current }
+        screen.instance_variable_set(:@section, k || [on, list.length - 1].min)
+      end
+
+      # KIF Settings, open at a heading's first row (the Timing Profiler's
+      # Settings box), in the section the heading is in (Kanto Reloaded's, or
+      # its group's own: KR Debug). section picks one when two have a
+      # heading of that name (the Egg Manager's).
+      def open_heading(heading, section = nil)
         return unless defined?(::KifSettingsScreen)
-        screen = ::KifSettingsScreen.new(false, SECTION)
+        unless section
+          page = Reloaded::Settings.instance_variable_get(:@pages).values.find { |pg| _INTL(pg[:name]) == heading.to_s }
+          g = page && Reloaded::Settings.group(page[:group])
+          section = g && g[:section] ? g[:id] : SECTION
+        end
+        screen = ::KifSettingsScreen.new(false, section)
         list = screen.send(:rows)
         opts = screen.send(:opt_rows)
         i = opts.index { |r| list[r].heading.to_s == heading.to_s }
@@ -198,7 +252,21 @@ module Reloaded
         d = Reloaded::Settings.definition(key)
         @keys << key
         return if [:text, :custom].include?(d[:type])
-        ::KIF::Options.add(SECTION, d[:scope] == :save ? :save : :global) { Reloaded::KIFBridge.option_for(key) }
+        ::KIF::Options.add(menu_for(d), d[:scope] == :save ? :save : :global) { Reloaded::KIFBridge.option_for(key) }
+      end
+
+      # The KIF menu a setting's rows belong to: its group's own section's
+      # (registered the first time), else Kanto Reloaded's
+      def menu_for(d)
+        g = Reloaded::Settings.group(Reloaded::Settings.page(d[:page])[:group])
+        return SECTION unless g && g[:section]
+        @menus ||= {}
+        unless @menus[g[:id]]
+          ::KIF::Options.register_menu(g[:id], _INTL(g[:name]), _INTL(g[:description].to_s),
+                                       Color.new(248, 248, 248), Color.new(64, 64, 64), _INTL(g[:name]))
+          @menus[g[:id]] = true
+        end
+        return g[:id]
       end
 
       def default_for_option(d)
@@ -240,7 +308,10 @@ module Reloaded
     # The Kanto Reloaded section follows the settings that are showing now.
     module ScreenRebuild
       def rebuild
-        Reloaded::Hooks.guard(nil, :kif_bridge_rebuild) { Reloaded::KIFBridge.refresh_section }
+        Reloaded::Hooks.guard(nil, :kif_bridge_rebuild) do
+          Reloaded::KIFBridge.refresh_section
+          Reloaded::KIFBridge.sync_sections(self)
+        end
         super
       end
     end
