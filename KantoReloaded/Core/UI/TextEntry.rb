@@ -12,7 +12,8 @@
 # how is :enter (Enter; Down too when :down is true; or the naming screen)
 # or :stop (Esc, or B). The scene answers entry= and entry_changed.
 #
-# Keyboard: type, Backspace deletes, Enter finishes, Esc stops.
+# Keyboard: type, Backspace deletes, Ctrl+V pastes, Enter finishes, Esc
+# stops.
 # Controller: A opens the game's naming screen (pbEnterText) with the text so
 # far, and its result is the field's text; B stops.
 # A keyboard letter can also be a game button (C is Use, X is Back...), so a
@@ -80,6 +81,7 @@ module Reloaded
         return :enter if raw_trigger?(:RETURN) || raw_trigger?(:KP_ENTER)
         return :stop if raw_trigger?(:ESCAPE)
         return delete(state) if raw_repeat?(:BACKSPACE)
+        return paste(state) if raw_trigger?(:V) && ctrl_held?
         unless typed.empty?
           typed.each_char { |ch| insert(state, ch) }
           return :changed
@@ -117,6 +119,21 @@ module Reloaded
       def insert(state, ch)
         return if state.text.length >= state.max || ch.ord < 32
         state.text << ch
+      end
+
+      # Ctrl+V: the clipboard's text, one line, as far as the field takes it
+      def paste(state)
+        text = Reloaded::ShareCodes.clipboard.to_s.gsub(/[\r\n\t]+/, " ").strip
+        return nil if text.empty?
+        text.each_char { |ch| insert(state, ch) }
+        return :changed
+      end
+
+      def ctrl_held?
+        return false unless Input.respond_to?(:pressex?)
+        return Input.pressex?(:LCTRL) || Input.pressex?(:RCTRL)
+      rescue StandardError
+        return false
       end
 
       def delete(state)

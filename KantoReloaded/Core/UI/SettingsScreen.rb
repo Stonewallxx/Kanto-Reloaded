@@ -773,7 +773,9 @@ module Reloaded
         if id == Reloaded::KIFBridge::SECTION
           P.poke_ball(top, 14, y + 2, 15)        # Kanto Reloaded: a Poke Ball instead of a tile
         elsif own && own[:ball]
-          P.poke_ball(top, 14, y + 2, 15, own[:ball])   # a group's own section: its ball (KR Debug's purple, his pick)
+          P.poke_ball(top, 14, y + 2, 15, own[:ball])   # a group's own section: its ball (KR Debug's grey, his pick)
+        elsif (icon = Reloaded::ModIcons.for(label))
+          Reloaded::ModIcons.draw(top, 14, y + 2, icon)  # a mod's own ball (Reloaded::ModIcons)
         else
           P.ui.rbox(top, 14, y + 2, 28, y + 16, 3, Color.new(*col))
           P.glyph(top, 14, y + 2, 15, 15, name[0], TILE_TEXT)

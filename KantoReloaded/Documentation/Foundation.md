@@ -117,6 +117,7 @@ end
 - **Errors on purpose:** `:passes => [IOError]` lets the hook raise those without being switched off (safe saving raises IOError so the game says the save failed).
 - **Class methods** are hooked on the singleton class: `Hooks.around(:x, Game.singleton_class, :set_up_system)`.
 - **The object it was called on:** `original.receiver` (an instance method's `self`), for hooks that need it (`Pokemon#exp=` reading the Pokémon's lock).
+- **A block:** `original.call(*args)` passes on the block the method was called with (the game's message boxes take one to keep a scene moving), unless the hook gives one of its own.
 
 For code that runs every frame (input, drawing), use `Hooks.prepend(feature, target, Module)`. Its methods call `super` and check `Reloaded::Features.on?(feature)` themselves; `Hooks.guard(feature, where) { ... }` wraps the risky part. A feature of `nil` is a core hook that can't be switched off.
 
@@ -191,8 +192,6 @@ Reloaded::Settings.get(:"overworld_menu.slots")
 Save settings are locked at the title screen with "Load a save to change this".
 
 **Developer pages:** Tools a modder might use are pages of the Kanto Reloaded section like any other, last, and shown only while KIF's DEBUG option is on (Settings > Advanced): the Timing Profiler's headings (Timing Profiler, Timing Profiler - Time, Timing Profiler - Report). Hot Reload in the Patch Viewer and the Save Checker's Inspector follow the same option. A page is hidden with `register_page(..., :visible => proc { Reloaded.debug? })`; an open settings screen gains or loses its headings when it rebuilds, so switching DEBUG in Settings shows them at once. A setting on a hidden page isn't built at all, since KIF Settings puts any row no section names in Game > Other.
-
-**KR Debug:** Stonewall's own tools are in a section of their own, **KR Debug**, right after Kanto Reloaded's, there only with the **Kanto Reloaded Debug** mod installed (`Mods/KantoReloadedDebug`; it calls `Reloaded::DebugMod.attach`, and `Reloaded.debug_mod?` is true from then on): its Debug Mode (the game's own debug, the same switch as KIF's DEBUG) and Developer Tools (the Hook Check). A group becomes a section of its own with `register_group(:kr_debug, :section => [r, g, b], :visible => proc { ... })`; its pages are `register_page(..., :group => :kr_debug)`. An open settings screen gains or loses the section when it rebuilds. Everything else Kanto Reloaded adds stays in its own section.
 
 ## Controls
 
@@ -299,6 +298,7 @@ Kanto Reloaded's settings live in KIF Settings. `KIFBridge` adds a Kanto Reloade
 **A section per feature:** In the improved screen, Kanto Reloaded's settings are split into sections, one per feature, folded out under Kanto Reloaded in the sidebar (indented, in the smaller text). The right panel shows only the chosen section: a header for each of its pages (a one-page section still has its header), then their rows. The order, and which pages share a section, are in `Core/Settings/Sections.rb` (`Reloaded::SettingsSections::LIST`): **Core** first (Reloaded Systems and Features, the switches), then the look and controls, saves, your run, items and Pokémon, and the developer tools last. A page that isn't listed gets a section of its own, before the developer ones. A section shows only while one of its pages has a row to show, so a feature switched Off takes its section with it.
 
 - **The title:** Kanto Reloaded stays pinned at the top of the sidebar while its sections scroll. It is a stop of its own: A or Left folds the sections away, so KIF's sections come close, and A or Right opens them again. B in one of its sections folds them too; B on the title closes the screen.
+- **Folded to Start:** The sections start folded away, and the screen remembers how you left them (open or folded) for next time. Going to a setting from elsewhere (Go to Settings, the Overworld Menu, Search) opens them for that visit without changing it. **Per-Save Settings** always shows them open.
 - **Headers:** a page's name without what comes before " - " (Bag - Auto-Sort is Auto-Sort), or its own name in its section (`HEADERS`: the Bag's page is Reloaded Bag there). Long section names get a short one in the sidebar (`SHORT`).
 - **Search** looks in every section, folded or not, and names each Kanto Reloaded result's section and header with a small Poké Ball ("Reloaded Bag > Auto-Sort"). KIF's own results keep KIF's "Section > Heading".
 - **KIF's own screen** (Reloaded Settings Off) keeps one Kanto Reloaded section with a heading per page. The rows themselves are KIF's in both, so the Overworld Menu finds a setting the same way either way.
@@ -340,13 +340,13 @@ The screen is built from these parts, which later Kanto Reloaded screens reuse:
 | `Prompts` | Button names for hints: controller names while a controller is in use, otherwise the player's keys (Button Prompts) |
 | `Pixel` | Text in KIF's pixel fonts, centred on the capitals; the smaller text of hints and descriptions; badges, headings, hints and the cursor |
 | `ButtonIcons` | Inputs drawn as icons: keycaps, and Xbox, PlayStation or Nintendo buttons, sticks, triggers and the d-pad (Button Style) |
-| `SplitScreen` | The Patch Viewer's and the Timing Profiler's layout: the sidebar of entries, the list of headings and rows, the description box with badges and scrolling |
+| `SplitScreen` | The Patch Viewer's and the Timing Profiler's layout (What's New's and Publish a Mod's too): the sidebar of entries, the list of headings and rows, the description box with badges and scrolling (by itself, or by hand with the right stick or the mouse wheel over it, where it then stays) |
 | `Frame` | What every settings-like screen shares: the layers, the pulsing cursor, the centred hint line that scrolls when it's too long, the title-bar boxes with their buttons beside them, the description box, running a dropdown, and alerts (`alert_box`: a red glow around a box, pulsing, on its own layer; the PokeVial's Low HP Reminder) |
 | `Dialogs` | Popups: `menu` (rows can lead with an input's icon), `picker`, `confirm`, `notice`, `ask` and `number` (with an item's picture and a line under it, `icon:` and `note:`), and `frame` for a popup a screen draws itself (`drawn` runs one with buttons, drawn with `button_row`: the Test Copy question). A settings button's popups draw on `SettingsScreen.showing` |
 | `RunTags` | A save's run as pills: its mode, its difficulty (Shown As) and DEBUG, on the Load Screen and in the Save Manager |
 | `Toast` | A short line at the top for a moment, no button: an icon, the words, a pill or a drawing of its own. The map moves it on (menus and messages too) and so does the Bag; it shows over the map menus |
 | `Dropdown` | A choice's values, dropped down from its value (Option Dropdowns) |
-| `TextEntry` | Typing into a field, as KIF Settings' search does: the keyboard types straight in, and a controller's A opens the game's naming screen |
+| `TextEntry` | Typing into a field, as KIF Settings' search does: the keyboard types straight in (Ctrl+V pastes), and a controller's A opens the game's naming screen |
 | `Presets` | KIF's 12 preset slots, with Kanto Reloaded's per-save settings, share codes, Rename and Delete |
 | `ShareCodes` | Share codes (a prefix such as `KIF1:` or `KRC1:`, then Base64 JSON, read without eval) and the clipboard |
 

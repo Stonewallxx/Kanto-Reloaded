@@ -25,7 +25,8 @@ module Reloaded
     # then Developer Tools (the Hook Check, Dev). What a modder might use
     # stays in the Kanto Reloaded section, shown with KIF's DEBUG option on
     # (Reloaded.debug?): the Timing Profiler's headings (Core/Profiler).
-    register_group(:kr_debug, :name => "KR Debug", :priority => 900, :section => [150, 96, 220], :ball => [150, 96, 220],
+    # Its ball is grey (his pick, 2026-10-25; ModIcons::DEBUG_GREY).
+    register_group(:kr_debug, :name => "KR Debug", :priority => 900, :section => [150, 96, 220], :ball => [150, 150, 160],
       :visible => proc { Reloaded.debug_mod? },
       :description => "Kanto Reloaded's own debug tools, from the Kanto Reloaded Debug mod.")
     register_page(:developer, :group => :kr_debug, :name => "Developer Tools", :icon => :system, :priority => 1100,

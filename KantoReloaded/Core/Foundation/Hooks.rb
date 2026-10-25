@@ -15,7 +15,9 @@
 #      end
 #
 #    original.receiver is the object the method was called on (an instance
-#    method's self), for hooks that need it.
+#    method's self), for hooks that need it. original.call passes on the
+#    block the method was called with (the game's message boxes take one
+#    to keep a scene moving) unless the hook gives one of its own.
 #
 #    While the feature is off, or after the hook has failed, calls go
 #    straight to the original. If the hook's own code raises, the feature is
@@ -126,6 +128,7 @@ module Reloaded
           return skip(feature, target, method_name, options, "method not found", where)
         end
         entry = record(feature, klass, method_name, :around, options, where)
+        entry[:params] = body.parameters             # the Hook Check: a hook taking (original, *args) fits any arguments
         visibility = visibility_of(klass, method_name)
         passes = Array(options[:passes])
         mod = Module.new
@@ -133,7 +136,7 @@ module Reloaded
           unless entry[:active] && (feature.nil? || Reloaded::Features.on?(feature))
             next super(*args, **kwargs, &blk)
           end
-          original = Original.new(self) { |*a, **k, &b| super(*a, **k, &b) }
+          original = Original.new(self) { |*a, **k, &b| super(*a, **k, &(b || blk)) }   # the caller's block, unless the hook gives one
           begin
             next body.call(original, *args, **kwargs, &blk)
           rescue Exception => e

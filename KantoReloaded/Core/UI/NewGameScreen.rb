@@ -652,13 +652,13 @@ module Reloaded
       end
       dy = y0 + 8 + list.length * 24 + 2
       base.fill_rect(x0 + 14, dy, w - 28, 1, c[:line])
-      starters(top, c, x0, dy, w)
       r = list[@sel[2]]
-      return unless r
-      why = NG.lock_reason(r[:id])
-      words = why || row_words(r)
-      lines = P.small_wrap(top, words.to_s, w - 32).first(3)
+      why = r ? NG.lock_reason(r[:id]) : nil
+      lines = r ? P.small_wrap(top, (why || row_words(r)).to_s, w - 32).first(3) : []
       ly = y1 - 10 - lines.length * 16
+      # the starters centred between the two lines (his ask)
+      starters(top, c, x0, dy, w, lines.empty? ? y1 - 6 : ly - 5)
+      return unless r
       base.fill_rect(x0 + 14, ly - 5, w - 28, 1, c[:line])
       lines.each_with_index { |ln, k| P.small(top, x0 + 16, ly + k * 16, w - 32, 16, ln, why ? c[:amber] : c[:dim], 2) }
     end
@@ -671,8 +671,9 @@ module Reloaded
       return _INTL(r[:description].to_s)
     end
 
-    # The set's three Pokémon (Mixed: the three rolled; Custom: its picks)
-    def starters(top, c, x0, dy, w)
+    # The set's three Pokémon (Mixed: the three rolled; Custom: its picks),
+    # centred between the line under the rows (dy) and the words' line (bottom)
+    def starters(top, c, x0, dy, w, bottom)
       why = NG.starters_lock
       v = NG.value(:starters).to_i
       list = if v == NG::CUSTOM
@@ -683,14 +684,14 @@ module Reloaded
              end
       if why || list.empty?
         text = why ? _INTL("Starters: Set by the Run") : _INTL("Starters: Picked at Start")
-        P.small(top, x0, dy + 14, w, 16, text, c[:dim], 2)
+        P.small(top, x0, dy + 1 + (bottom - dy - 1 - 16) / 2, w, 16, text, c[:dim], 2)
         return
       end
       slot = (w - 40) / 3
       off = (3 - list.length) * slot / 2
       list.each_with_index do |sym, k|
         ix = x0 + 20 + off + k * slot
-        species_icon(top, sym, ix + (slot - 40) / 2, dy + 3, 40)
+        species_icon(top, sym, ix + (slot - 40) / 2, dy + 1 + (bottom - dy - 1 - 40) / 2, 40)
       end
     end
 

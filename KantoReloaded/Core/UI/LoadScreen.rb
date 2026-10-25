@@ -244,6 +244,9 @@ module Reloaded
       end
 
       def close(fading)
+        # the startup checks' toast goes with the screen, at once: not on into
+        # the save (his ask, 2026-10-25)
+        Reloaded::Toast.dispose if defined?(Reloaded::Toast)
         fade(:out) if fading
         @icons.each { |s| s.dispose unless s.disposed? }
         @icons = []

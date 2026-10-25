@@ -73,7 +73,7 @@ PIF's own menu still runs it, so KIF Beta's updater, imports and first-run quest
 
 As the load screen starts, KIF Beta checks for a newer KIF and, every 12 hours, for updates to your mods, while Startup Mod-Check is On. They run and finish before you can choose anything. They wait for the load screen to fade in and run over it, instead of on a black screen before it, and they look like Kanto Reloaded's (`Core/Saves/UpdateChecks.rb`, `Core/UI/UpdateChecksScreen.rb`):
 
-- **Checking for Updates...** is Kanto Reloaded's toast at the top (a Poké Ball; his ask, 2026-10-23, design 1 Then Up to Date: the popup came and went at once when the checks were quick). It stays while they run (the game waits on them), then says **Everything's Up to Date** with KIF's version in a green pill, and fades after about two and a half seconds while you use the menu. When KIF gets no answer it says Couldn't Check for Updates (or Couldn't Check Your Mods); with KIF's own updates Off and the mods checked, Your Mods Are Up to Date. A question (a new KIF, mod updates) takes over from it, and no toast comes after; on the very first start, KIF's first-start questions do. With Updates Off (Options > System) and the mods not due, nothing runs and nothing shows.
+- **Checking for Updates...** is Kanto Reloaded's toast at the top (a Poké Ball; his ask, 2026-10-23, design 1 Then Up to Date: the popup came and went at once when the checks were quick). It stays while they run (the game waits on them), then says **Everything's Up to Date** with KIF's version in a green pill, and fades after about two and a half seconds while you use the menu; it goes at once when you load a save or start a new game. When KIF gets no answer it says Couldn't Check for Updates (or Couldn't Check Your Mods); with KIF's own updates Off and the mods checked, Your Mods Are Up to Date. A question (a new KIF, mod updates) takes over from it, and no toast comes after; on the very first start, KIF's first-start questions do. With Updates Off (Options > System) and the mods not due, nothing runs and nothing shows.
 - **A new KIF** (design 2, Choice List): the versions (you have, new), then Update Now, What's New, Later and Skip This Version, and what the highlighted one does. B is Later. What's New shows KIF's notes, then comes back to the list.
 - **Mod updates** (design 2, Update All): each mod with its versions (old to new), then Update All (KIF's own installer, from the popup; they work from the next start), Open Updates (Mods > Updates, as KIF's Yes) and Later. B is Later.
 - **KIF's other waits** (its update download, installing mods, Mods > Browse) are a popup with KIF's title, what it's on, a gold bar, and B to cancel where KIF lets you. KIF's messages and questions along the way are Reloaded's popups.
@@ -82,17 +82,43 @@ It's all KIF's own code, hooked: the checks, their answers and what they do are 
 
 ## What's New
 
-The Load Screen's **What's New** row: Each source on the left (Kanto Reloaded, KIF Beta, mods with notes), their versions on the right with the selected version's notes. A version is NEW until the screen has shown it; the first time a source is seen, only its newest version is.
+The Load Screen's **What's New** row: Each source on the left (Kanto Reloaded, KIF Beta, mods with notes), the Versions box under them (version numbers only, a gold dot on NEW ones), and the selected version on the right. A version is NEW until the screen has shown it; the first time a source is seen, only its newest version is.
 
-- **Kanto Reloaded:** `Changelog.md` in its folder.
+- **The Card:** `UPDATE #N` (or `VERSION 1.2.0` without an Update line) at the top left and the date at the top right, the version's name under them, then its pills: Version (blue), Works On (green), Hotfix (amber) and NEW (gold, at the end).
+- **The Notes:** Drawn as their Markdown has them, in any format. The version's top heading level is its sub-sections, each in its colour (Added green, Changed blue, Fixed amber, Removed red, Supported Mods purple, Known Issues pink, Before You Update gold; any other name in the heading blue). The next level down are headers under them, in the same colour and underlined, each level one step in. Dotted lines in the heading's colour join a sub-section to its headers.
+- **In a Line:** Bold is drawn bold, italics pink, `code` amber. Bullets, numbered lines, quotes, divider lines and tables show too.
+- **Never Shown, for Safety:** Web addresses. A link shows only its words, as plain text; bare addresses (`https://...`, `www....`, `discord.gg/...`), images, link lines (`[1]: https://...`) and HTML tags are left out.
+- **A Mod's Icon:** A mod registered with `Reloaded::ModIcons` shows its own Poké Ball in place of the letter tile (Ghostly Possession: purple, with the possessed Outline).
+
+- **Kanto Reloaded:** Its released changelogs, in its `Documentation\Changelogs` folder.
 - **KIF Beta:** `Data\KIF\update_notes.txt` holds only the current version's notes, so each one is kept as it arrives (`Settings\Whats New.json` in the mod folder), and older versions stay after KIF updates.
-- **A mod:** A `Changelog.md` in its folder, in this form:
+- **A mod:** Its `Documentation\Changelogs` folder, or a `Changelogs` folder at its root (with both, `Documentation\Changelogs` is read). Each `vX.Y.Z.md` is one version, in this form:
+
+```markdown
+# My Mod
+## Update #2 - Lights Out
+- **Version:** v1.1.0
+- **Release Date:** November 14, 2026
+- **Works On:** KIF 1.2.2+
+## Added
+### Town Lights
+- Lighthouses sweep a beam over the sea at night.
+  - A line under it.
+## Fixed
+### Team Possession
+- A Ghost is no longer lost when you reload.
+```
+
+- **What's Read:** Its Update line (number, name and a hotfix label like `(Hotfix 1)`), Release Date, Works On and sub-sections. A file missing some of it still shows what it has, and a file that can't be read is skipped.
+- **Never Shown:** A version whose Release Date is `Unreleased`, an `Unreleased.md`, any other file, and the mod's `Dev` folder.
+- **One File:** A mod with no Changelogs folder is read from a single `Changelog.md` in its folder, split at its version headings: `## 1.2.0 (2026-10-20)`, Keep a Changelog's `## [1.2.0] - 2026-10-20` (its `[Unreleased]` left out), `## v2.1 - Faster Pedals` (the words after the version are its name) or `## Version 1.2`:
 
 ```markdown
 # My Mod
 
 ## 1.2.0 (2026-10-20)
-- Gym leaders: Harder teams
+### Added
+- **Gym Leaders:** Harder teams.
   - a note under it
 - Rematches with every leader
 ```
@@ -116,6 +142,9 @@ Reloaded::Saves.backups("File A")         # newest first: [{ :path, :time, :name
 Reloaded::Saves.note("File A")            # and set_note, tag, set_tag
 Reloaded::SaveManagerScreen.open          # the Save Manager
 Reloaded::WhatsNewScreen.open             # What's New
+Reloaded::WhatsNew.blocks(lines)          # Markdown lines => [Block] (kind, level, depth, number, segments)
+Reloaded::ModIcons.register("My Mod", :ids => ["MyMod"], :ball => [r, g, b], :outline => [r, g, b])
+Reloaded::ModIcons.draw(bitmap, x, y, Reloaded::ModIcons.for("My Mod"))   # its ball, 15 px
 ```
 
 Previews read the whole save (PIF has no small header) with PIF's raw reader, which nothing hooks and which never rewrites the file. They're kept until the file changes, and the light part of each (no party) is kept in `Kanto Reloaded\Save Previews.json`, so lists fill in at once.

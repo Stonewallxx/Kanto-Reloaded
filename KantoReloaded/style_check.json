@@ -363,6 +363,21 @@
       "rule": "title_case",
       "file": "Core/NewGame/NewGameSetup.rb",
       "text": "Prompt first save"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/PublishScreen.rb",
+      "text": "), mod.json["
+    },
+    {
+      "rule": "names",
+      "file": "Core/UI/PublishScreen.rb",
+      "text": "KantoReloaded"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/Publish/Publish.rb",
+      "text": "Publish a mod"
     }
   ]
 }

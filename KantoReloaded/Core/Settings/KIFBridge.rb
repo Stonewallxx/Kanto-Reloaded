@@ -34,6 +34,7 @@ module Reloaded
     LABEL = "Kanto Reloaded"
     COLOUR = [214, 52, 60]      # KIF's own screen: a red tile; the improved screen draws a Poke Ball instead
     TOGGLE = :"systems.reloaded_settings"
+    SECTION_OPEN = :"systems.kr_section_open"
 
     # Mixed into the bridge options: the setting they show, its default and
     # a description that adds why it is locked.
@@ -55,6 +56,10 @@ module Reloaded
         Reloaded::Settings.register(TOGGLE, :page => :systems, :priority => -1000,   # always first
           :name => "Reloaded Settings", :type => :toggle, :default => true, :preset => false,
           :description => "Use Kanto Reloaded's improved settings screen. Off shows KIF Settings as KIF ships it. Applies the next time Options opens.")
+        # Whether Kanto Reloaded's sections are open in the sidebar: folded
+        # to start, then as you left them (his ask, 2026-10-25; not shown)
+        Reloaded::Settings.register(SECTION_OPEN, :page => :systems, :priority => 9000, :type => :toggle, :default => false,
+          :preset => false, :visible => proc { false }, :name => "Kanto Reloaded Section Open")
       end
 
       # True when Options should open the improved screen.

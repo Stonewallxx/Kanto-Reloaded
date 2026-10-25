@@ -570,6 +570,12 @@ module Reloaded
 
       private
 
+      # Only this save's rows: every section open, the Settings screen's
+      # folding left as it is
+      def kr_remember_fold?
+        return false
+      end
+
       # Run Setup has its own Difficulty row
       def run_setup_row?(r)
         opt = r.opt

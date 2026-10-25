@@ -84,8 +84,18 @@ module Reloaded
         return id.to_s.start_with?("kr.")
       end
 
+      # Folded to start, then as it was left (his ask, 2026-10-25)
       def kr_open?
-        return @kr_open != false
+        if @kr_open.nil?
+          @kr_open = kr_remember_fold? ? (Reloaded::Settings.get(Reloaded::KIFBridge::SECTION_OPEN) ? true : false) : true
+        end
+        return @kr_open
+      end
+
+      # Whether this screen keeps its folding for next time (Per-Save
+      # Settings opens with them open and leaves it alone)
+      def kr_remember_fold?
+        return true
       end
 
       # Kanto Reloaded's rows, a list per section: KIF's rows as they are,
@@ -159,6 +169,7 @@ module Reloaded
       # Folds the sections away (or opens them); the cursor on the title
       def kr_fold(open)
         @kr_open = open
+        Reloaded::Settings.set(Reloaded::KIFBridge::SECTION_OPEN, open ? true : false) if kr_remember_fold?
         kr_place
         @section = @sections.index { |s| s[0] == KR } || @section
         @sel = 0
@@ -363,7 +374,9 @@ module Reloaded
             if id == KR
               P.poke_ball(top, 14, y + 2, 15)      # Kanto Reloaded: a Poke Ball instead of a tile
             elsif own && own[:ball]
-              P.poke_ball(top, 14, y + 2, 15, own[:ball])   # a group's own section: its ball (KR Debug's purple)
+              P.poke_ball(top, 14, y + 2, 15, own[:ball])   # a group's own section: its ball (KR Debug's grey)
+            elsif (icon = Reloaded::ModIcons.for(label))
+              Reloaded::ModIcons.draw(top, 14, y + 2, icon)  # a mod's own ball (Reloaded::ModIcons)
             else
               P.ui.rbox(top, 14, y + 2, 28, y + 16, 3, Color.new(*col))
               P.glyph(top, 14, y + 2, 15, 15, name[0], TILE_TEXT)
