@@ -23,9 +23,8 @@
 #
 # Everything is KIF's own code, hooked: the checks, their answers and
 # what they do are unchanged. A question of KIF's this doesn't know stays
-# KIF's. With Reloaded Load Screen Off (Reloaded Systems), it's all as KIF
-# draws it, before the load screen. With Startup Mod-Check Off nothing comes
-# up (Saves.rb skips both checks).
+# KIF's. With Startup Mod-Check Off nothing comes up (Saves.rb skips both
+# checks).
 #==============================================================================
 
 module Reloaded
@@ -48,7 +47,7 @@ module Reloaded
         return true
       end
 
-      # Reloaded's look for them: with Reloaded Load Screen On
+      # Reloaded's look for them: with Kanto Reloaded's Load Screen (always)
       def on?
         return Reloaded::Saves.load_screen?
       end

@@ -33,6 +33,11 @@
 # While it's On, KIF's Speed Up acts as if its module were Off (its hooks
 # fall through, its settings hide) and KIF's Mods list says Kanto Reloaded
 # replaces it. Off, or failed, gives KIF's back at once.
+#
+# A takeover KIF mustn't be told of (it would switch the whole folder off,
+# when only part of it is replaced: KIF's Randomizer screens, whose engine
+# keeps running) is declared with :replaces instead: Kanto Reloaded's own
+# record only, its hooks do the work.
 #==============================================================================
 
 module Reloaded
@@ -59,7 +64,8 @@ module Reloaded
           :core        => !!options[:core],     # can't be switched off
           :page        => options[:page],       # its settings page, if any
           :order       => options[:order] || 100,
-          :takes_over  => Array(options[:takes_over]).map(&:to_s)   # KIF features it takes over
+          :takes_over  => Array(options[:takes_over]).map(&:to_s),  # KIF features it takes over
+          :replaces    => Array(options[:replaces]).map(&:to_s)     # what it takes over that KIF isn't told of
         }
         refresh(id)
         return true

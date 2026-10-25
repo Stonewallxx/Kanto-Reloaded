@@ -293,13 +293,20 @@ module Reloaded
       end
 
       def check_kr(r, data)
-        value = data[:reloaded]
+        value = Reloaded::SaveStore.value_in(data)
         sections = value.is_a?(Hash) && value["sections"].is_a?(Hash) ? value["sections"] : nil
         if sections && !value.empty?
           r.parts = sections.length
           details = sections.map { |id, v| "- #{part_words(id)}: #{size_words((Marshal.dump(v).bytesize rescue 0))}" }.join("\n")
-          r.checks << Line.new(:kr, :ok, _INTL("Kanto Reloaded Data"),
-                               r.parts == 1 ? _INTL("Found: 1 part.") : _INTL("Found: {1} parts.", r.parts), details)
+          own = data[:reloaded]
+          if own.is_a?(Hash) && !own.empty?
+            r.checks << Line.new(:kr, :ok, _INTL("Kanto Reloaded Data"),
+                                 r.parts == 1 ? _INTL("Found: 1 part.") : _INTL("Found: {1} parts.", r.parts), details)
+          else
+            r.checks << Line.new(:kr, :note, _INTL("Kanto Reloaded Data"),
+                                 _INTL("Kept with the game's own data: It's back when the save loads."),
+                                 _INTL("It was saved with Kanto Reloaded off. Kanto Reloaded keeps its data with the game's own as well, so nothing was lost.") + "\n\n" + details)
+          end
           return
         end
         copy = r.backup ? nil : Reloaded::SaveStore.backup_path(r.path)
@@ -313,7 +320,7 @@ module Reloaded
       end
 
       def check_upgrades(r, data)
-        value = data[:reloaded]
+        value = Reloaded::SaveStore.value_in(data)
         r.upgrades = Reloaded::SaveStore.pending_upgrades(value)
         r.held = value.is_a?(Hash) && value["held"].is_a?(Hash) ? value["held"] : {}
         unless r.held.empty?
@@ -337,7 +344,7 @@ module Reloaded
       end
 
       def check_plain(r, data)
-        value = data[:reloaded]
+        value = Reloaded::SaveStore.value_in(data)
         unless value.is_a?(Hash)
           r.checks << Line.new(:plain, :ok, _INTL("Plain Values"), _INTL("Loads without Kanto Reloaded."), nil)
           return

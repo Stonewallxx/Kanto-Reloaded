@@ -4,7 +4,7 @@ One file with everything needed to fix a bug, ready to send. This is Roadmap top
 
 ## Making One
 
-Go to **KIF Settings > Kanto Reloaded > Bug Report > Make a Bug Report**. The screen has two sections:
+Go to **KIF Settings > Kanto Reloaded > Bug Report > Make a Bug Report**. The screen has three sections:
 
 - **What Happened:**
   - **Note:** Type straight in what you were doing and what went wrong. On a controller, A opens the naming screen.
@@ -13,17 +13,20 @@ Go to **KIF Settings > Kanto Reloaded > Bug Report > Make a Bug Report**. The sc
   - Logs, Settings, Mods, Hooks, Save Check and Recent Steps
   - **Errors**: the errors this session that didn't close the game (A lists them)
   - **Include the Save**: off by default; pick a save to add a copy of it, so the bug can be played again
+- **Test Copy:** Is the bug Kanto Reloaded's? Make a copy of a save to play with Kanto Reloaded off and see if it still happens; your run stays clean.
+  - **Copy:** the save to copy (Left / Right). It starts on the one you're playing, or the newest.
+  - **Make a Test Copy:** where the copy goes (the first free File slot, with its TEST pill). A asks first, then makes it. Loaded with Kanto Reloaded, the copy counts as Debug (see [Difficulty.md](Difficulty.md), Test Copy).
 
 **Make Report** (Y, or the box at the top right) saves the file and shows **Report Made**. That says where the file is and how big it is, with **Open the Folder**, **Open Discord** (Kanto Reloaded's bug reports channel) and **Done**. On a phone they're **Copy the Path** and **Copy the Link**, which put the report's full path or Discord's link on the clipboard and say **Copied**.
 
 ## What's in the File
 
-`KR Bug Report <date> <time>.zip` goes in the mod's `Bug Reports` folder (`Mods\KantoReloaded\Bug Reports`):
+`KR Bug Report <date> <time>.zip` goes in the `Bug Reports` folder in Kanto Reloaded's Logging folder (`Mods\KantoReloaded\Logging\Bug Reports`). Reports made before it was there move in at the next start:
 
 | File | What it is |
 |---|---|
 | `Report.md` | Your note, the versions, the crash (if there was one), this session's errors and Recent Steps |
-| `logs/` | Kanto Reloaded's log and the one before it, KIF's session log (and the one before), its error log, and PIF's errorlog (each cut to its last 512 KB) |
+| `logs/` | Every log (each cut to its last 512 KB): Kanto Reloaded's (its log, the one before, the Timing Profiler's text report: the `.log` and `.txt` files in Logging), every file in KIF's Logs folder but its READ ME (session, error and frame logs, and the ones before them), and PIF's errorlog |
 | `settings/` | Kanto Reloaded's settings, controls, layouts and features, and KIF Beta's settings (changed ones marked) |
 | `mods.md` | Every mod: on or off, loaded or not (and why), its version and author, and the Data Patches load order |
 | `hooks.md` | Kanto Reloaded's hooks, and any other code on the same methods |
@@ -92,7 +95,8 @@ The first covers:
 - this session's errors
 - the zip, read back with every file's CRC checked, and what's in it
 - the user name taken out
-- the mod's Bug Reports folder
+- every log going in (Kanto Reloaded's and all of KIF's, not the READ ME or reports)
+- the Bug Reports folder in Logging, and older reports moved into it
 - the old files moved over from the save folder, the newer one kept
 - naming the mod a crash came from
 - the crash path, with PIF's box when ours can't show

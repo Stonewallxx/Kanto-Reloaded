@@ -72,6 +72,11 @@
     },
     {
       "rule": "title_case",
+      "file": "Core/UI/RandomizerScreen.rb",
+      "text": "LOCKED BY ARCHIPELAGO"
+    },
+    {
+      "rule": "title_case",
       "file": "Core/UI/SaveCheckScreen.rb",
       "text": "NEEDED TO LOAD"
     },
@@ -290,6 +295,74 @@
       "file": "Core/UI/EggDayCareTab.rb",
       "text": "ONE MORE TO BREED",
       "why": "Small capitals, as the picked design has it"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/Difficulty/Difficulty.rb",
+      "text": "The whole party gains EXP",
+      "why": "Sentences: the description box joins them, each ending in a period"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/Difficulty/Difficulty.rb",
+      "text": "No poison damage while walking",
+      "why": "Sentences: the description box joins them, each ending in a period"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/Difficulty/Difficulty.rb",
+      "text": "Trainers use their easier movesets",
+      "why": "Sentences: the description box joins them, each ending in a period"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/Difficulty/Difficulty.rb",
+      "text": "Trainers use their harder movesets",
+      "why": "Sentences: the description box joins them, each ending in a period"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/Difficulty/Difficulty.rb",
+      "text": "The smartest trainer AI",
+      "why": "Sentences: the description box joins them, each ending in a period"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/Difficulty/Difficulty.rb",
+      "text": "Their next Pokémon stays hidden (Switch style)",
+      "why": "Sentences: the description box joins them, each ending in a period"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/Difficulty/Difficulty.rb",
+      "text": "Trainer IVs at least 10",
+      "why": "Sentences: the description box joins them, each ending in a period"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/Difficulty/Difficulty.rb",
+      "text": "Shown As",
+      "why": "The row's name in his Roadmap decision and picked design (Design 1)"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/TestCopyAsk.rb",
+      "text": "DEBUG WITH KR"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/TestCopyAsk.rb",
+      "text": "A copy to test with"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/NewGame/NewGameSetup.rb",
+      "text": "Type A"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/NewGame/NewGameSetup.rb",
+      "text": "Prompt first save"
     }
   ]
 }

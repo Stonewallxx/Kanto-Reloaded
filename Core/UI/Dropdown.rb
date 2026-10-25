@@ -47,8 +47,11 @@ module Reloaded
     # values: the choices' labels; current: the value now (marked NOW, the
     # highlight starts on it); locked: choices that can't be picked; cursor:
     # the highlight in Kanto Reloaded's Cursor Color (false: the screen's
-    # selection colours, as KIF Settings draws its own).
-    def initialize(values, current, anchor, bounds, locked: [], cursor: true)
+    # selection colours, as KIF Settings draws its own); tags: more pills,
+    # { index => [label, palette key] } (the Randomizer's IN USE).
+    def initialize(values, current, anchor, bounds, locked: [], cursor: true, tones: nil, tags: nil)
+      @tones = tones                     # each choice's palette colour, or nil
+      @tags = tags || {}
       @values = values.map { |v| P.pf.utf8(v.to_s) }
       @current = current.to_i
       @index = [[@current, 0].max, @values.length - 1].min
@@ -132,9 +135,13 @@ module Reloaded
         @hits << [i, x0 + 4, ry, x1 - 4, ry + ROW - 2]
         highlight(b, c, x0 + 4, ry, right + 4, ry + ROW - 2) if i == @index
         locked = locked?(i)
-        color = locked ? Reloaded::Palette.mix(c[:dim], c[:panel2], 0.3) : c[:opt]
+        color = locked ? Reloaded::Palette.mix(c[:dim], c[:panel2], 0.3) : ((@tones && @tones[i] && c[@tones[i]]) || c[:opt])
         px = right
         px -= P.pill(b, px, ry + 4, now_label, now_fill(c), c[:selb], true) + 5 if i == @current
+        if (tag = @tags[i])
+          ink = c[tag[1]] || c[:amber]
+          px -= P.pill(b, px, ry + 4, tag[0], Reloaded::Palette.mix(c[:panel2], ink, c[:light] ? 0.22 : 0.3), ink, true) + 5
+        end
         if locked
           padlock(b, px - 7, ry + 5, c[:dim], i == @index ? highlight_fill(c) : c[:panel2])
           px -= 12
@@ -246,6 +253,7 @@ module Reloaded
       text_w = @values.map { |v| P.width(P.pf::TEXT, v) }.max.to_i
       w = TEXT_X + text_w + 10 + P.width(P.pf::TINY, now_label) + 12 + 8
       w += 12 if locked?(@current)
+      w += @tags.values.map { |label, _k| P.width(P.pf::TINY, label) + 17 }.max.to_i
       w += BAR_W + 5 if scrolls?
       w = [[w, ax1 - ax0 + 1, MIN_W].max, bx1 - bx0].min
       x0 = [[(ax0 + ax1) / 2 - w / 2, bx0].max, bx1 - w].min

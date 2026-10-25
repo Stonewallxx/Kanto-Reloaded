@@ -73,10 +73,6 @@ As KIF's did, it never asks when it's the only Pokémon in your party that isn't
 
 Kanto Reloaded > Egg Manager: Hatched Pokémon (kept by each save), Auto-Incubate, Hatch Alerts, Hatch Speed Helper, Inspect Eggs.
 
-## Debug
-
-The **Kanto Reloaded Debug** mod (its own folder, `Mods/KantoReloadedDebug`) has an **Egg Manager** page in its KR Debug section of KIF Settings, shown while the Egg Manager is On: random Eggs (how many, where, their steps, fusions), a gift Egg, every Egg Ready, the Day Care filled or emptied, a Day Care Egg now, incubators given and taken back, the visit forgotten, alerts shown again, every Egg removed (it asks first). Its guide is in that mod's Documentation.
-
 ## For Other Mods
 
 ```ruby

@@ -15,7 +15,7 @@ Version 2.0.0.
 3. Put it in KIF Beta's `Mods` folder, so the path is `Mods\KantoReloaded\mod.json`.
 4. Start the game. Kanto Reloaded's settings are in its own section of KIF Settings.
 
-Kanto Reloaded keeps its settings, logs and bug reports in its own folder (`Settings`, `Logging`, `Bug Reports`). Only things that belong to a save, like backups and notes, go beside your saves.
+Kanto Reloaded keeps its settings and logs in its own folder (`Settings`, `Logging`). Bug reports go in `Logging\Bug Reports`. Only things that belong to a save, like backups and notes, go beside your saves.
 
 ## Reporting a Bug
 

@@ -179,6 +179,8 @@ module Reloaded
           section = g && g[:section] ? g[:id] : SECTION
         end
         screen = ::KifSettingsScreen.new(false, section)
+        # the improved screen: the heading is in one of Kanto Reloaded's sections
+        return screen.main if section == SECTION && screen.respond_to?(:open_at_heading) && screen.open_at_heading(heading)
         list = screen.send(:rows)
         opts = screen.send(:opt_rows)
         i = opts.index { |r| list[r].heading.to_s == heading.to_s }
@@ -270,6 +272,7 @@ module Reloaded
       end
 
       def default_for_option(d)
+        return nil if d[:no_default] || d[:read_only]      # no Default dot, X does nothing
         case d[:type]
         when :toggle then return d[:default] ? 1 : 0
         when :enum then return d[:default].to_i

@@ -9,16 +9,18 @@
 #                    presets, What's New, crash detection, the Pause Menu's
 #                    layout, the Timing Profiler's sessions and the Hook
 #                    Check's state
-#   logs_dir         <ROOT>\Logging: logs and reports
-#   bug_reports_dir  <ROOT>\Bug Reports
+#   logs_dir         <ROOT>\Logging: logs, and reports in folders of their
+#                    own (Save Checks, Hook Checks, Style Checks)
+#   bug_reports_dir  <ROOT>\Logging\Bug Reports
 #   user_dir         the game's save folder (%APPDATA%\KIF in KIF Beta)
 #   data_dir         <user_dir>\Kanto Reloaded: save things only (each
 #                    save's .kr copy, notes and color tags, previews, Set
 #                    Aside)
 #
 # KIF's mod catalog never touches files a mod writes into its own folder,
-# and the Release Builder leaves Settings, Logging and Bug Reports out. The
-# first start after this layout moves the old files over (migrate).
+# and the Release Builder leaves Settings and Logging out. The first start
+# after this layout moves the old files over (migrate), and the Bug Reports
+# that were in the mod folder's own Bug Reports folder into Logging.
 #==============================================================================
 
 module Reloaded
@@ -56,7 +58,7 @@ module Reloaded
       end
 
       def bug_reports_dir
-        return ensure_dir(File.join(local_dir, "Bug Reports"))
+        return ensure_dir(File.join(logs_dir, "Bug Reports"))
       end
 
       # What used to be in <user_dir>\Kanto Reloaded and isn't a save's,
@@ -69,9 +71,9 @@ module Reloaded
                 "Dev/Hook Check.json" => :settings, "Logs" => :logs, "Bug Reports" => :bug_reports }.freeze
 
       def migrate
+        moved = move_bug_reports
         old = File.join(user_dir, DATA_FOLDER)
-        return 0 unless File.directory?(old)
-        moved = 0
+        return moved unless File.directory?(old)
         MOVES.each do |name, where|
           from = File.join(old, name)
           next unless File.exist?(from)
@@ -199,6 +201,16 @@ module Reloaded
         File.utime(File.atime(from), File.mtime(from), to) rescue nil
         File.delete(from) if File.size(to) == File.size(from)
         return 1
+      end
+
+      # Bug Reports from the mod folder's own Bug Reports folder (where they
+      # were before) into Logging's
+      def move_bug_reports
+        from = File.join(local_dir, "Bug Reports")
+        return 0 unless File.directory?(from)
+        return move(from, bug_reports_dir)
+      rescue StandardError
+        return 0
       end
 
       # Reads a file written by write_atomic, recovering the temporary copy if

@@ -108,6 +108,8 @@ module Reloaded
       return pbPlayBuzzerSE if @pick_mode
       r = current
       return pbPlayBuzzerSE if r && kr_lock(r.opt)
+      d = r ? kr_def(r.opt) : nil
+      return pbPlayBuzzerSE if d && (d[:no_default] || d[:read_only])
       super
     end
 
@@ -183,7 +185,7 @@ module Reloaded
       o = r.opt
       return if KIF::SettingsScreen.button?(o)
       return pbPlayBuzzerSE if lock_name(o)
-      if kr_lock(o)
+      if kr_lock(o) || read_only?(o)
         pbPlayBuzzerSE if round || Input.trigger?(dir > 0 ? Input::RIGHT : Input::LEFT)
         return
       end
@@ -192,6 +194,7 @@ module Reloaded
       nv = step_value(o, cur, dir, round)
       return if nv == cur
       o.set(nv)
+      return refresh if (o.get rescue nil) == cur     # it asked first, and the answer was Keep
       pbPlayCursorSE
       after_change
     end
@@ -224,7 +227,7 @@ module Reloaded
       return unless r
       o = r.opt
       return super if r.action || KIF::SettingsScreen.button?(o)
-      return pbPlayBuzzerSE if lock_name(o) || kr_lock(o)
+      return pbPlayBuzzerSE if lock_name(o) || kr_lock(o) || read_only?(o)
       if KIF::SettingsScreen.choices?(o)
         return pick(r) if picker?(o)
         return open_dropdown(r) if dropdown?(r)
@@ -657,8 +660,9 @@ module Reloaded
       return cycle(o) unless anchor
       cur = (o.get rescue 0).to_i
       values = o.values.map { |v| PF.utf8(v.to_s) }
+      d = kr_def(o)
       dd = Reloaded::Dropdown.new(values, cur, anchor, dropdown_bounds(LIST_X0, LIST_Y0, LIST_X1, LIST_Y1),
-                                  :locked => Reloaded::KIFDropdowns.locks(o).keys)
+                                  :locked => Reloaded::KIFDropdowns.locks(o).keys, :tones => d && d[:tones])
       @dropdown_keys = Array.new(values.length) { Object.new }    # each choice's description scrolls on its own
       choice = run_dropdown(dd) { tick_description }
       return if choice.nil? || choice == cur
@@ -821,7 +825,7 @@ module Reloaded
         end
         unless mode == :tabs
           room = (mode == :button ? chip_left(r) - 8 : VAL_X1) - x      # a button row's name stops before its chip
-          nw = P.text(top, x, y, room, ROW_H - 2, PF.fit(PF::ROW, r.label, room), kr_lock(r.opt) ? c[:dim] : c[:opt], PF::ROW)
+          nw = P.text(top, x, y, room, ROW_H - 2, PF.fit(PF::ROW, r.label, room), kr_lock(r.opt) || read_only?(r.opt) ? c[:dim] : c[:opt], PF::ROW)
           if lock_name(r.opt)
             lx = x + nw + 6
             room = mode == :below ? VAL_X1 : (value_kind(r) == :slider ? slider_x0(r) : value_left(r)) - 6
@@ -959,6 +963,44 @@ module Reloaded
       return nil
     end
 
+    # A Kanto Reloaded row's setting, or nil
+    def kr_def(opt)
+      return nil unless opt && opt.respond_to?(:kr_key) && opt.kr_key
+      return Reloaded::Settings.definition(opt.kr_key)
+    end
+
+    # Shown, never changed here (Difficulty's Shown As)
+    def read_only?(opt)
+      d = kr_def(opt)
+      return d ? d[:read_only] : false
+    end
+
+    # A value in its own colour (the setting's :tones: Easy green, Normal
+    # blue, Hard red), or nil
+    def value_tone(opt, c)
+      d = kr_def(opt)
+      return nil unless d && d[:tones]
+      index = (opt.get rescue nil)
+      key = index.is_a?(Integer) ? d[:tones][index] : nil
+      return key ? c[key] : nil
+    end
+
+    # A value shown as a pill in its tone (the setting's :pill: Shown As),
+    # and its :tags (proc: [[label, [r, g, b] or a palette key]], DEBUG) as
+    # pills left of it, where a row's badge goes
+    def paint_pill_value(top, c, o, d, cx, y)
+      v = shown_value(o).to_s.upcase
+      tone = value_tone(o, c) || c[:txt]
+      vw = P.width(PF::TINY, v) + 12
+      P.pill(top, cx - vw / 2, y + 4, v, Reloaded::RunTags.fill(c, tone), tone, false)
+      x = cx - vw / 2 - 8
+      tags = d[:tags] ? (d[:tags].call rescue []) : []
+      Array(tags).reverse_each do |label, colour|
+        ink = colour.is_a?(Symbol) ? c[colour] : Reloaded::PartyPaint.ink(c, colour)
+        x -= P.pill(top, x, y + 4, _INTL(label), Reloaded::RunTags.fill(c, ink), ink) + 4
+      end
+    end
+
     # The mod that locked a row's setting (KIF 0.21.52's Experiences), or nil.
     def lock_name(opt)
       return nil unless opt && respond_to?(:locked_by, true)
@@ -1037,13 +1079,15 @@ module Reloaded
           tx += tw
         end
       else
+        d = kr_def(o)
+        return paint_pill_value(top, c, o, d, cx, y) if d && d[:pill]
         wmax = value_box(o)[1]
         v = PF.fit(PF::TEXT, shown_value(o), VALUE_MAX)
         vw = PF.width(PF::TEXT, v)
-        P.text(top, cx - vw / 2, y, vw + 2, ROW_H - 2, v, locked ? c[:dim] : c[:opt])
+        P.text(top, cx - vw / 2, y, vw + 2, ROW_H - 2, v, locked ? c[:dim] : (value_tone(o, c) || c[:opt]))
         if locked
           padlock(top, cx + vw / 2 + 6, y + 6, c[:dim])
-        else
+        elsif !read_only?(o)                     # Shown As: its value, no arrows
           arrow = selected ? c[:txt] : c[:dim]
           P.ui.tri(top, cx - vw / 2 - 14, y + 7, :l, arrow, 4)
           P.ui.tri(top, cx + vw / 2 + 6, y + 7, :r, arrow, 4)
@@ -1139,8 +1183,14 @@ module Reloaded
       out = @query ? _INTL("Clear") : (@sub || jump_back? ? _INTL("Back") : _INTL("Sections"))
       go = goes_to(current) ? [[button(:X), _INTL("Go to Settings"), :go_to_settings]] : []
       return [[:ud, _INTL("Select")], [button(:C), _INTL("Add to Page")]] + go + [[back, out, :mouse_back]] if @pick_mode
-      return [[:ud, _INTL("Select")], [:lr, _INTL("Change"), :mouse_change], [button(:A), _INTL("Default"), :reset_default]] +
-             go + [[back, out, :mouse_back]]
+      # a row with no Default (Difficulty) doesn't offer one; a read-only row
+      # (Shown As) doesn't offer Change either
+      r = current
+      d = r ? kr_def(r.opt) : nil
+      pairs = [[:ud, _INTL("Select")]]
+      pairs << [:lr, _INTL("Change"), :mouse_change] unless d && d[:read_only]
+      pairs << [button(:A), _INTL("Default"), :reset_default] unless d && (d[:no_default] || d[:read_only])
+      return pairs + go + [[back, out, :mouse_back]]
     end
   end
 end

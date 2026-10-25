@@ -45,6 +45,9 @@ module Reloaded
     SWITCH_REMIX = 974
     SWITCH_EXPERT = 772
     SWITCH_RANDOMIZED = 855
+    SWITCH_SPECIES = 790          # PIF's single Pokémon mode
+    SWITCH_LEGENDARY = 1129
+    VAR_SPECIES = 251             # its Pokémon
 
     @previews = {}     # path => preview (with :party)
     @parties = []      # paths whose party is kept, oldest first
@@ -96,9 +99,11 @@ module Reloaded
       #------------------------------------------------------------------------
       # What a save file holds: { :name, :gender, :money, :badges, :owned,
       # :seen, :seconds, :map_id, :map, :saved_at, :difficulty (and
-      # :difficulty_index: 0 Easy, 1 Normal, 2 Hard), :mode,
-      # :randomized, :player_id, :save_count, :party (the game's Pokémon, or
-      # nil), :health (:healthy, :check, :damaged), :problem (why) }.
+      # :difficulty_index: 0 Easy, 1 Normal, 2 Hard), :debug (the Debug Run
+      # Tag), :mode (mode_of), :randomized, :test_of (a test copy: the slot
+      # it was copied from), :player_id, :save_count, :party (the game's
+      # Pokémon, or nil), :health (:healthy, :check, :damaged), :problem
+      # (why) }.
       def preview(file, party: true)
         key = stamp(file)
         return { :health => :damaged, :problem => "The file isn't there." } unless key
@@ -155,15 +160,20 @@ module Reloaded
         pv[:map_id] = (data[:map_factory].map.map_id rescue nil)
         pv[:map] = map_name(pv[:map_id])
         pv[:saved_at] = (p.last_time_saved rescue nil)
-        pv[:difficulty] = difficulty(p)
-        pv[:difficulty_index] = ((p.lowest_difficulty rescue nil) || (p.selected_difficulty rescue nil))
         switches = data[:switches]
         sw = ->(id) { switches.respond_to?(:[]) && (switches[id] rescue false) ? true : false }
-        pv[:mode] = if sw.call(SWITCH_EXPERT) then "Expert"
-                    elsif sw.call(SWITCH_REMIX) then "Remix"
-                    else "Classic"
-                    end
+        # Shown As (the lowest used) and the Debug Run Tag (Difficulty.rb)
+        if defined?(Reloaded::Difficulty)
+          pv[:difficulty_index] = Reloaded::Difficulty.shown_in(p, sw)
+          pv[:difficulty] = Reloaded::Difficulty.shown_name(pv[:difficulty_index])
+          pv[:debug] = Reloaded::Difficulty.debug_in(data, sw)
+        else
+          pv[:difficulty] = difficulty(p)
+          pv[:difficulty_index] = ((p.lowest_difficulty rescue nil) || (p.selected_difficulty rescue nil))
+        end
+        pv[:mode] = mode_of(sw, data[:variables])
         pv[:randomized] = sw.call(SWITCH_RANDOMIZED)
+        pv[:test_of] = test_of(data) if respond_to?(:test_of)
         pv[:player_id] = (p.id rescue nil)
         pv[:save_count] = (data[:game_system].save_count rescue nil)
         pv[:version] = data[:game_version]
@@ -584,6 +594,20 @@ module Reloaded
 
       def current_version
         return defined?(::Settings::GAME_VERSION_NUMBER) ? ::Settings::GAME_VERSION_NUMBER.to_s : ""
+      end
+
+      # The run's mode, as PIF's getCurrentGameModeSymbol reads it (each
+      # later one wins): Classic, Remix, Expert, Species, Randomized,
+      # Legendary. A randomized run says Randomized whatever it started as.
+      def mode_of(sw, variables)
+        mode = "Classic"
+        mode = "Remix" if sw.call(SWITCH_REMIX)
+        mode = "Expert" if sw.call(SWITCH_EXPERT)
+        species = (variables[VAR_SPECIES] rescue nil)
+        mode = "Species" if sw.call(SWITCH_SPECIES) && species.is_a?(Integer) && species > 0
+        mode = "Randomized" if sw.call(SWITCH_RANDOMIZED)
+        mode = "Legendary" if sw.call(SWITCH_LEGENDARY)
+        return mode
       end
 
       # The newest previews in memory (their parties too); the light part

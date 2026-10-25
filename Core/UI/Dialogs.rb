@@ -17,10 +17,17 @@
 #                                                     the value, or nil; icon:
 #                                                     an item's picture beside
 #                                                     it, note: proc(value) a
-#                                                     line under it
+#                                                     line under it, format:
+#                                                     proc(value) its words
+#                                                     (money: ₽5,000)
 #   Dialogs.frame(bitmap, colours, x, y, w, h, title) a popup of a screen's own
 #                                                     (dimmed behind, the
 #                                                     plate, its title)
+#   Dialogs.drawn(scene, count, choice) { |b, c, choice| }
+#                                                     buttons on a popup the
+#                                                     block draws (frame, then
+#                                                     button_row); the button
+#                                                     chosen
 #   Dialogs.picker(scene, title, values, index, swatch)
 #                                                     index, or nil; swatch
 #                                                     :text or :cursor draws
@@ -95,12 +102,22 @@ module Reloaded
         return buttons_dialog(scene, title, text, buttons, choice, segments)
       end
 
+      # A popup the block draws (bitmap, colours, the chosen button), its
+      # count buttons drawn with button_row: the chosen one's index
+      def drawn(scene, count, choice = 0, &painter)
+        return buttons_dialog(scene, nil, nil, Array.new(count), choice, nil, painter)
+      end
+
       # The chosen button's index; Back picks the last one.
-      def buttons_dialog(scene, title, text, buttons, choice = 0, segments = nil)
+      def buttons_dialog(scene, title, text, buttons, choice = 0, segments = nil, painter = nil)
         redraw = true
         loop do
           if redraw
-            draw_buttons(scene.overlay, scene.palette, title, text, buttons, choice, segments)
+            if painter
+              painter.call(scene.overlay, scene.palette, choice)
+            else
+              draw_buttons(scene.overlay, scene.palette, title, text, buttons, choice, segments)
+            end
             redraw = false
           end
           Graphics.update
@@ -136,7 +153,7 @@ module Reloaded
       #------------------------------------------------------------------------
       # A number: Left/Right one step, Up/Down ten steps
       #------------------------------------------------------------------------
-      def number(scene, title, value, min, max, step = 1, unit = "", icon: nil, note: nil)
+      def number(scene, title, value, min, max, step = 1, unit = "", icon: nil, note: nil, format: nil)
         min ||= 0
         max ||= 999_999
         step = [step.to_i, 1].max
@@ -144,7 +161,7 @@ module Reloaded
         redraw = true
         loop do
           if redraw
-            draw_number(scene.overlay, scene.palette, title, value, min, max, unit, icon, note)
+            draw_number(scene.overlay, scene.palette, title, value, min, max, unit, icon, note, format)
             redraw = false
           end
           Graphics.update
@@ -186,6 +203,20 @@ module Reloaded
         dim(b)
         panel(b, c, x, y, w, h)
         title_bar(b, c, x, y, w, title)
+      end
+
+      # A popup's buttons, centred across x..x + w at by; the chosen one lit
+      def button_row(b, c, x, w, by, buttons, choice)
+        widths = buttons.map { |label| [P.width(P.pf::TEXT, label) + 28, 72].max }
+        total = widths.inject(0) { |sum, bw| sum + bw } + 10 * (buttons.length - 1)
+        bx = x + (w - total) / 2
+        @hits = []
+        buttons.each_with_index do |label, i|
+          @hits << [i, bx, by, bx + widths[i], by + 24]
+          button(b, c, bx, by, bx + widths[i], by + 24, i == choice)
+          P.text(b, bx, by, widths[i], 24, label, i == choice ? c[:strong] : c[:txt], nil, 2)
+          bx += widths[i] + 10
+        end
       end
 
       # Where a popup's clicks land: [[index, x0, y0, x1, y1], ...]
@@ -417,17 +448,7 @@ module Reloaded
         title_bar(b, c, x, y, w, title)
         lines.each_with_index { |line, i| P.text(b, x + 16, y + 40 + i * 18, w - 32, 18, line, c[:txt], nil, 2) }
         P.small_rich(b, x + 16, y + 46 + lines.length * 18, w - 32, 18, segments) if rich > 0
-        widths = buttons.map { |label| [P.width(P.pf::TEXT, label) + 28, 72].max }
-        total = widths.inject(0) { |sum, bw| sum + bw } + 10 * (buttons.length - 1)
-        bx = x + (w - total) / 2
-        by = y + h - 36
-        @hits = []
-        buttons.each_with_index do |label, i|
-          @hits << [i, bx, by, bx + widths[i], by + 24]
-          button(b, c, bx, by, bx + widths[i], by + 24, i == choice)
-          P.text(b, bx, by, widths[i], 24, label, i == choice ? c[:strong] : c[:txt], nil, 2)
-          bx += widths[i] + 10
-        end
+        button_row(b, c, x, w, y + h - 36, buttons, choice)
       end
 
       # How many lines coloured segments take (measured on a scratch draw).
@@ -440,7 +461,7 @@ module Reloaded
 
       # With an icon (an item, the Bag's Toss): its picture in a box on the
       # left, the number centred on the rest, the note under it
-      def draw_number(b, c, title, value, min, max, unit, icon = nil, note = nil)
+      def draw_number(b, c, title, value, min, max, unit, icon = nil, note = nil, format = nil)
         dim(b)
         w = icon || note ? 300 : 280
         h = icon || note ? 150 : 130
@@ -456,14 +477,15 @@ module Reloaded
           nx = x + 72
           nw = w - 72
         end
-        label = value.to_s + unit.to_s
+        words = format || proc { |v| v.to_s + unit.to_s }
+        label = words.call(value).to_s
         tw = P.width(P.pf::ROW, label)
         cx = nx + nw / 2
         P.text(b, nx, y + 46, nw, 30, label, c[:txt], P.pf::ROW, 2)
         P.ui.tri(b, cx - tw / 2 - 16, y + 56, :l, value > min ? c[:selb] : c[:line], 5)
         P.ui.tri(b, cx + tw / 2 + 6, y + 56, :r, value < max ? c[:selb] : c[:line], 5)
         P.small(b, nx, y + 82, nw, 16, note.call(value).to_s, c[:dim], 2) if note
-        P.text(b, x, y + h - 30, w, 20, _INTL("{1} to {2}", min.to_s + unit.to_s, max.to_s + unit.to_s), c[:dim], nil, 2)
+        P.text(b, x, y + h - 30, w, 20, _INTL("{1} to {2}", words.call(min), words.call(max)), c[:dim], nil, 2)
       end
 
       def item_picture(b, id, x, y, size)

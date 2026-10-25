@@ -17,7 +17,7 @@ A verdict comes first, then six checks, each with its own line:
 | Check | What it looks at |
 |---|---|
 | File | The file reads, and holds nothing the game hasn't got (a mod's objects with the mod gone) |
-| Kanto Reloaded Data | Kanto Reloaded's parts are in the save, or its `.kr` copy can bring them back |
+| Kanto Reloaded Data | Kanto Reloaded's parts are in the save, kept with the game's own (saved with it off: they come back when it loads), or its `.kr` copy can bring them back |
 | Upgrades | Parts on an older version, and any whose upgrade failed (held, nothing lost) |
 | Plain Values | Kanto Reloaded's data is plain values only, so the save loads without it |
 | Missing Content | Pokémon, items, moves and abilities the game hasn't got now |

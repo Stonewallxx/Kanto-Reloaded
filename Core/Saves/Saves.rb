@@ -12,7 +12,8 @@
 #                      Beta's, mods')
 #   ../UI/SaveManagerScreen.rb, LoadScreen.rb, WhatsNewScreen.rb
 #
-# Settings: Reloaded Load Screen and Startup Mod-Check (Reloaded Systems:
+# Kanto Reloaded's Load Screen is always on with Kanto Reloaded (his call,
+# 2026-10-25: no switch). Settings: Startup Mod-Check (Reloaded Systems:
 # Off skips KIF Beta's startup checks, for a newer KIF and for mod
 # updates; his call, 2026-10-23), and a Saves page with
 # the Save Manager and Backup Cap. Backup Cap takes over KIF Beta's Save
@@ -23,7 +24,6 @@
 
 module Reloaded
   module Saves
-    LOAD_SCREEN = :"systems.reloaded_load_screen"
     MOD_CHECK = :"systems.startup_mod_check"
     CAPS = [nil, 10, 15, 20, 25, 50, 100].freeze
     CAP_NAMES = ["Unlimited", "10", "15", "20", "25", "50", "100"].freeze
@@ -57,9 +57,6 @@ module Reloaded
 
       def register_settings
         s = Reloaded::Settings
-        s.register(LOAD_SCREEN, :page => :systems, :priority => 20, :type => :toggle, :default => true, :preset => false,
-          :name => "Reloaded Load Screen", :goes_to => :saves,
-          :description => "Kanto Reloaded's Load Screen: Your save's note, health and backups, What's New and the Save Manager, and KIF's update checks before it in Reloaded's look. Off shows the game's own.")
         s.register(MOD_CHECK, :page => :systems, :priority => 40, :type => :toggle, :default => true, :preset => false,
           :name => "Startup Mod-Check",
           :description => "Before the load screen, KIF looks for a newer KIF and for updates to your mods. Off skips both, so nothing comes up; Options > System > Check for Updates and Mods > Updates still check.")
@@ -75,11 +72,9 @@ module Reloaded
           :description => "How many backups of each save are kept. Older ones go to the Recycle Bin, and named backups are always kept.")
       end
 
-      # Kanto Reloaded's Load Screen is on.
+      # Kanto Reloaded's Load Screen is on: always, with Kanto Reloaded
       def load_screen?
-        return Reloaded::Settings.get(LOAD_SCREEN) ? true : false
-      rescue StandardError
-        return false
+        return true
       end
 
       def cap

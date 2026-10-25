@@ -337,6 +337,12 @@ module Reloaded
           :apply       => options[:apply],
           :preview     => options[:preview],
           :on_press    => options[:on_press],
+          :no_default  => !!options[:no_default],    # no Default (X), never reset: Difficulty
+          :tones       => options[:tones],           # each value's palette colour: [:green, :blue, :red]
+          :confirm     => options[:confirm],         # proc { |new, old| true to go ahead }: asks first
+          :read_only   => !!options[:read_only],     # shown, never changed (Shown As)
+          :pill        => !!options[:pill],          # the value drawn as a pill in its tone (Shown As)
+          :tags        => options[:tags],            # proc { [[label, rgb or tone], ...] }: pills beside it (DEBUG)
           :goes_to     => options[:goes_to] ? options[:goes_to].to_sym : nil,
           :commit      => options[:commit],
           :text        => options[:text],
@@ -401,23 +407,26 @@ module Reloaded
       def set(key, value, force = false)
         d = @definitions[key.to_sym]
         return false unless d && d[:type] != :button && d[:type] != :text
+        return false if d[:read_only]
         return false if !force && locked?(key)
         new_value = normalize(d, value)
         return false if !force && locked_choices(key).has_key?(choice_index(d, new_value))
         old_value = get(key)
         return false if new_value == old_value
+        return false if !force && d[:confirm] && !d[:confirm].call(new_value, old_value)
         write_value(d, new_value)
         run_apply(d, new_value)
         notify(d, new_value, old_value)
         return true
       rescue Exception => e
+        raise if e.is_a?(SystemExit) || (defined?(Reset) && e.is_a?(Reset))   # the game closing or resetting
         Reloaded::Log.exception("Could not set #{key}", e, :settings)
         return false
       end
 
       def reset(key)
         d = @definitions[key.to_sym]
-        return false unless d
+        return false unless d && !d[:no_default]
         return set(key, d[:default])
       end
 
@@ -438,7 +447,7 @@ module Reloaded
 
       def changed?(key)
         d = @definitions[key.to_sym]
-        return false unless d && valued?(d)
+        return false unless d && valued?(d) && !d[:no_default]
         return get(key) != d[:default]
       end
 

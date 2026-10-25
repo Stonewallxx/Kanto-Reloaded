@@ -17,11 +17,23 @@
 # numbers, true/false/nil, Time), so a save stays loadable with Kanto
 # Reloaded removed.
 #
-# Backup copy: the game only writes the save values of code that is loaded,
-# so saving with Kanto Reloaded switched off drops this data. Each time the
-# game saves, a copy is written to <data_dir>\Saves\<save file>.kr. When a
-# save without Kanto Reloaded's data is loaded and its copy belongs to the
-# same player, the copy is restored (and logged).
+# Kept with KR off (his pick, 2026-10-25): the game only writes the save
+# values of code that is loaded, so a save made with Kanto Reloaded switched
+# off has no :reloaded value. The same Hash also hangs on the game's own
+# $PokemonGlobal (@kr_reloaded): the game writes every field of its own
+# objects, so it's still there after such a save, and comes back from it.
+# One Marshal pass writes a shared object once, so the save doesn't grow.
+# Last resort, for saves from before this: each time the game saves, a copy
+# is written to <data_dir>\Saves\<save file>.kr, restored when a save
+# without Kanto Reloaded's data is loaded and the copy is the same player's.
+#
+# The seal: the game counts every save ($game_system.save_count, with or
+# without Kanto Reloaded). Each save Kanto Reloaded writes records that
+# count. A save that comes back with a higher count was saved that many
+# times without Kanto Reloaded: kept in "gaps" (Difficulty counts such a run
+# as Debug). A save Kanto Reloaded hasn't seen before is "joined" instead.
+# A test copy (Saves.make_test_copy) carries "test_copy" here, so it counts
+# as Debug too, and the save it was copied from stays clean.
 #==============================================================================
 
 module Reloaded
@@ -29,6 +41,8 @@ module Reloaded
     SAVE_KEY = :reloaded
     SCHEMA = 1
     BACKUP_FOLDER = "Saves"
+    GLOBAL_FIELD = :@kr_reloaded    # the same data on $PokemonGlobal (kept with KR off)
+    TEST_COPY = "test_copy"         # a test copy's mark (Saves.make_test_copy)
 
     @sections = {}       # id => { :version, :migrate }
     @data = nil          # the loaded save's value (nil at the title screen)
@@ -63,6 +77,33 @@ module Reloaded
         return nil unless @data
         sections = (@data["sections"] ||= {})
         return (sections[id.to_s] ||= {})
+      end
+
+      # Kanto Reloaded's data in a save file's values (its :reloaded value,
+      # or, saved with Kanto Reloaded off, the copy on its global metadata)
+      def value_in(data)
+        return nil unless data.is_a?(Hash)
+        value = data[SAVE_KEY]
+        return value if value.is_a?(Hash) && !value.empty?
+        kept = global_copy(data[:global_metadata])
+        return kept || value
+      end
+
+      # Saves written without Kanto Reloaded since it last saved this one:
+      # [{ "saves", "count" (the game's), "found_at", "since" }] (empty: none)
+      def gaps
+        return @data ? Array(@data["gaps"]) : []
+      end
+
+      def played_without?
+        return !gaps.empty?
+      end
+
+      # A test copy (Saves.make_test_copy): { "of" => the slot it was
+      # copied from, "at" }, or nil
+      def test_copy
+        value = @data ? @data[TEST_COPY] : nil
+        return value.is_a?(Hash) ? value : nil
       end
 
       def backup_path(save_path)
@@ -100,6 +141,49 @@ module Reloaded
         return @data
       end
 
+      def global_copy(global)
+        return nil if global.nil? || !global.instance_variable_defined?(GLOBAL_FIELD)
+        value = global.instance_variable_get(GLOBAL_FIELD)
+        return value.is_a?(Hash) && !value.empty? ? value : nil
+      rescue Exception
+        return nil
+      end
+
+      # The same Hash on $PokemonGlobal, so the game keeps it with KR off
+      def attach
+        g = $PokemonGlobal
+        g.instance_variable_set(GLOBAL_FIELD, @data) if g && @data && !g.frozen?
+      rescue Exception => e
+        Reloaded::Log.exception("Couldn't keep Kanto Reloaded's data with the game's own", e, :save)
+      end
+
+      def save_count(system)
+        return system && system.respond_to?(:save_count) ? system.save_count.to_i : nil
+      rescue Exception
+        return nil
+      end
+
+      # Saves made without Kanto Reloaded since its last one (the seal), or
+      # the first time it sees this save
+      def check_seal(incoming, came_with_data)
+        return unless incoming.is_a?(Hash)
+        count = save_count(incoming[:game_system])
+        return unless count
+        seal = @data["seal"]
+        if seal.is_a?(Hash) && seal["count"]
+          missed = count - seal["count"].to_i
+          return unless missed > 0
+          gaps = (@data["gaps"] ||= [])
+          # once per gap: the game asks twice for a save with no :reloaded
+          # value, and the same file can be loaded again before KR saves it
+          return if gaps.any? { |g| g["count"] == count }
+          gaps << { "saves" => missed, "count" => count, "found_at" => Time.now, "since" => seal["saved_at"] }
+          Reloaded::Log.warning("This save was saved #{missed} time(s) without Kanto Reloaded since #{seal["saved_at"]}", :save)
+        elsif !came_with_data
+          @data["joined"] ||= { "count" => count, "at" => Time.now }
+        end
+      end
+
       # The game asks for a new game value both for a new game and for a save
       # that has no :reloaded value; only the second has incoming save data.
       def missing_or_new
@@ -113,20 +197,33 @@ module Reloaded
         Reloaded::Events.emit(:saving)
         @data["player_id"] = player_id($Trainer)
         @data["saved_at"] = Time.now
+        # the game has already counted this save (Game.save)
+        count = save_count($game_system)
+        @data["seal"] = { "count" => count, "saved_at" => @data["saved_at"], "version" => (Reloaded.version rescue nil) } if count
         stamp_versions
+        attach
         return @data
       end
 
       def from_save(value)
+        incoming = Reloaded::Lifecycle.incoming_save_data
         if !value.is_a?(Hash) || value.empty?
-          restored = restore_backup
-          value = restored if restored
+          kept = incoming.is_a?(Hash) ? global_copy(incoming[:global_metadata]) : nil
+          if kept
+            Reloaded::Log.warning("The save has no Kanto Reloaded value (saved with it switched off?); its data came back from the game's own", :save)
+            value = kept
+          else
+            restored = restore_backup
+            value = restored if restored
+          end
         end
         @data = value.is_a?(Hash) && !value.empty? ? value : nil
+        came_with_data = !@data.nil?
         fresh unless @data
         @data["sections"] ||= {}
         @data["versions"] ||= {}
         migrate
+        check_seal(incoming, came_with_data)
         return @data
       end
 

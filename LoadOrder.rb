@@ -25,10 +25,12 @@ module Reloaded
       "Core/Saves/SaveFile.rb",
       "Core/Saves/SafeSave.rb",
       "Core/Saves/Library.rb",
+      "Core/Saves/TestCopy.rb",
       "Core/Saves/Saves.rb",
       "Core/Saves/WhatsNew.rb",
       # Core settings pages and interface
       "Core/Settings/Pages.rb",
+      "Core/Settings/Sections.rb",
       "Core/Interface/GlobalSmallText.rb",
       # Themes, colours, button names, drawing, popups and typing for Kanto
       # Reloaded's screens
@@ -42,6 +44,7 @@ module Reloaded
       "Core/UI/TextEntry.rb",
       "Core/UI/Frame.rb",
       "Core/UI/Toast.rb",
+      "Core/UI/RunTags.rb",
       # The game's window frames: Global Frame and Speech Frame
       "Core/Interface/WindowFrames.rb",
       # Reloaded Controls: inputs, actions and bindings, and the layer that
@@ -60,6 +63,7 @@ module Reloaded
       "Core/Settings/Presets.rb",
       "Core/Settings/AutosaveRows.rb",
       "Core/UI/SettingsScreen.rb",
+      "Core/UI/SettingsSections.rb",
       "Core/UI/ControlsScreen.rb",
       # Data Patches: mods change the game's data with JSON files
       # (Mods/<mod>/DataPatches), in memory after it loads
@@ -98,6 +102,7 @@ module Reloaded
       "Core/UI/PartyIcons.rb",
       "Core/UI/SaveCheckScreen.rb",
       "Core/UI/Notice.rb",
+      "Core/UI/TestCopyAsk.rb",
       "Core/UI/BugReportScreen.rb",
       "Core/UI/SaveManagerScreen.rb",
       "Core/UI/LoadScreen.rb",
@@ -172,6 +177,26 @@ module Reloaded
       "Core/UI/EggPopups.rb",
       "Core/UI/EggManagerScreen.rb",
       "Core/UI/EggDayCareTab.rb",
+      # Difficulty: Shown As, the Debug Run Tag, Hard's trainer IVs; the
+      # question when lowering
+      "Core/Difficulty/Difficulty.rb",
+      "Core/UI/DifficultyAsk.rb",
+      # The Randomizer: Kanto Reloaded's parts on cody's engine (KIF's)
+      "Core/Randomizer/Randomizer.rb",
+      "Core/Randomizer/Learnsets.rb",
+      "Core/Randomizer/Abilities.rb",
+      "Core/Randomizer/Dynamic.rb",
+      "Core/UI/RandomizerRows.rb",
+      "Core/UI/RandomizerScreen.rb",
+      "Core/UI/RandomizerShare.rb",
+      "Core/UI/RandomizerBans.rb",
+      "Core/UI/RandomizerViewers.rb",
+      "Core/UI/RandomizerNewGame.rb",
+      # New Game Setup: the run set up before Oak's talk (after Difficulty
+      # and the Randomizer: its rows use theirs), its screen and popups
+      "Core/NewGame/NewGameSetup.rb",
+      "Core/UI/NewGameScreen.rb",
+      "Core/UI/NewGamePopups.rb",
       # Fixes to the game's own code
       "Core/Fixes/Fixes.rb",
       "Core/Fixes/CommandTextColours.rb",
@@ -190,7 +215,7 @@ module Reloaded
     # to KIF Settings. Dev boots last, when it's there. PauseMenu boots
     # before Profiler and BugReport, so their hooks on the pause menu's
     # scene sit over its screen and still see it open.
-    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :EggManager, :TitleVersions, :TitleLogo, :LivingTitle, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
+    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :EggManager, :Difficulty, :Randomizer, :NewGameSetup, :TitleVersions, :TitleLogo, :LivingTitle, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
 
     def self.files
       return FILES

@@ -1,7 +1,7 @@
 #==============================================================================
 # Kanto Reloaded: Make a Bug Report
 #==============================================================================
-# Design 1 (Settings layout), two sections:
+# Design 1 (Settings layout), three sections:
 #
 #   What Happened   a note typed straight in (A opens the naming screen on a
 #                   controller), and the screenshot: This Screen (the map as
@@ -10,6 +10,9 @@
 #   What's in It    each part ticked off (Logs, Settings, Mods, Hooks, Save
 #                   Check, Recent Steps, this session's Errors) and Include
 #                   the Save (Off by default)
+#   Test Copy       a copy of a save to play with Kanto Reloaded off, to see
+#                   if the bug is Kanto Reloaded's (TestCopyAsk asks first);
+#                   Copy picks the save, Make a Test Copy shows where it goes
 #
 # Make Report (Y, or the box at the top right) saves the zip (Bundle) and
 # shows Report Made. Opened from the next start's offer after a crash, the
@@ -26,7 +29,7 @@ module Reloaded
     include Reloaded::SplitScreen
 
     BR = Reloaded::BugReport
-    SECTIONS = [[:what, "What Happened"], [:inside, "What's in It"]].freeze
+    SECTIONS = [[:what, "What Happened"], [:inside, "What's in It"], [:test, "Test Copy"]].freeze
     SHOTS = ["This Screen", "Last Screenshot", "None"].freeze
     NOTE_MAX = 200
     THUMB_W = 160
@@ -53,6 +56,7 @@ module Reloaded
       @mods = BR::Bundle.mods
       @errors = BR::Bundle.quiet_errors
       @slot = BR::Bundle.current_slot
+      @copy = first_copy
     end
 
     def main
@@ -62,6 +66,7 @@ module Reloaded
         Graphics.update
         Input.update
         update_frame
+        Reloaded::Toast.update if defined?(Reloaded::Toast)
         tick_description
         break if handle_input == :close
       end
@@ -96,6 +101,10 @@ module Reloaded
     def rows
       if section_id == :what
         return [[:note, _INTL("Note"), nil], [:shot, _INTL("Screenshot"), _INTL(SHOTS[@shot])]]
+      end
+      if section_id == :test
+        return [[:copy, _INTL("Copy"), copy_slot || _INTL("None")],
+                [:make, _INTL("Make a Test Copy"), Reloaded::Saves.free_slot || _INTL("None")]]
       end
       out = [[:logs, _INTL("Logs"), @logs == 1 ? _INTL("1 File") : _INTL("{1} Files", @logs)],
              [:settings, _INTL("Settings"), _INTL("KR and KIF")],
@@ -211,6 +220,9 @@ module Reloaded
         @shot = (@shot + dir) % SHOTS.length
       when :save
         @save = (@save + dir) % @slots.length
+      when :copy
+        return false if Reloaded::Saves.slots.length < 2
+        @copy = (@copy + dir) % Reloaded::Saves.slots.length
       else
         return false
       end
@@ -222,11 +234,41 @@ module Reloaded
     def press
       case row && row[0]
       when :note then edit_note
-      when :shot, :save then change(1)
+      when :shot, :save, :copy then change(1) || pbPlayBuzzerSE
+      when :make then make_copy
       when :errors then show_errors
       else pbPlayBuzzerSE
       end
       return nil
+    end
+
+    # The save Copy starts on: the one being played (or checked), or the
+    # newest
+    def first_copy
+      list = Reloaded::Saves.slots
+      i = list.index(@slot.to_s)
+      return i if i
+      newest = list.max_by { |s| File.mtime(Reloaded::Saves.path(s)) rescue Time.at(0) }
+      return list.index(newest) || 0
+    end
+
+    def copy_slot
+      return Reloaded::Saves.slots[@copy]
+    end
+
+    # Make a Test Copy: asked first; Include the Save can pick it after
+    def make_copy
+      slot = copy_slot
+      return pbPlayBuzzerSE unless slot && defined?(Reloaded::TestCopyAsk)
+      pbPlayDecisionSE
+      if Reloaded::TestCopyAsk.run(self, slot)
+        list = Reloaded::Saves.slots
+        @copy = list.index(slot) || 0
+        save = @slots[@save]
+        @slots = ["Off"] + list
+        @save = @slots.index(save) || 0
+      end
+      refresh
     end
 
     def edit_note
@@ -297,10 +339,14 @@ module Reloaded
       paint_title_bar(base, c)
       P.text(top, 0, 2, W, 28, _INTL("Bug Report"), c[:title], PF::TITLE, 2)
       paint_make_box(base, top, c)
-      entries = SECTIONS.map { |_id, name| { :name => _INTL(name), :tile => [:dot, [120, 230, 150]] } }
+      entries = SECTIONS.map { |id, name| { :name => _INTL(name), :tile => [:dot, id == :test ? Reloaded::RunTags::PURPLE : [120, 230, 150]] } }
       paint_sidebar(base, top, c, entries, @section, @focus == :side)
       P.ui.rbox(base, LIST_X0, LIST_Y0, LIST_X1, LIST_Y1, 6, c[:panel])
-      section_id == :what ? paint_what(base, top, c) : paint_inside(base, top, c)
+      case section_id
+      when :what then paint_what(base, top, c)
+      when :test then paint_test(base, top, c)
+      else paint_inside(base, top, c)
+      end
       paint_description(base, top, c)
       paint_hints(base, c)
       place_cursor
@@ -409,6 +455,39 @@ module Reloaded
       P.small(top, LIST_X0 + 12, LIST_Y1 - 16, LIST_X1 - LIST_X0 - 24, 14, _INTL("User names are taken out of paths."), c[:dim])
     end
 
+    # Test Copy: what it's for, the save to copy, where the copy goes (its
+    # TEST pill before it), and that it counts as Debug
+    def paint_test(_base, top, c)
+      y = LIST_Y0 + 6
+      P.heading(top, LIST_X0 + 10, LIST_X1 - 10, y, _INTL("Test Without Kanto Reloaded"), c[:head], c[:line])
+      y += 18
+      words = _INTL("Is the bug Kanto Reloaded's? Play a copy of your save with Kanto Reloaded off and see if it still happens. Your run stays clean.")
+      lines = P.small_wrap(top, words, LIST_X1 - LIST_X0 - 24)
+      lines.each_with_index { |ln, k| P.small(top, LIST_X0 + 12, y + k * 16, LIST_X1 - LIST_X0 - 24, 16, ln, c[:dim]) }
+      y += lines.length * 16 + 10
+      purple = Reloaded::RunTags.purple(c)
+      rows.each_with_index do |(id, label, value), k|
+        @row_hits << [k, LIST_X0 + 4, y, LIST_X1 - 8, y + ROW_H - 2]
+        @cursor_rect = [LIST_X0 + 4, y, LIST_X1 - 8 - LIST_X0 - 4 + 1, ROW_H - 1] if @focus == :list && @sel == k
+        P.text(top, NAME_X, y, 200, ROW_H - 2, label, c[:opt], PF::ROW)
+        vw = P.width(PF::ROW, value)
+        if id == :copy
+          many = Reloaded::Saves.slots.length > 1
+          P.ui.tri(top, VAL_X1 - vw - 14, y + 9, :l, c[:dim], 3) if many
+          P.text(top, VAL_X1 - vw - 4, y, vw, ROW_H - 2, value, c[:txt], PF::ROW)
+          P.ui.tri(top, VAL_X1, y + 9, :r, c[:dim], 3) if many
+        else
+          P.text(top, VAL_X1 + 4 - vw, y, vw, ROW_H - 2, value, Reloaded::Saves.free_slot ? c[:txt] : c[:dim], PF::ROW)
+          if Reloaded::Saves.free_slot
+            P.pill(top, VAL_X1 + 4 - vw - 6, y + 5, _INTL("TEST"), Reloaded::RunTags.fill(c, purple), purple)
+          end
+        end
+        y += ROW_H + 2
+      end
+      seg = [[_INTL("With Kanto Reloaded, it counts as "), c[:dim]], [_INTL("Debug"), purple, true], [".", c[:dim]]]
+      P.small_rich(top, LIST_X0 + 12, y + 6, LIST_X1 - LIST_X0 - 24, 16, seg)
+    end
+
     # A tick for what goes in; Include the Save's is empty while it's Off.
     def tick(top, x, y, id, c)
       on = id != :save || !@save.zero?
@@ -426,7 +505,11 @@ module Reloaded
     end
 
     def section_words
-      return section_id == :what ? _INTL("Your note and a picture of what happened.") : _INTL("Everything in the report, ticked off. The file goes in Kanto Reloaded's Bug Reports folder.")
+      case section_id
+      when :what then return _INTL("Your note and a picture of what happened.")
+      when :test then return _INTL("A copy of your save to play with Kanto Reloaded off, so your run stays clean.")
+      end
+      return _INTL("Everything in the report, ticked off. The file goes in Kanto Reloaded's Bug Reports folder.")
     end
 
     # [title, text, pills]
@@ -434,8 +517,16 @@ module Reloaded
       id = r[0]
       case id
       when :note then return [_INTL("What Happened"), _INTL("Type straight in: What you were doing and what went wrong. A opens the naming screen.")]
+      when :copy then return [_INTL("Copy"), _INTL("The save to copy. It starts on the one you're playing, or the newest.")]
+      when :make
+        dest = Reloaded::Saves.free_slot
+        return [_INTL("Make a Test Copy"), _INTL("Every File slot is taken: Delete a save first.")] unless dest
+        purple = Reloaded::RunTags.purple(palette)
+        text = _INTL("Copies {1} to {2}, marked TEST. Play it with Kanto Reloaded off to see if the bug is ours. Loaded with Kanto Reloaded, the copy counts as Debug.",
+                     copy_slot, dest)
+        return [_INTL("Make a Test Copy"), text, [[_INTL("TEST"), Reloaded::RunTags.fill(palette, purple), purple]]]
       when :shot then return [_INTL("Screenshot"), _INTL("This Screen is the screen as it was when you opened the Pause Menu. Or your last screenshot, or none.")]
-      when :logs then return [_INTL("Logs"), _INTL("Kanto Reloaded's log and the one before it, KIF's session and error logs, and the game's errorlog.")]
+      when :logs then return [_INTL("Logs"), _INTL("Every log: Kanto Reloaded's, everything in KIF's Logs folder, and the game's errorlog.")]
       when :settings then return [_INTL("Settings"), _INTL("Kanto Reloaded's settings, controls, layouts and features, and KIF's settings.")]
       when :mods then return [_INTL("Mods"), _INTL("Every mod: On or off, loaded or not, its version and author, and the order they load in.")]
       when :hooks then return [_INTL("Hooks"), _INTL("Where Kanto Reloaded changes the game, and any other code on the same methods.")]
@@ -477,6 +568,8 @@ module Reloaded
         case row && row[0]
         when :note then out << [button(:C), _INTL("Naming Screen"), :press]
         when :shot, :save then out << [:lr, _INTL("Change")]
+        when :copy then out << [:lr, _INTL("Change")] if Reloaded::Saves.slots.length > 1
+        when :make then out << [button(:C), _INTL("Make Copy"), :press] if copy_slot && Reloaded::Saves.free_slot
         when :errors then out << [button(:C), _INTL("Show"), :press] unless @errors.empty?
         end
       end

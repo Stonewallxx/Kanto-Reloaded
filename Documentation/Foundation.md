@@ -19,14 +19,13 @@ In the mod folder (`Mods\KantoReloaded`):
 | Folder (`Paths`) | What it holds |
 |---|---|
 | `Settings` (`settings_dir`) | `Settings.json` (Global settings, "seen" settings, pins), `Features.json` (each feature's On/Off), `Controls.json` (controls the player rebound; everything else follows F1 or its default), `ControlLayouts.json`, `Whats New.json`, `Session.json` and `Last Crash.json` (Bug Reports), `Pause Menu.json` (Your Row and the Favorite), `Overworld Menu.json` (its pages), `Timing Sessions.json`, `Hook Check.json` and `Hook Check Version.json` (Developer: the Hook Check runs at the Main Menu only when KIF's version or Kanto Reloaded's hooks changed since the last check) |
-| `Logging` (`logs_dir`) | `Kanto Reloaded.log` (this session's; `.old.log` is the last one), Save Checks, `TimingProfile.txt`, Hook Check and Style Check reports |
-| `Bug Reports` (`bug_reports_dir`) | The bug reports made |
+| `Logging` (`logs_dir`) | `Kanto Reloaded.log` (this session's; `.old.log` is the last one), `TimingProfile.txt`, and a folder each for reports: `Save Checks`, `Bug Reports` (`bug_reports_dir`: the bug reports made), `Hook Checks` (the newest 5 KIF versions' kept) and `Style Checks` (the Style Checker's reports and fix backups). Reports from before these folders move in by themselves |
 
 In the save folder (`%APPDATA%\KIF\Kanto Reloaded`, `Paths.data_dir`), save things only:
 
 | File | What it holds |
 |---|---|
-| `Saves\<save>.kr` | Backup copy of each save's Kanto Reloaded data |
+| `Saves\<save>.kr` | Last-resort copy of each save's Kanto Reloaded data (for saves from before it was kept with the game's own) |
 | `Save Notes.json` | Each save's note and color tag |
 | `Save Previews.json` | What the save lists show, until the save changes |
 | `Set Aside\` | What the Save Checker set aside to make a save loadable |
@@ -86,6 +85,8 @@ Reloaded::Features.on?(:overworld_menu)
 
 `:takes_over => ["F-UI-05_SpeedUp"]` names KIF features ours takes over (KIF 0.21.52's `KIF::Features`, which KIF calls replacing). While ours runs, KIF's acts as if its module were Off: its hooks fall through and its settings hide. KIF's Mods list says Kanto Reloaded replaces it. Switching ours Off, or ours failing, gives KIF's back at once. The feature ids are in `KIF::Features.list`, or in cody's `MOD_REPLACE_API.md`.
 
+`:replaces => ["KIF's Randomizer Screens"]` declares a takeover KIF isn't told of, for when only part of a KIF folder is replaced and the rest must keep running (KIF's own takeover would switch the whole folder off). It's Kanto Reloaded's record only; the feature's hooks do the work. The Reloaded Randomizer takes over cody's Randomizer screens this way, while his engine runs on.
+
 Each feature gets an On/Off row on the Features page, and another at the top of its own page (`:page`). The Features row goes to that page with Go to Settings (see The settings screen).
 
 ### KIF features Kanto Reloaded turns off
@@ -142,7 +143,10 @@ data = Reloaded::SaveStore.section(:pc)   # a Hash in the loaded save; nil at th
 
 - **Plain data only.** Sections hold only plain Ruby values (Hash, Array, String, Symbol, numbers, true/false/nil, Time), so a save still loads without Kanto Reloaded.
 - **Upgrades.** A section whose stored version is older is upgraded once with `:migrate`, all or nothing: Every pending upgrade runs on a copy and applies only if all of them work. If one fails, none apply, the old data is held in the save and tried again on later loads ([SaveChecker.md](SaveChecker.md)).
-- **Backup copy.** Each save also writes a copy to `Saves\<save>.kr`. The game drops the data of mods that aren't loaded. So a save made with Kanto Reloaded switched off gets its data back from the copy, but only if the copy belongs to the same player.
+- **Kept with KR off.** The game writes only the save values of code that's loaded, so a save made with Kanto Reloaded switched off has no `:reloaded` value. The same data also hangs on the game's own `$PokemonGlobal` (`@kr_reloaded`): the game writes every field of its own objects, so the data is still there after such a save and comes back from it when the save loads. One save pass writes a shared object once, so the save doesn't grow. `SaveStore.value_in(save_data)` finds it in a save file either way (the Save Checker uses it).
+- **Last-resort copy.** Each save also writes a copy to `Saves\<save>.kr`. A save with no Kanto Reloaded data anywhere (one from before it was kept with the game's own) gets it back from the copy, but only if the copy belongs to the same player.
+- **The seal.** The game counts every save (`$game_system.save_count`), with or without Kanto Reloaded. Each save Kanto Reloaded writes records that count (`"seal"`). A save that comes back with a higher count was saved that many times without Kanto Reloaded: `SaveStore.gaps` lists each gap once (`"saves"`, the game's `"count"`, `"found_at"`, `"since"`), and `SaveStore.played_without?` says whether there's any (Difficulty counts such a run as Debug). Loading and quitting without saving changes nothing. A save Kanto Reloaded hasn't seen before is `"joined"` instead, not a gap.
+- **Test copies.** A test copy (`Saves.make_test_copy`) carries `"test_copy"` (`"of"`, the slot it was copied from, and `"at"`) in this data, in both places, so the mark stays when the copy is saved with Kanto Reloaded off. `SaveStore.test_copy` reads it on the loaded save; Difficulty counts it as Debug.
 
 ## Settings
 
@@ -175,8 +179,14 @@ Reloaded::Settings.get(:"overworld_menu.slots")
 | `:reset` | a `Settings.json` schema version: a value stored by an older file is dropped once, so the setting starts at its default |
 | `:remap` | `[schema, { old => new }]`: an `:enum` value stored by an older `Settings.json` moves to its new index once (for values added mid-list) |
 | `:added` | a version: shows "New" until seen (leave it off for the first version) |
-| `:goes_to` | a page id: the switch has its own settings there, and the settings screen's Go to Settings (Y) jumps to that page's heading (Reloaded Controls to Controls, Reloaded Load Screen to Saves; feature switches get it from `:page`) |
+| `:goes_to` | a page id: the switch has its own settings there, and the settings screen's Go to Settings (Y) jumps to that page's heading (Reloaded Controls to Controls; feature switches get it from `:page`) |
 | `:priority` | order on the page |
+| `:no_default` | no Default: X does nothing, no Default dot, `reset` and presets' Reset leave it alone (Difficulty, so one press can't lower a run) |
+| `:tones` | one palette colour per value (`[:green, :blue, :red]`): the row's value and the dropdown's choices are drawn in it |
+| `:confirm` | `proc { |new_value, old_value| }`: asked before a change (Left/Right, the dropdown, the Overworld Menu's rows); false keeps the old value. Presets (`force`) skip it |
+| `:read_only` | shown, never changed: its name dimmed, its value with no arrows, Left/Right/A buzz, and the hint line offers neither Change nor Default (Difficulty's Shown As) |
+| `:pill` | the value drawn as a pill in its `:tones` colour instead of words (Shown As) |
+| `:tags` | `proc { [[label, [r, g, b] or a palette key], ...] }`: pills drawn left of the value, where a row's badge goes (Shown As's DEBUG) |
 
 Save settings are locked at the title screen with "Load a save to change this".
 
@@ -250,7 +260,7 @@ Mods change the game's data (items, moves, abilities, species, trainers, encount
 
 ## Saves
 
-Safe saving (every save written to a temporary file, read back, then swapped in), the Save Manager (Active, Backups, Deleted; notes, colour tags, health), the rebuilt Load Screen (Reloaded Load Screen) and What's New. The guide is [Saves.md](Saves.md).
+Safe saving (every save written to a temporary file, read back, then swapped in), the Save Manager (Active, Backups, Deleted; notes, colour tags, health), the rebuilt Load Screen (always on with Kanto Reloaded) and What's New. The guide is [Saves.md](Saves.md).
 
 Bug Reports make one file with everything needed to fix a bug (logs, settings, mods, hooks, the Save Check, Recent Steps, a note and a screenshot), and After a Crash offers one before the game closes, naming the mod the crash came from. The guide is [BugReports.md](BugReports.md).
 
@@ -280,13 +290,20 @@ KIF Settings places rows by name: a Kanto Reloaded setting with one of KIF's nam
 
 ## The settings screen
 
-Kanto Reloaded's settings live in KIF Settings. `KIFBridge` adds a Kanto Reloaded section, first in the sidebar, with one heading per page and every setting as one of KIF's own rows. The section follows features switching On and Off each time the screen rebuilds.
+Kanto Reloaded's settings live in KIF Settings. `KIFBridge` adds a Kanto Reloaded section, first in the sidebar, with one heading per page and every setting as one of KIF's own rows (the improved screen shows it as a section per feature: see below). The section follows features switching On and Off each time the screen rebuilds.
 
 **Reloaded Settings** picks the screen that Options opens. It is the first row of **Reloaded Systems**, the first heading of the Kanto Reloaded section, which holds the toggles between Kanto Reloaded's version of a system and the game's own. It is On by default:
 
 - **On:** the improved KIF Settings (`Core/UI/SettingsScreen.rb`). It is a subclass of KIF's `KifSettingsScreen`, so it has the same sections, rows, modules, mods, search and defaults. It draws and handles input Kanto Reloaded's way: the theme and colour settings, the pulsing cursor, choices between arrows that step with Left and Right and open a dropdown with A, values (with OPEN, badges and slider numbers) lined up on one column per heading, smaller hints and descriptions, and presets with share codes in the title bar (or R). Search works as KIF's does. A Kanto Reloaded setting another one decides right now (its `:soft_lock`, `:lock` or `:needs`: the other Speed-Up Type's rows, the PokeVial's Max Uses under Progressive Uses) is dimmed with a padlock where its arrows would be; Left, Right, A and the Default button buzz, and its description says why ("Locked: Toggle Only."). The Overworld Menu's setting rows say the same.
 
-**Go to Settings:** On a Reloaded Systems or Features switch that has settings of its own (`:goes_to`), Y (A on a keyboard) jumps to that page's heading: the heading at the top of the list, the cursor on its first setting. The button shows after the highlighted switch's name and in the hints, only while the page is showing (a feature's page hides while it's Off), and a click on either goes too. B goes back to the switch once, then to the sections as before. From a search's results it clears the search first.
+**A section per feature:** In the improved screen, Kanto Reloaded's settings are split into sections, one per feature, folded out under Kanto Reloaded in the sidebar (indented, in the smaller text). The right panel shows only the chosen section: a header for each of its pages (a one-page section still has its header), then their rows. The order, and which pages share a section, are in `Core/Settings/Sections.rb` (`Reloaded::SettingsSections::LIST`): **Core** first (Reloaded Systems and Features, the switches), then the look and controls, saves, your run, items and Pokémon, and the developer tools last. A page that isn't listed gets a section of its own, before the developer ones. A section shows only while one of its pages has a row to show, so a feature switched Off takes its section with it.
+
+- **The title:** Kanto Reloaded stays pinned at the top of the sidebar while its sections scroll. It is a stop of its own: A or Left folds the sections away, so KIF's sections come close, and A or Right opens them again. B in one of its sections folds them too; B on the title closes the screen.
+- **Headers:** a page's name without what comes before " - " (Bag - Auto-Sort is Auto-Sort), or its own name in its section (`HEADERS`: the Bag's page is Reloaded Bag there). Long section names get a short one in the sidebar (`SHORT`).
+- **Search** looks in every section, folded or not, and names each Kanto Reloaded result's section and header with a small Poké Ball ("Reloaded Bag > Auto-Sort"). KIF's own results keep KIF's "Section > Heading".
+- **KIF's own screen** (Reloaded Settings Off) keeps one Kanto Reloaded section with a heading per page. The rows themselves are KIF's in both, so the Overworld Menu finds a setting the same way either way.
+
+**Go to Settings:** On a Reloaded Systems or Features switch that has settings of its own (`:goes_to`), Y (A on a keyboard) jumps to that page's heading in its section: the heading at the top of the list, the cursor on its first setting. The button shows after the highlighted switch's name and in the hints, only while the page is showing (a feature's page hides while it's Off), and a click on either goes too. B goes back to the switch once, then to the sections as before. From a search's results it clears the search first.
 
 **The mouse** works in Kanto Reloaded's own screens and popups, never on the map (`Core/UI/Pointer.rb`):
 
@@ -325,7 +342,8 @@ The screen is built from these parts, which later Kanto Reloaded screens reuse:
 | `ButtonIcons` | Inputs drawn as icons: keycaps, and Xbox, PlayStation or Nintendo buttons, sticks, triggers and the d-pad (Button Style) |
 | `SplitScreen` | The Patch Viewer's and the Timing Profiler's layout: the sidebar of entries, the list of headings and rows, the description box with badges and scrolling |
 | `Frame` | What every settings-like screen shares: the layers, the pulsing cursor, the centred hint line that scrolls when it's too long, the title-bar boxes with their buttons beside them, the description box, running a dropdown, and alerts (`alert_box`: a red glow around a box, pulsing, on its own layer; the PokeVial's Low HP Reminder) |
-| `Dialogs` | Popups: `menu` (rows can lead with an input's icon), `picker`, `confirm`, `notice`, `ask` and `number` (with an item's picture and a line under it, `icon:` and `note:`), and `frame` for a popup a screen draws itself. A settings button's popups draw on `SettingsScreen.showing` |
+| `Dialogs` | Popups: `menu` (rows can lead with an input's icon), `picker`, `confirm`, `notice`, `ask` and `number` (with an item's picture and a line under it, `icon:` and `note:`), and `frame` for a popup a screen draws itself (`drawn` runs one with buttons, drawn with `button_row`: the Test Copy question). A settings button's popups draw on `SettingsScreen.showing` |
+| `RunTags` | A save's run as pills: its mode, its difficulty (Shown As) and DEBUG, on the Load Screen and in the Save Manager |
 | `Toast` | A short line at the top for a moment, no button: an icon, the words, a pill or a drawing of its own. The map moves it on (menus and messages too) and so does the Bag; it shows over the map menus |
 | `Dropdown` | A choice's values, dropped down from its value (Option Dropdowns) |
 | `TextEntry` | Typing into a field, as KIF Settings' search does: the keyboard types straight in, and a controller's A opens the game's naming screen |

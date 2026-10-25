@@ -1,14 +1,15 @@
 #==============================================================================
 # Kanto Reloaded: what goes in a bug report
 #==============================================================================
-# One zip (Zip.rb) in the mod's Bug Reports folder, named
+# One zip (Zip.rb) in the mod's Logging\Bug Reports folder, named
 # "KR Bug Report <date> <time>.zip":
 #
 #   Report.md         what happened (the player's note), the crash, the
 #                     versions, this session's errors and Recent Steps
-#   logs/             Kanto Reloaded's log and the one before it, KIF's
-#                     session log (and the one before), its error log, and
-#                     PIF's errorlog.txt (each cut to its last 512 KB)
+#   logs/             every log: Kanto Reloaded's (its log, the one before
+#                     it, the Timing Profiler's), every file in KIF's Logs
+#                     folder, and PIF's errorlog.txt (each cut to its last
+#                     512 KB)
 #   settings/         Kanto Reloaded's settings, controls, layouts and
 #                     features, KIF's settings
 #   mods.md           every mod: on or off, loaded or not, its version,
@@ -32,16 +33,38 @@ module Reloaded
         #----------------------------------------------------------------------
         # What's in it (the Make a Bug Report screen's rows)
         #----------------------------------------------------------------------
-        # [[label, where]] of every log that's there.
+        # [[label, where]] of every log that's there: Kanto Reloaded's (the
+        # .log and .txt files in Logging, its own log first; the reports'
+        # folders stay out), every file in KIF's Logs folder but its READ
+        # ME, and PIF's errorlog.txt.
         def logs
-          out = []
-          out << ["Kanto Reloaded.log", Reloaded::Log.path]
-          out << ["Kanto Reloaded.old.log", File.join(Reloaded::Paths.logs_dir, Reloaded::Log::OLD_FILE)]
-          kif = defined?(::KIF::Paths) && ::KIF::Paths.respond_to?(:log) ? ->(n) { ::KIF::Paths.log(n) } : ->(n) { File.join(Reloaded::Paths.game_dir, "Logs", n) }
-          # KIF_errorlog_previous.txt: KIF Beta 0.21.61+ moves an error log over 1 MB there
-          %w[KIF_log.txt KIF_log_previous.txt KIF_errorlog.txt KIF_errorlog_previous.txt].each { |n| out << [n, kif.call(n)] }
+          out = [["Kanto Reloaded.log", Reloaded::Log.path]]
+          kr = Reloaded::Paths.logs_dir
+          files_in(kr).each do |n|
+            out << [n, File.join(kr, n)] if [".log", ".txt"].include?(File.extname(n).downcase) && n != File.basename(Reloaded::Log.path.to_s)
+          end
+          kif = kif_logs_dir
+          files_in(kif).each { |n| out << [n, File.join(kif, n)] unless n.downcase == "read me.txt" } if kif
           out << ["errorlog.txt", pif_errorlog]
-          return out.select { |_n, f| f && File.file?(f) }
+          seen = {}
+          return out.select { |n, f| f && File.file?(f) && !seen[n] && (seen[n] = true) }
+        end
+
+        # KIF's Logs folder (KIF::Paths.logs, or where KIF::Paths.log puts
+        # its log), or the game folder's Logs
+        def kif_logs_dir
+          kp = defined?(::KIF::Paths) ? ::KIF::Paths : nil
+          dir = (kp.logs rescue nil) if kp && kp.respond_to?(:logs)
+          dir ||= (File.dirname(kp.log("KIF_log.txt")) rescue nil) if kp && kp.respond_to?(:log)
+          dir ||= File.join(Reloaded::Paths.game_dir, "Logs")
+          return File.directory?(dir.to_s) ? dir : nil
+        end
+
+        def files_in(dir)
+          return [] unless dir && File.directory?(dir)
+          return Dir.children(dir).select { |n| File.file?(File.join(dir, n)) }.sort_by(&:downcase)
+        rescue StandardError
+          return []
         end
 
         def pif_errorlog
@@ -142,7 +165,7 @@ module Reloaded
           return t
         end
 
-        # Where it goes: Mods\KantoReloaded\Bug Reports.
+        # Where it goes: Mods\KantoReloaded\Logging\Bug Reports.
         def target_dir
           return Reloaded::Paths.bug_reports_dir
         end
@@ -240,6 +263,7 @@ module Reloaded
           out << "- Kanto Reloaded #{Reloaded.version}, KIF #{(::KIF::PORT_VERSION rescue "?")}, game #{(::Settings::GAME_VERSION_NUMBER rescue "?")}"
           out << "- Save: #{slot || "none"}"
           out += Reloaded::QualityOfLife.report_lines if defined?(Reloaded::QualityOfLife)
+          out += Reloaded::Difficulty.report_lines if defined?(Reloaded::Difficulty)
           out += ["", "## What Happened", "", note.to_s.strip.empty? ? "(no note)" : note.to_s.strip]
           if crash
             out += ["", "## The Crash", "", "- Error: #{crash[:error]}", "- Where: #{crash[:where]}", "- In: #{crash[:owner]}"]

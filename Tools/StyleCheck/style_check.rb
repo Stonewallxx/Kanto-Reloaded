@@ -29,7 +29,7 @@
 #                   Y Fix, N Skip, I Ignore from now on, A Fix all of this
 #                   rule, Q Stop. Changed files are backed up first.
 #     --out         where the report and the backups go (Kanto Reloaded's
-#                   Logging folder if left out)
+#                   Logging\Style Checks folder if left out)
 # The report: <out>/Style Check <mod name>.md. Exit status 0 when nothing was
 # found, 1 when something was, 2 for a usage error.
 #
@@ -303,10 +303,21 @@ module StyleCheck
       return { "name" => data["name"] || File.basename(File.expand_path(root)), "version" => data["version"] || "" }
     end
 
+    # Kanto Reloaded's Logging\Style Checks (reports and fix backups from
+    # before it, loose in Logging, moved in)
     def default_out
-      base = File.join(File.expand_path("../..", __dir__), "Logging")
+      logs = File.join(File.expand_path("../..", __dir__), "Logging")
+      base = File.join(logs, "Style Checks")
       FileUtils.mkdir_p(base) rescue nil
-      return File.directory?(base) ? base : Dir.pwd
+      return Dir.pwd unless File.directory?(base)
+      Dir.children(logs).each do |n|
+        next unless n.start_with?("Style Check ", "Style Fixes ")
+        to = File.join(base, n)
+        File.rename(File.join(logs, n), to) unless File.exist?(to)
+      end
+      return base
+    rescue StandardError
+      return base && File.directory?(base) ? base : Dir.pwd
     end
 
     def report_path(out, root)

@@ -10,7 +10,7 @@ ruby Tools/StyleCheck/style_check.rb [<mod folder>] [--fix] [--out <folder>]
 
 - **Mod folder:** the mod to check. Without one, it checks Kanto Reloaded itself.
 - **--fix:** Fix It for Me (below).
-- **--out:** where the report and backups go. Without it, Kanto Reloaded's Logging folder (`Mods\KantoReloaded\Logging`).
+- **--out:** where the report and backups go. Without it, the Style Checks folder in Kanto Reloaded's Logging folder (`Mods\KantoReloaded\Logging\Style Checks`); reports and backups from before it move in.
 
 It writes `Style Check <mod name>.md` there and prints how many problems it found. It exits with 0 when there's nothing to fix, 1 when there is, and 2 for a mistake in the command.
 

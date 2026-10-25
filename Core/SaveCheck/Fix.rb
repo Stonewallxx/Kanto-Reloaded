@@ -107,7 +107,8 @@ module Reloaded
         # Kanto Reloaded's section for the Save Checker in data's :reloaded
         # value (made when the save has none yet).
         def kr_section(data)
-          value = data[:reloaded]
+          value = Reloaded::SaveStore.value_in(data)
+          data[:reloaded] = value if value.is_a?(Hash) && !value.empty?
           unless value.is_a?(Hash) && !value.empty?
             value = { "schema" => Reloaded::SaveStore::SCHEMA, "versions" => {}, "sections" => {} }
             data[:reloaded] = value

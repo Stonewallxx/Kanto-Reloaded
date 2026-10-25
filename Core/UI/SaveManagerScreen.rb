@@ -8,7 +8,10 @@
 #            saved, play time, party, its Notes (Y edits) and a status
 #            banner (a click opens the Save Checker). A: Edit Note, Color
 #            Tag, Check This Save, Backups, Back Up Now, Delete (to the
-#            Deleted tab), Open Folder
+#            Deleted tab), Open Folder. A controller's X: Test Copy (a copy
+#            to play with Kanto Reloaded off, TestCopyAsk); test copies
+#            are listed last, under Test Copies. The details' head shows
+#            the save's Run Tags (mode, difficulty, DEBUG)
 #   Backups  the selected save's backups, newest first (named ones in
 #            gold); the selected backup's details, Restore (A), Name (Y)
 #            and Check (X: the Save Checker on it). Left / Right: another
@@ -39,6 +42,7 @@ module Reloaded
     RIGHT_X0 = 228
     RIGHT_X1 = W - 6
     SAVE_ROW = 42
+    HEADING_H = 20          # Test Copies' heading in the list
     BACKUP_ROW = 36
     LIST_Y = 62
     BACKUP_LIST_Y = 76
@@ -77,6 +81,7 @@ module Reloaded
         Input.update
         update_frame
         @icons.each { |s| s.update unless s.disposed? }
+        Reloaded::Toast.update if defined?(Reloaded::Toast)
         tick
         break if handle_input == :close
       end
@@ -105,8 +110,10 @@ module Reloaded
     # What's shown
     #--------------------------------------------------------------------------
     def reload
-      @saves = S.slots.map { |slot| { :slot => slot, :path => S.path(slot) } }
-      @saves.each { |s| s[:pv] = S.preview(s[:path], :party => false) }
+      saves = S.slots.map { |slot| { :slot => slot, :path => S.path(slot) } }
+      saves.each { |s| s[:pv] = S.preview(s[:path], :party => false) }
+      # test copies last, under their heading
+      @saves = saves.reject { |s| s[:pv][:test_of] } + saves.select { |s| s[:pv][:test_of] }
       @archived = S.archived
       @backup_list = nil
       @party_for = nil
@@ -253,6 +260,8 @@ module Reloaded
         y_button
       elsif Input.trigger?(Input::A) && tab == :backups     # a controller's X
         check_backup
+      elsif Input.trigger?(Input::A) && tab == :active
+        test_copy
       end
       return nil
     end
@@ -396,6 +405,22 @@ module Reloaded
       return unless i
       S.set_tag(e[:slot], S::TAGS[i][0], e[:pv])
       @changed = true
+    end
+
+    # A copy of the save to play with Kanto Reloaded off (TestCopyAsk asks
+    # first); the cursor lands on it
+    def test_copy
+      e = current
+      return pbPlayBuzzerSE unless e && tab == :active && defined?(Reloaded::TestCopyAsk)
+      pbPlayDecisionSE
+      made = Reloaded::TestCopyAsk.run(self, e[:slot])
+      if made
+        @changed = true
+        reload
+        @sel = @save = @saves.index { |s| s[:slot] == made } || @sel
+      end
+      selection_moved
+      refresh
     end
 
     def back_up_now(e)
@@ -560,24 +585,45 @@ module Reloaded
       end
     end
 
-    # The left list: rows of h, the selected one under the cursor.
-    def each_row(entries)
+    # The left list: rows of h, the selected one under the cursor. heading:
+    # [index, label, colour], a heading above that row (Test Copies)
+    def each_row(entries, heading = nil)
       @row_hits = []
+      at = heading ? heading[0] : nil
       @top = @sel if @sel < @top
-      @top = @sel - fit + 1 if @sel >= @top + fit
-      entries[@top, fit].to_a.each_with_index do |e, k|
+      @top += 1 while @sel >= @top + fits_from(@top, entries.length, at)
+      n = fits_from(@top, entries.length, at)
+      y = list_y
+      entries[@top, n].to_a.each_with_index do |e, k|
         i = @top + k
-        y = list_y + k * row_h
+        if i == at
+          P.heading(@top_sprite.bitmap, LEFT_X0 + 10, LEFT_X1 - 10, y + 3, heading[1], heading[2], palette[:line])
+          y += HEADING_H
+        end
         @row_hits << [i, LEFT_X0 + 3, y, LEFT_X1 - 3, y + row_h - 3]
         @cursor_rect = [LEFT_X0 + 3, y, LEFT_X1 - LEFT_X0 - 6, row_h - 2] if i == @sel && !@entry
         yield e, y
+        y += row_h
       end
-      return unless entries.length > fit
+      return unless entries.length > n
       track = PANEL_Y1 - list_y - 8
-      bar = [track * fit / entries.length, 12].max
-      pos = (track - bar) * @top / [entries.length - fit, 1].max
+      bar = [track * n / entries.length, 12].max
+      pos = (track - bar) * @top / [entries.length - n, 1].max
       @sprite.bitmap.fill_rect(LEFT_X1 - 5, list_y, 2, track, palette[:line])
       @sprite.bitmap.fill_rect(LEFT_X1 - 5, list_y + pos, 2, bar, palette[:dim])
+    end
+
+    # How many rows fit from top (the heading takes room of its own)
+    def fits_from(top, count, at)
+      room = PANEL_Y1 - 4 - list_y
+      n = 0
+      (top...count).each do |i|
+        h = row_h + (i == at ? HEADING_H : 0)
+        break if h > room
+        room -= h
+        n += 1
+      end
+      return [n, 1].max
     end
 
     def empty(top, c, text)
@@ -597,14 +643,20 @@ module Reloaded
 
     def paint_saves(_base, top, c)
       return empty(top, c, _INTL("No save files yet.")) if @saves.empty?
-      each_row(@saves) do |e, y|
+      first = @saves.index { |e| e[:pv][:test_of] }
+      heading = first ? [first, _INTL("Test Copies"), Reloaded::RunTags.purple(c)] : nil
+      each_row(@saves, heading) do |e, y|
         tag_bar(top, S.tag(e[:slot], e[:pv]), LEFT_X0 + 8, y + 4, row_h - 10)
         pw = health_pill(top, e[:pv][:health], LEFT_X1 - 8, y + 5)
         room = LEFT_X1 - 8 - pw - 6 - (LEFT_X0 + 18)
         P.text(top, LEFT_X0 + 18, y, room, 22, PF.fit(PF::ROW, e[:slot], room), c[:opt], PF::ROW)
         note = S.note(e[:slot], e[:pv])
-        line = note.empty? ? _INTL("No Note") : note
-        P.small(top, LEFT_X0 + 18, y + 22, LEFT_X1 - LEFT_X0 - 30, 16, fit_small(top, line, LEFT_X1 - LEFT_X0 - 30), note.empty? ? c[:dim] : palette[:gold])
+        test = e[:pv][:test_of]
+        line, colour = if !note.empty? then [note, palette[:gold]]
+                       elsif test then [_INTL("Test Copy of {1}", test), Reloaded::RunTags.purple(c)]
+                       else [_INTL("No Note"), c[:dim]]
+                       end
+        P.small(top, LEFT_X0 + 18, y + 22, LEFT_X1 - LEFT_X0 - 30, 16, fit_small(top, line, LEFT_X1 - LEFT_X0 - 30), colour)
       end
     end
 
@@ -627,9 +679,8 @@ module Reloaded
     def paint_save(base, top, c, e)
       return unless e
       pv = e[:pv]
-      tg = S.tag(e[:slot], pv)
-      tag_bar(top, tg, RIGHT_X0 + 8, PANEL_Y0 + 8, 18)
-      detail_head(top, c, e[:slot], tg ? _INTL("Tag: {1}", _INTL(tg)) : nil)
+      tag_bar(top, S.tag(e[:slot], pv), RIGHT_X0 + 8, PANEL_Y0 + 8, 18)
+      save_head(top, c, e[:slot], pv)
       y = fields(top, c, PANEL_Y0 + 32, [["Trainer", pv[:name] || "?", pv[:gender] == :female ? palette[:pink] : palette[:blue]],
                                           ["Location", pv[:map] || "?", palette[:green]], ["Saved", when_text(pv[:saved_at] || File.mtime(e[:path]))],
                                           ["Play Time", play_time(pv[:seconds]), palette[:gold]]])
@@ -649,6 +700,22 @@ module Reloaded
       banner(base, top, c, *save_banner(e))
     end
 
+    # The save's name (a test copy's TEST pill beside it) and its Run Tags
+    # on the right (the tag's colour is its bar)
+    def save_head(top, c, slot, pv)
+      tags = Reloaded::RunTags.parts(c, pv)
+      right = RIGHT_X1 - 10 - Reloaded::RunTags.width(tags)
+      x = RIGHT_X0 + 18
+      test = pv[:test_of] ? _INTL("TEST") : nil
+      room = right - 8 - x - (test ? P.width(PF::TINY, test) + 18 : 0)
+      nw = P.text(top, x, PANEL_Y0 + 3, room, 24, PF.fit(PF::ROW, slot.to_s, room), c[:opt], PF::ROW)
+      if test
+        colour = Reloaded::RunTags.purple(c)
+        P.pill(top, x + nw + 6, PANEL_Y0 + 7, test, Reloaded::RunTags.fill(c, colour), colour, false)
+      end
+      Reloaded::RunTags.draw(top, tags, right, PANEL_Y0 + 7)
+    end
+
     # [title, line under it, colour]
     def save_banner(e)
       pv = e[:pv]
@@ -656,6 +723,9 @@ module Reloaded
       keep = S.cap ? _INTL("KEEPING {1}", S.cap) : _INTL("KEEPING UNLIMITED")
       sub = _INTL("{1} BACKUPS · {2}", n, keep)
       return [_INTL("You're Playing This Save"), sub, palette[:blue]] if e[:slot].to_s == S.playing.to_s
+      if pv[:test_of] && pv[:health] == :healthy
+        return [_INTL("Test Copy of {1}", pv[:test_of]), _INTL("FOR TESTING WITH KANTO RELOADED OFF"), Reloaded::RunTags.purple(palette)]
+      end
       case pv[:health]
       when :healthy then return [_INTL("Healthy"), sub, palette[:green]]
       when :check then return [_INTL("Check: {1}", pv[:problem].to_s), sub, palette[:amber]]
@@ -785,8 +855,8 @@ module Reloaded
       end
       case tab
       when :active
-        return [[:ud, _INTL("Choose")], [button(:C), _INTL("Options"), :press], [button(:X), _INTL("Note"), :y_button], tabs,
-                [back, _INTL("Close"), :close_screen]]
+        return [[:ud, _INTL("Choose")], [button(:C), _INTL("Options"), :press], [button(:X), _INTL("Note"), :y_button],
+                [button(:A), _INTL("Test Copy"), :test_copy], tabs, [back, _INTL("Close"), :close_screen]]
       when :backups
         out = [[:ud, _INTL("Choose")]]
         out << [:lr, _INTL("Save")] if @saves.length > 1

@@ -2,8 +2,9 @@
 # Kanto Reloaded: the Load Screen
 #==============================================================================
 # PIF's load screen, rebuilt (Roadmap topic 1, design 1): the big Continue
-# panel (◂ ▸ switches save file; its note, trainer, badges, difficulty and
-# mode, play time, Pokédex, money, backups, health and party), then the
+# panel (◂ ▸ switches save file; its note, trainer, badges, play time,
+# Pokédex, backups, money, its Run Tags (mode, difficulty, DEBUG: RunTags),
+# health and party; a test copy's purple strip in its note's place), then the
 # rows: New Game, What's New (NEW until read), Mystery Gift, Options, Save
 # Manager, KIF Beta's links, Quit. The list scrolls like PIF's; Kanto
 # Reloaded's and KIF Beta's versions are centred above the Continue panel.
@@ -19,7 +20,7 @@
 # Manager are rows of PIF's link list (Settings::MAIN_MENU_LINKS, as KIF
 # adds its own) with addresses this catches. After a restore or a change in
 # the Save Manager, the menu reads the saves again (KIF's way: -3, landing
-# on the slot asked for). Reloaded Load Screen Off: the game's own screen.
+# on the slot asked for). Always on with Kanto Reloaded (his call, 2026-10-25).
 #==============================================================================
 
 return unless defined?(Reloaded::Frame) && defined?(::KIF::PixelFont)
@@ -656,8 +657,14 @@ module Reloaded
         P.text(top, x0, y + 24, x1 - x0, 24, @slot.to_s, c[:txt], PF::ROW, 2)
         lx = INFO_X
         rx = x0 + 246
+        test = @pv && @pv[:test_of]
         if @entry
           Reloaded::TextEntry.draw_field(base, top, c, @entry, lx - 4, y + 46, INFO_X1 - lx + 4, 20)
+        elsif test && @note.to_s.empty?
+          # a test copy: a soft purple strip in the note's place (a fill, no outline)
+          colour = Reloaded::RunTags.purple(c)
+          P.ui.rbox(base, lx - 4, y + 47, INFO_X1, y + 64, 4, Reloaded::RunTags.fill(c, colour))
+          P.text(top, lx - 4, y + 47, INFO_X1 - lx + 4, 17, _INTL("TEST COPY OF {1} · DEBUG IF LOADED HERE", test.to_s.upcase), colour, PF::TINY, 2)
         else
           note = @note.to_s.empty? ? _INTL("No note yet. Y writes one.") : @note
           P.small(top, lx, y + 48, INFO_X1 - lx, 16, fit_small(top, note, INFO_X1 - lx), @note.to_s.empty? ? c[:dim] : c[:gold])
@@ -666,19 +673,23 @@ module Reloaded
         name_colour = t && (t.female? rescue false) ? c[:pink] : c[:blue]
         cols = [[lx, rx - 10], [rx, INFO_X1]]
         # [label, value, label colour, value colour]: the Save Manager's
-        # colours (play time gold, money green), difficulty by how hard
+        # colours (play time gold, money green); the mode and difficulty
+        # are Run Tags, on the row under these
         lines = [[[t ? t.name.to_s : "?", nil, name_colour], [_INTL("Time"), play_time(@pv && @pv[:seconds] || @frame_count / 40), nil, c[:gold]]],
                  [[_INTL("Badges"), (t.badge_count rescue 0).to_s], [_INTL("Pokédex"), dex_text]],
-                 [[(@pv && @pv[:difficulty]).to_s, mode_text, difficulty_colour(c)], [_INTL("Money"), money_text, nil, c[:green]]]]
+                 [[_INTL("Backups"), @backups.to_i.to_s], [_INTL("Money"), money_text, nil, c[:green]]]]
         lines.each_with_index do |row, k|
           ly = y + 66 + k * 22
-          row.each_with_index do |(label, value, colour, value_colour), j|
+          row.each_with_index do |cell, j|
+            next unless cell
+            label, value, colour, value_colour = cell
             from, to = cols[j]
             P.text(top, from, ly, to - from, 22, label.to_s, colour || c[:txt])
             P.text(top, from, ly, to - from, 22, value.to_s, value_colour || c[:txt], nil, 1) if value
           end
         end
-        P.small(top, lx, y + 134, 160, 14, @backups == 1 ? _INTL("1 BACKUP") : _INTL("{1} BACKUPS", @backups.to_i), c[:dim])
+        # the Run Tags on the left, the health on the right
+        Reloaded::RunTags.draw(top, Reloaded::RunTags.parts(c, @pv), lx, y + 133)
         label, tone = HEALTH[(@pv || {})[:health]] || HEALTH[:damaged]
         colour = c[tone]
         P.pill(top, INFO_X1, y + 133, _INTL(label), dark_fill(colour), colour)
@@ -692,28 +703,9 @@ module Reloaded
         return "#{owned || "?"} / #{seen || "?"}"
       end
 
-      # Easy (and Debug) green, Normal blue, Hard red.
-      def difficulty_colour(c = palette)
-        return nil unless @pv
-        index = @pv[:difficulty_index]
-        name = @pv[:difficulty].to_s
-        index ||= 0 if [_INTL("Easy"), "Easy", "Debug"].include?(name)
-        index ||= 1 if [_INTL("Normal"), "Normal"].include?(name)
-        index ||= 2 if [_INTL("Hard"), "Hard"].include?(name)
-        return c[:green] if name == "Debug"
-        return [c[:green], c[:blue], c[:red]][index.to_i] if index && index.to_i.between?(0, 2)
-        return nil
-      end
-
       def money_text
         m = (@trainer.money rescue 0).to_i
         return "$#{m.to_s.reverse.scan(/\d{1,3}/).join(",").reverse}"
-      end
-
-      def mode_text
-        return "" unless @pv
-        mode = @pv[:mode].to_s
-        return @pv[:randomized] ? "#{mode} · #{_INTL("Random")}" : mode
       end
 
       def paint_row(base, top, c, i, y)
