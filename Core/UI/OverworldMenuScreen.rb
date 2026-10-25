@@ -598,15 +598,21 @@ module Reloaded
       refresh
       @dc_icons = mons.map { |pk, _lv, _i| Reloaded::PartyIcons.icon(pk, @viewport, 4) }
       paint_day_care(mons, ent.day_care_egg?, ent.day_care_compat)
+      @dc_to_manager = false
       loop do
         Graphics.update
         Input.update
         pbUpdateSceneMap if defined?(pbUpdateSceneMap)
         @dc_icons.each { |sp| sp.update if sp && !sp.disposed? && sp.respond_to?(:update) }
+        # the Egg Manager's Day Care tab (his pick, Q10: Keep the Popup and Link It)
+        if egg_manager_link? && (Input.trigger?(Input::ACTION) || (Reloaded::Pointer.left? && hint_click[1] == :egg_manager))
+          @dc_to_manager = true
+          break
+        end
         break if Input.trigger?(Input::BACK) || Input.trigger?(Input::USE) || Reloaded::Pointer.right?
       end
-      pbPlayCancelSE
-      return nil
+      @dc_to_manager ? pbPlayDecisionSE : pbPlayCancelSE
+      return @dc_to_manager ? proc { Reloaded::EggManager.open(tab: :day_care) } : nil
     ensure
       (@dc_icons || []).each { |sp| sp.dispose if sp && !sp.disposed? }
       @dc_icons = nil
@@ -660,7 +666,20 @@ module Reloaded
       o.fill_rect(x + 12, cy + 4, DC_W - 24, 1, c[:line])
       egg_icon(o, x + 30, cy + 32)
       P.text(o, x + 52, cy + 14, 200, 20, _INTL("An Egg Is Waiting"), tone(:gold), PF::TEXT)
-      P.small(o, x + 52, cy + 34, DC_W - 64, 16, _INTL("Collect it from the Day Care Man."), c[:dim])
+      words = egg_manager_link? ? _INTL("Collect it in the Egg Manager.") : _INTL("Collect it from the Day Care Man.")
+      P.small(o, x + 52, cy + 34, DC_W - 64, 16, words, c[:dim])
+    end
+
+    # The Egg Manager is on and can open here
+    def egg_manager_link?
+      return defined?(Reloaded::EggManager) && Reloaded::EggManager.on? && Reloaded::EggManager.usable == true &&
+             Reloaded::EggManager::DayCare.visited?
+    rescue StandardError
+      return false
+    end
+
+    def dc_egg_manager
+      return :egg_manager
     end
 
     # The Egg, 34 px, centred at cx, cy (Big Pokémon Icons or small)
@@ -1617,7 +1636,10 @@ module Reloaded
         return [[:lr, _INTL("Change")], [Reloaded::Prompts.input(:L) || button(:L), "-#{ten}"],
                 [Reloaded::Prompts.input(:R) || button(:R), "+#{ten}"], [button(:C), _INTL("Set")], [button(:B), _INTL("Cancel")]]
       end
-      return [[button(:B), _INTL("Close")]] if @day_care_open
+      if @day_care_open
+        return [[button(:A), _INTL("Egg Manager"), :dc_egg_manager], [button(:B), _INTL("Close")]] if egg_manager_link?
+        return [[button(:B), _INTL("Close")]]
+      end
       if @encounters
         tabs, scroll = @encounters
         pairs = []

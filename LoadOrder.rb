@@ -162,6 +162,16 @@ module Reloaded
       "Core/UI/PCPresets.rb",
       "Core/UI/PCCompare.rb",
       "Core/UI/PCBoxMove.rb",
+      # the Egg Manager (after the PC: its PC action, Compare's colours)
+      "Core/EggManager/EggManager.rb",
+      "Core/EggManager/Eggs.rb",
+      "Core/EggManager/Incubators.rb",
+      "Core/EggManager/DayCare.rb",
+      "Core/EggManager/Alerts.rb",
+      "Core/EggManager/Hatching.rb",
+      "Core/UI/EggPopups.rb",
+      "Core/UI/EggManagerScreen.rb",
+      "Core/UI/EggDayCareTab.rb",
       # Fixes to the game's own code
       "Core/Fixes/Fixes.rb",
       "Core/Fixes/CommandTextColours.rb",
@@ -180,7 +190,7 @@ module Reloaded
     # to KIF Settings. Dev boots last, when it's there. PauseMenu boots
     # before Profiler and BugReport, so their hooks on the pause menu's
     # scene sit over its screen and still see it open.
-    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :TitleVersions, :TitleLogo, :LivingTitle, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
+    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :EggManager, :TitleVersions, :TitleLogo, :LivingTitle, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
 
     def self.files
       return FILES

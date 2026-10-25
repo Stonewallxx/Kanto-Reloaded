@@ -421,7 +421,10 @@ module Reloaded
             :condition => proc { $PokemonGlobal && $PokemonGlobal.respond_to?(:daycare) },
             :status => proc { day_care_status },
             :description => "An egg waiting, or how many Pokémon are there. A shows who's there, how well they get along, the levels each has gained and what taking it back costs.",
-            :handler => proc { |menu| menu.day_care; nil })
+            # glows while an Egg waits (the Egg Manager's Hatch Alerts, his pick Q7)
+            :alert => proc { defined?(Reloaded::EggManager) && Reloaded::EggManager.on? && Reloaded::EggManager::Alerts.on? && day_care_egg? },
+            # the popup's Egg Manager hint hands back a proc: the Egg Manager opens once the menu has closed
+            :handler => proc { |menu| menu.day_care })
           om.register(:radar_chain, :name => "Poké Radar Chain", :kind => :info, :priority => 60,
             :condition => proc { radar_chain > 0 },
             :status => proc { [radar_chain.to_s, :green] },

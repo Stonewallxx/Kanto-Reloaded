@@ -24,7 +24,7 @@ The ones that change how hard the game is are kept by **each save** (the row say
 | Level-Up Moves | Every save | Native (the game as it is), Ask (asks before learning any new move, even with a free slot) or Skip (never learns moves by levelling up: the Move Relearner still has them). It applies to level-ups in battle, Rare Candies, Super Candy and moves learned on evolving, not to TMs or tutors. |
 | Always Obey | Each save | Your Pokémon always obey, whatever their level and your badges, unless the story makes one disobey. |
 | Level Locking | Each save | Locks set in the Level Lock Manager apply. Setting a lock turns it On, so the lock works at once. Off pauses every lock without forgetting it. |
-| Instant Hatch | Each save | Eggs in the party hatch on the next step. |
+| Instant Hatch | Each save | Eggs in the party hatch on the next step (and an Egg in one of the Egg Manager's incubators is Ready at once). |
 | Day Care Eggs | Each save | The Day Care has an Egg ready as soon as two Pokémon that get along are left there. |
 | Encounter Rate | Each save | Fewer (half as often), Normal or More (twice as often) wild Pokémon on steps in grass, caves and water. Rock Smash is as it was. |
 | Max Friendship | Each save | Your Pokémon count as fully friendly: friendship evolutions and Return work at once. |

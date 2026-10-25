@@ -272,6 +272,24 @@
       "rule": "title_case",
       "file": "Core/UI/PCPresets.rb",
       "text": "GUI storage put down"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/EggDayCareTab.rb",
+      "text": "Mart buy item",
+      "why": "An audio file's name (Audio/SE, Audio/ME)"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/EggDayCareTab.rb",
+      "text": "Pkmn get",
+      "why": "An audio file's name (Audio/SE, Audio/ME)"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/EggDayCareTab.rb",
+      "text": "ONE MORE TO BREED",
+      "why": "Small capitals, as the picked design has it"
     }
   ]
 }

@@ -72,7 +72,7 @@ Each row of the list is recognized by its KIF id or its icon (`menuIcons/BAG` is
 
 If the screen fails, the game's own menu takes over for that menu, and the log says why.
 
-The tile art is Hoenn Reloaded's menu icons, fitted to 56 pixels, in `Graphics/PauseMenu` (KIF's PC, Heal, Kuray Shop and Tutor.net use the PC, PokeVial, Reloaded Mart and TM Vault icons). Return uses the game's Escape Rope, Quit Contest its Sport Ball, and Safari Quit and other mods' rows their own list icons at double size.
+The tile art is Hoenn Reloaded's menu icons, fitted to 56 pixels, in `Graphics/PauseMenu` (the Egg Manager's is the game's own Egg sprite, `EGGMANAGER.png`) (KIF's PC, Heal, Kuray Shop and Tutor.net use the PC, PokeVial, Reloaded Mart and TM Vault icons). Return uses the game's Escape Rope, Quit Contest its Sport Ball, and Safari Quit and other mods' rows their own list icons at double size.
 
 ## For Kanto Reloaded's Features
 
