@@ -34,6 +34,9 @@ module Reloaded
       [:bag,             "Reloaded Bag",    [:bag, :bag_sort]],
       [:pokevial,        "PokeVial",        [:pokevial]],
       [:egg_manager,     "Egg Manager",     [:egg_manager]],
+      [:critical_ev_gain, "Critical EV Gain", [:critical_ev_gain]],
+      [:iv_boundaries,   "IV Boundaries",   [:iv_boundaries, :iv_boundaries_fusing]],
+      [:double_abilities, "Double Abilities", [:double_abilities]],
       [:data_patches,    "Data Patches",    [:data_patches]],
       [:profiler,        "Timing Profiler", [:profiler, :profiler_time, :profiler_report]]
     ].freeze

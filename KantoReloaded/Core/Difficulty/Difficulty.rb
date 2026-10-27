@@ -215,17 +215,28 @@ module Reloaded
       end
 
       #------------------------------------------------------------------------
-      # Hard's trainer IVs: at least 10, on top of PIF's own
+      # Hard's trainer IVs: at least 10, on top of PIF's own. IVs the
+      # trainer's data sets on purpose stay (his pick, 2026-10-25: Expert's
+      # deliberate 0s, Gentleman Nick's Trick Room team at Speed 0)
       #------------------------------------------------------------------------
-      def floor_ivs(trainer)
+      def floor_ivs(trainer, data = nil)
         return unless ready? && level == 2 && trainer.respond_to?(:party)
-        Array(trainer.party).each do |pk|
+        Array(trainer.party).each_with_index do |pk, i|
           next unless pk && pk.respond_to?(:iv) && pk.iv.is_a?(Hash)
+          next if data_ivs?(pk, data, i)
           low = pk.iv.keys.select { |s| pk.iv[s].to_i < IV_FLOOR }
           next if low.empty?
           low.each { |s| pk.iv[s] = IV_FLOOR }
           pk.calc_stats if pk.respond_to?(:calc_stats)
         end
+      end
+
+      # The trainer data set this Pokémon's IVs (and another mod hasn't
+      # changed them since): GameData::Trainer#pokemon[i][:iv]
+      def data_ivs?(pk, data, i)
+        set = data.is_a?(Array) && data[i].is_a?(Hash) ? data[i][:iv] : nil
+        return false unless set.is_a?(Hash) && !set.empty?
+        return set.all? { |stat, v| pk.iv[stat].to_i == v.to_i }
       end
 
       #------------------------------------------------------------------------
@@ -253,7 +264,8 @@ module Reloaded
         if defined?(::GameData::Trainer)
           h.around(nil, ::GameData::Trainer, :to_trainer, :id => :difficulty_trainer_ivs) do |original, *args|
             trainer = original.call(*args)
-            Reloaded::Difficulty.floor_ivs(trainer)
+            data = (original.receiver.pokemon rescue nil)
+            Reloaded::Difficulty.floor_ivs(trainer, data)
             trainer
           end
         end

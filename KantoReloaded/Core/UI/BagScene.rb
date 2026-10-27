@@ -463,6 +463,14 @@ module Reloaded
         notes << game_note(label.to_s, it, i == use)
         map << (label.to_s == _INTL("Toss") ? [:toss, i] : i)
       end
+      if @kr_full && tm_search?(it)
+        labels << _INTL("Who Can Learn")
+        notes << _INTL("Every Pokémon that can learn {1}: Yours first, the PC's too.", display_name(item))
+        map << :tm_learners
+        labels << _INTL("Search TMs")
+        notes << _INTL("Every TM and HM by its move, ones you don't have too.")
+        map << :tm_search
+      end
       if @kr_full
         fav = B.favorite?(item)
         labels << (fav ? _INTL("Remove Favorite") : _INTL("Favorite"))
@@ -491,6 +499,8 @@ module Reloaded
       when :unquick then remove_quick(item)
       when :move then start_move(item)
       when :teach then teach(item)
+      when :tm_learners then tm_search(:show, item)
+      when :tm_search then tm_search(:search, item)
       when Array
         @kr_toss = [item, quantity(item) > 1 ? nil : 1]
         refresh
@@ -787,6 +797,20 @@ module Reloaded
 
     def teach?(it)
       return machine?(it) && defined?(Reloaded::TMVault) && Reloaded::TMVault.on? && defined?(Reloaded::TMVaultScreen)
+    end
+
+    # KIF 1.2.6's TM Search (C-ITEM-01_TMSearch): its Who Can Learn and
+    # Search TMs, which it adds to the game's Bag menu, in this one's too,
+    # with Teach (his pick, 2026-10-26). They open KIF's own screens.
+    def tm_search?(it)
+      return false unless defined?(::KIF::TMSearch) && ::KIF::TMSearch.respond_to?(:show) && ::KIF::TMSearch.respond_to?(:search)
+      return machine?(it)
+    end
+
+    def tm_search(how, id)
+      it = B.item_data(id)
+      hidden { how == :show ? ::KIF::TMSearch.show(it.id) : ::KIF::TMSearch.search }
+      make_icons
     end
 
     # Which of the game's commands is its Use (a machine's)
@@ -1228,7 +1252,7 @@ module Reloaded
       py0 = DETAILS_Y
       py1 = H - P::HINT_H - 5
       plate(base, c, PP.rgb(item_rgb(id)), 6, py0, W - 6, py1, 12)
-      if machine?(it) || stone?(it) || heal_kind(id) || plate_type(id)
+      if machine?(it) || stone?(it) || heal_kind(id) || plate_type(id) || ev_reset?(id)
         party_details(top, c, py0, id, it)
       else
         P.text(top, 18, py0 + 5, 300, 22, PF.fit(PF::ROW, it.name, 340), c[:strong], PF::ROW)
@@ -1264,6 +1288,8 @@ module Reloaded
         heal_grid(top, c, 308, py0 + 6, id)
       elsif (to = plate_type(id))
         plate_grid(top, c, 308, py0 + 6, to)
+      elsif ev_reset?(id)
+        evs_grid(top, c, 308, py0 + 6)
       else
         party_grid(top, c, 308, py0 + 6, 3, 64, 50, 26, it)
       end
@@ -1273,6 +1299,27 @@ module Reloaded
     def plate_type(id)
       return nil unless defined?(Reloaded::HiddenPower::Plates)
       return Reloaded::HiddenPower::Plates.type_of(id)
+    end
+
+    # The Fresh-Start Mochi (Critical EV Gain): it resets EVs
+    def ev_reset?(id)
+      return defined?(Reloaded::CriticalEVGain::Mochi) && id.to_s == Reloaded::CriticalEVGain::Mochi::ID.to_s
+    end
+
+    # Each Pokémon's EVs in all; "No EVs" where the Mochi would change
+    # nothing (his pick, Party Grid)
+    def evs_grid(top, c, x, y)
+      party.each_with_index do |p, i|
+        cx = x + (i % 3) * 64 + 32
+        cy = y + (i / 3) * 50
+        fit_icon(i, cx, cy + 14, 26)
+        n = p.egg? ? 0 : Reloaded::CriticalEVGain::Mochi.total(p)
+        word, col = if p.egg? then [_INTL("Egg"), c[:dim]]
+                    elsif n == 0 then [_INTL("No EVs"), c[:dim]]
+                    else [_INTL("{1} EVs", n), c[:txt]]
+                    end
+        P.text(top, cx - 32, cy + 28, 64, 12, word, col, PF::TINY, 2)
+      end
     end
 
     # Each Pokémon's Hidden Power type now, in its colour; "Already Ice"

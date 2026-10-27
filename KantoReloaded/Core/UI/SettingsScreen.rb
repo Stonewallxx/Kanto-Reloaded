@@ -86,6 +86,65 @@ module Reloaded
 
     attr_reader :entry, :picked
 
+    # Toggles a feature groups as chips (a setting's :chips, Critical EV
+    # Gain's Stats): one row here, Left/Right choose a chip, A turns it On or
+    # Off. KIF's own screen, and search, keep them as toggles. The chosen chip
+    # is kept by the screen (state), so a rebuild keeps it.
+    class ChipsOption
+      attr_reader :name, :parts, :labels
+
+      def initialize(name, parts, labels, state)
+        @name = name
+        @parts = parts
+        @labels = labels
+        @state = state
+      end
+
+      def get
+        return (@state[@name] || 0).clamp(0, @parts.length - 1)
+      end
+
+      def set(v)
+        @state[@name] = v.to_i.clamp(0, @parts.length - 1)
+      end
+
+      def next(v)
+        return [v + 1, @parts.length - 1].min
+      end
+
+      def prev(v)
+        return [v - 1, 0].max
+      end
+
+      def part
+        return @parts[get]
+      end
+
+      # The description's title: the chosen chip's own name
+      def title
+        return part.name
+      end
+
+      # The chosen chip's setting answers for the row (its lock, its scope)
+      def kr_key
+        return part.respond_to?(:kr_key) ? part.kr_key : nil
+      end
+
+      def on?(i)
+        p = @parts[i]
+        return Reloaded::Settings.get(p.kr_key) ? true : false if p.respond_to?(:kr_key) && p.kr_key
+        return (p.get rescue 0).to_i == 1
+      end
+
+      # The chosen chip's words for its state (its :descriptions, Off then
+      # On), else its own description
+      def description
+        k = kr_key
+        said = k ? Reloaded::Settings.choice_description(k, on?(get) ? 1 : 0) : nil
+        return said || (KIF::SettingsScreen.description_for(part) rescue nil) || part.description
+      end
+    end
+
     def initialize(inloadscreen = false, start = nil)
       super
       frame_init
@@ -183,6 +242,7 @@ module Reloaded
       r = current
       return unless r
       o = r.opt
+      return change_chip(o, dir) if o.is_a?(ChipsOption)
       return if KIF::SettingsScreen.button?(o)
       return pbPlayBuzzerSE if lock_name(o)
       if kr_lock(o) || read_only?(o)
@@ -191,12 +251,49 @@ module Reloaded
       end
       cur = (o.get rescue nil)
       return if cur.nil?
-      nv = step_value(o, cur, dir, round)
+      nv = stepped(o, cur, dir) || step_value(o, cur, dir, round)
       return if nv == cur
       o.set(nv)
       return refresh if (o.get rescue nil) == cur     # it asked first, and the answer was Keep
       pbPlayCursorSE
       after_change
+    end
+
+    # Y on a row: a slider's step, or Go to Settings (other row kinds add
+    # theirs: SettingsRangeRows.rb)
+    def press_x
+      if steps?(current)
+        toggle_step
+      elsif goes_to(current)
+        go_to_settings
+      end
+    end
+
+    # A slider with :steps (Critical EV Gain's Chance): Y switches its step
+    def steps?(r)
+      d = r ? kr_def(r.opt) : nil
+      return d && d[:steps] && d[:steps].length > 1 && KIF::SettingsScreen.slider?(r.opt) ? true : false
+    end
+
+    def toggle_step(*_args)
+      r = current
+      return pbPlayBuzzerSE unless steps?(r) && !kr_lock(r.opt) && !lock_name(r.opt)
+      r.opt.instance_variable_set(:@optinterval, Reloaded::Settings.next_slider_step(r.opt.kr_key))
+      pbPlayCursorSE
+      refresh
+      return nil
+    end
+
+    # Left/Right on such a slider: its chosen step, landing on the step's
+    # multiples (7 goes to 10 in steps of 5); nil for any other row
+    def stepped(o, cur, dir)
+      d = kr_def(o)
+      return nil unless d && d[:steps] && KIF::SettingsScreen.slider?(o)
+      st = Reloaded::Settings.slider_step(o.kr_key)
+      lo = o.optstart.to_i
+      v = cur + lo
+      nv = dir > 0 ? (v / st + 1) * st : ((v - 1) / st) * st
+      return nv.clamp(lo, o.optend.to_i) - lo
     end
 
     # The value one step on from cur; choices go round when round (or on a
@@ -226,6 +323,7 @@ module Reloaded
       r = current
       return unless r
       o = r.opt
+      return toggle_chip(o) if o.is_a?(ChipsOption)
       return super if r.action || KIF::SettingsScreen.button?(o)
       return pbPlayBuzzerSE if lock_name(o) || kr_lock(o) || read_only?(o)
       if KIF::SettingsScreen.choices?(o)
@@ -235,6 +333,55 @@ module Reloaded
       end
       return choose_number(r) if KIF::SettingsScreen.slider?(o) || o.is_a?(NumberOption)
       super
+    end
+
+    # A chip row: Left/Right choose a chip (nothing changes), A turns the
+    # chosen one On or Off
+    def change_chip(o, dir)
+      cur = o.get
+      nv = dir > 0 ? o.next(cur) : o.prev(cur)
+      return if nv == cur
+      o.set(nv)
+      pbPlayCursorSE
+      refresh
+    end
+
+    def toggle_chip(o)
+      return pbPlayBuzzerSE if @pick_mode || kr_lock(o)
+      k = o.kr_key
+      return pbPlayBuzzerSE unless k
+      Reloaded::Settings.set(k, !Reloaded::Settings.get(k))
+      pbPlayDecisionSE
+      after_change
+    end
+
+    # A chip row's chips after its name, the chosen one in the cursor's
+    # colours while the row is chosen; Off chips dark, all dimmed when locked
+    def paint_chips(top, c, r, y, selected, locked)
+      o = r.opt
+      x = NAME_X + PF.width(PF::ROW, r.label) + 12
+      n = o.parts.length
+      w = (VAL_X1 - x - (n - 1) * 4) / n
+      n.times do |i|
+        on = o.on?(i) && !locked
+        cur = selected && i == o.get
+        cx = x + i * (w + 4)
+        fill = if cur then c[:selb]
+               elsif on then Reloaded::Palette.mix(c[:panel], c[:segon], c[:light] ? 0.25 : 0.35)
+               else c[:dark]
+               end
+        P.ui.rbox(top, cx, y + 3, cx + w, y + 21, 5, fill, cur ? c[:selb] : (on ? c[:segon] : c[:line]))
+        ink = cur ? c[:dark] : (on ? c[:txt] : Reloaded::Palette.mix(c[:dim], c[:panel], 0.35))
+        P.text(top, cx, y + 3, w, 18, o.labels[i].to_s, ink, PF::TINY, 2)
+      end
+    end
+
+    # A slider's number with its unit or format (5%, +3)
+    def slider_text(o, v)
+      d = kr_def(o)
+      return v.to_s unless d
+      return (d[:format].call(v).to_s rescue v.to_s) if d[:format]
+      return v.to_s + d[:unit].to_s
     end
 
     # Search, as KIF Settings' works: typed straight into the title bar, the
@@ -292,8 +439,8 @@ module Reloaded
     # Choices always show between arrows; :below when the name leaves no room.
     def value_mode(r)
       kind = value_kind(r)
-      return kind if kind == :button || kind == :tabs
-      name_end = NAME_X + r.indent * 16 + PF.width(PF::ROW, r.label) + 10
+      return kind if kind == :button || kind == :tabs || kind == :chips
+      name_end =NAME_X + r.indent * 16 + PF.width(PF::ROW, r.label) + 10
       left = kind == :slider ? slider_x0(r) : value_left(r)
       return name_end <= left ? kind : :below
     end
@@ -385,7 +532,7 @@ module Reloaded
       elsif Input.trigger?(Input::ACTION)
         reset_default
       elsif Input.trigger?(Input::X)
-        go_to_settings if goes_to(current)
+        press_x
       elsif Input.trigger?(Input::BACK)
         back_out
       end
@@ -871,6 +1018,7 @@ module Reloaded
       x0 = case value_kind(r)
            when :slider then slider_x0(r)
            when :tabs   then LIST_X0 + 10
+           when :chips  then NAME_X + PF.width(PF::ROW, r.label) + 12
            when :button then column(r) - 30
            else value_left(r)
            end
@@ -881,6 +1029,7 @@ module Reloaded
     # name: KIF's tab rows) or :arrows.
     def value_kind(r)
       o = r.opt
+      return :chips if o.is_a?(ChipsOption)
       return :button if KIF::SettingsScreen.button?(o)
       return :slider if KIF::SettingsScreen.slider?(o)
       return :tabs if KIF::SettingsScreen.choices?(o) && r.label.to_s.strip.empty?
@@ -1054,8 +1203,11 @@ module Reloaded
         P.ui.rbox(top, x0, y + 10, x1, y + 14, 2, c[:dark])
         P.ui.rbox(top, x0, y + 10, kx, y + 14, 2, locked ? c[:line] : (selected ? c[:selb] : c[:segon]))
         P.ui.rbox(top, kx - 4, y + 6, kx + 4, y + 18, 3, locked ? c[:dim] : c[:txt])
-        P.text(top, cx - 25, y, 50, ROW_H - 2, v.to_s, locked ? c[:dim] : c[:opt], nil, 2)
-        padlock(top, cx + P.width(PF::TEXT, v.to_s) / 2 + 6, y + 6, c[:dim]) if locked
+        text = slider_text(o, v)
+        P.text(top, cx - 25, y, 50, ROW_H - 2, text, locked ? c[:dim] : c[:opt], nil, 2)
+        padlock(top, cx + P.width(PF::TEXT, text) / 2 + 6, y + 6, c[:dim]) if locked
+      when :chips
+        paint_chips(top, c, r, y, selected, locked)
       when :tabs
         tabs = o.values.map { |v| tab_parts(v) }
         cur = (o.get rescue 0).to_i
@@ -1109,8 +1261,12 @@ module Reloaded
         return
       end
       title = r.label.to_s.strip.empty? ? _INTL(@sections[@section][1]) : r.label
+      title = r.opt.title.to_s if r.opt.respond_to?(:title)             # a row of chips or a range: the part chosen
       title = @dropdown.values[@dropdown.index] if @dropdown           # the highlighted choice
       P.text(top, 14, y0 + 1, 330, 26, PF.fit(PF::ROW, title, 330), c[:head], PF::ROW)
+      if r.opt.is_a?(ChipsOption)                                       # the chosen chip On or Off, after its name
+        P.pill(top, 14 + [PF.width(PF::ROW, title), 330].min + 8, y0 + 7, r.opt.on?(r.opt.get) ? _INTL("ON") : _INTL("OFF"), c[:pill], c[:txt], false)
+      end
       x = W - 14
       if r.scope && r.section != :modules && r.section != :presets && !r.action
         x -= P.pill(top, x, y0 + 7, r.scope == :global ? _INTL("ALL SAVES") : _INTL("THIS SAVE"), c[:pill], c[:txt]) + 6
@@ -1188,9 +1344,16 @@ module Reloaded
       # a row with no Default (Difficulty) doesn't offer one; a read-only row
       # (Shown As) doesn't offer Change either
       r = current
+      # a chip row: Left/Right choose a chip, A turns it On or Off (no Default)
+      if r && r.opt.is_a?(ChipsOption)
+        return [[:ud, _INTL("Select")], [:lr, _INTL("Choose"), :mouse_change], [button(:C), _INTL("On / Off")]] + go + [[back, out, :mouse_back]]
+      end
       d = r ? kr_def(r.opt) : nil
       pairs = [[:ud, _INTL("Select")]]
       pairs << [:lr, _INTL("Change"), :mouse_change] unless d && d[:read_only]
+      if steps?(r) && !kr_lock(r.opt) && !lock_name(r.opt)
+        pairs << [button(:X), _INTL("Step {1}", Reloaded::Settings.slider_step(r.opt.kr_key)), :toggle_step]
+      end
       pairs << [button(:A), _INTL("Default"), :reset_default] unless d && (d[:no_default] || d[:read_only])
       return pairs + go + [[back, out, :mouse_back]]
     end

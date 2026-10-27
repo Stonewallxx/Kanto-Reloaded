@@ -53,25 +53,40 @@ module Reloaded
       # Its other parts, each a module of this one with an install
       PARTS = [:Battle, :Summary, :Researcher, :Plates, :Chamber].freeze
 
+      # Kanto Reloaded boots before the game loads its data: nothing here
+      # may read GameData (PIF's get of a missing id asks for :PIKACHU, which
+      # no table but Species has, for ever)
       def boot
+        # a new game's party is made with Pokemon.new: nothing old to fill
+        Reloaded::Events.on(:save_loaded, :hidden_power, 60) { |c| fill_save unless c.is_a?(Hash) && c[:new_game] }
         install
+        ok = true
         PARTS.each do |name|
           next unless const_defined?(name, false)
           part = const_get(name, false)
-          part.install if part.respond_to?(:install)
+          next unless part.respond_to?(:install)
+          begin
+            part.install
+          rescue StandardError, SystemStackError => e
+            ok = false
+            Reloaded::Log.exception("Hidden Power's #{name} couldn't start", e, :hidden_power)
+          end
         end
-        # a new game's party is made with Pokemon.new: nothing old to fill
-        Reloaded::Events.on(:save_loaded, :hidden_power, 60) { |c| fill_save unless c.is_a?(Hash) && c[:new_game] }
-        return true
+        return ok
       end
 
       #------------------------------------------------------------------------
       # Types
       #------------------------------------------------------------------------
       # The pool in the game's order (a type the game hasn't got is left out)
+      # (kept once the game's types are there; asked before they load, it's
+      # empty and kept for nothing)
       def pool
+        return @pool if @pool
         return [] unless game_types?
-        @pool ||= STANDARD.select { |t| GameData::Type.exists?(t) }.sort_by { |t| GameData::Type.get(t).id_number }
+        list = STANDARD.select { |t| GameData::Type.exists?(t) }.sort_by { |t| GameData::Type.get(t).id_number }
+        @pool = list unless list.empty?
+        return list
       end
 
       # Its own generator: rolls never move the global one a seeded
@@ -175,7 +190,8 @@ module Reloaded
         @hp_moves ||= {}
         return @hp_moves[id] if @hp_moves.key?(id)
         data = GameData::Move.try_get(id)
-        return @hp_moves[id] = (data && data.function_code.to_s == FUNCTION) ? true : false
+        return false unless data                 # (not kept: the game's data may not be loaded yet)
+        return @hp_moves[id] = data.function_code.to_s == FUNCTION
       rescue StandardError
         return false
       end

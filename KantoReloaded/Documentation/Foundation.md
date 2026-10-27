@@ -162,12 +162,15 @@ Reloaded::Settings.get(:"overworld_menu.slots")
 
 | Option | Meaning |
 |---|---|
-| `:type` | `:toggle`, `:enum` (`:values`), `:slider` / `:number` (`:min`, `:max`, `:step`, `:unit`), `:text`, `:button` (`:on_press`) |
+| `:type` | `:toggle`, `:enum` (`:values`), `:slider` / `:number` (`:min`, `:max`, `:step`, `:unit`; a slider's `:steps => [1, 5]` lets Y switch its step in the improved screen), `:text`, `:button` (`:on_press`) |
 | `:scope` | `:global` (all saves, `Settings.json`) or `:save` (the save's "settings" section) |
 | `:long` | an enum that opens its own picker on A (a centred popup) instead of a dropdown: Theme, the frames, the colours |
 | `:swatch` | `:text` or `:cursor`: the picker shows each value's colour |
 | `:descriptions` | one text per value, in order: the dropdown explains the highlighted value with it |
 | `:locked_choices` | proc returning `{ index => reason }` (or `[index, ...]`): values that can't be picked now. The dropdown shows them locked, Left/Right step over them and `set` refuses them |
+| `:chips` / `:chip` | toggles in one group shown as one row of chips in the improved screen (Critical EV Gain's Stats); `:chip` is each one's label |
+| `:range` | `[group, :floor / :ceiling, name]`: two sliders shown as one two-handle bar in the improved screen (IV Boundaries); `:range_shown` (proc(group): the numbers shown) and `:range_popup` (proc(screen, option): A on the bar, `[floor, ceiling]` or nil) on the floor |
+| `:chip_pick` | an enum shown as a row of chips you pick with A in the improved screen (IV Boundaries' presets); `:locked_text` is what A on a locked one says |
 | `:bind` | ties the setting to state the game already reads (`Bind.system`, `.switch`, `.variable`, `.custom`, `.direct`) |
 | `:apply` | `proc { |value, restoring| }` when the value changes, and at startup / save load |
 | `:commit` | `proc { |value, old_value| }` once when the settings screen closes, if it changed |

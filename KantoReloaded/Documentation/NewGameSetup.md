@@ -21,6 +21,7 @@ Four steps on a strip along the top. **L1** and **R1** move between them (a clic
 |---|---|
 | **Difficulty** | Easy, Normal or Hard, each in its colour. A opens **Choose a Difficulty**: the three levels beside Oak and What Changes for each. Change it any time later in Kanto Reloaded's settings. |
 | **Randomizer** | In Randomized Mode, with the Reloaded Randomizer on. A opens the Randomizer beside Oak (the seed and every part), with **Done** and **Back**. The run is randomized once, at Start. |
+| **IV Boundaries** | With IV Boundaries on: a preset for new Pokémon's IVs (Vanilla, Accessibility, Strong, Perfect-ish, Perfect or Challenge), for wild Pokémon, Eggs and gifts alike. On Hard, floors stay at 0. |
 | **Starters** | The three Pokémon Oak offers: Kanto, Johto, Hoenn, Sinnoh, Kalos, Mixed (a Grass, a Fire and a Water starter from any generation, rolled once and shown) or Custom (any Pokémon you pick, fused or not, in the **Custom Starter** popup). Every player gets the sets, on a first game too. Locked, with why, in Legendary Mode and while Random Starters are on in the Randomizer. |
 | **Starting Money** | $3,000 to start, in steps of $1,000 up to $100,000. A opens a picker (Up and Down in steps of $10,000). |
 | **Autosave** | On: the game saves when you heal, and the save screen opens once, where the game would have asked about Autosave. Off: you save when you want to. Change it later in KIF Settings. |

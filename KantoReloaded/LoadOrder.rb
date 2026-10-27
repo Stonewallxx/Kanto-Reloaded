@@ -65,6 +65,7 @@ module Reloaded
       "Core/Settings/AutosaveRows.rb",
       "Core/UI/SettingsScreen.rb",
       "Core/UI/SettingsSections.rb",
+      "Core/UI/SettingsRangeRows.rb",
       "Core/UI/ControlsScreen.rb",
       # Data Patches: mods change the game's data with JSON files
       # (Mods/<mod>/DataPatches), in memory after it loads
@@ -212,6 +213,26 @@ module Reloaded
       "Core/HiddenPower/Plates.rb",
       "Core/HiddenPower/Chamber.rb",
       "Core/UI/HiddenPowerScreens.rb",
+      # Critical EV Gain: bonus EVs after a win, the EV Gains board, the
+      # Fresh-Start Mochi
+      "Core/CriticalEVGain/CriticalEVGain.rb",
+      "Core/CriticalEVGain/Mochi.rb",
+      "Core/UI/CriticalEVGainScreens.rb",
+      "Core/IVBoundaries/IVBoundaries.rb",
+      "Core/IVBoundaries/Sources.rb",
+      "Core/IVBoundaries/Fusion.rb",
+      "Core/IVBoundaries/MaxIVs.rb",
+      "Core/UI/IVBoundariesScreens.rb",
+      "Core/UI/IVBoundariesRows.rb",
+      # Double Abilities: every fusion's head and body abilities, in battle and
+      # out; the Fusion Screen, Banned Pairs, the Split Pill pop-ups
+      "Core/DoubleAbilities/DoubleAbilities.rb",
+      "Core/DoubleAbilities/Banned.rb",
+      "Core/DoubleAbilities/Battle.rb",
+      "Core/DoubleAbilities/PopUps.rb",
+      "Core/DoubleAbilities/Fusing.rb",
+      "Core/DoubleAbilities/EliteRedux.rb",
+      "Core/UI/DoubleAbilitiesScreens.rb",
       # Fixes to the game's own code
       "Core/Fixes/Fixes.rb",
       "Core/Fixes/CommandTextColours.rb",
@@ -230,7 +251,7 @@ module Reloaded
     # to KIF Settings. Dev boots last, when it's there. PauseMenu boots
     # before Profiler and BugReport, so their hooks on the pause menu's
     # scene sit over its screen and still see it open.
-    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :EggManager, :Difficulty, :Randomizer, :NewGameSetup, :Publish, :HiddenPower, :TitleVersions, :TitleLogo, :LivingTitle, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
+    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :EggManager, :Difficulty, :Randomizer, :NewGameSetup, :Publish, :HiddenPower, :CriticalEVGain, :IVBoundaries, :DoubleAbilities, :TitleVersions, :TitleLogo, :LivingTitle, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
 
     def self.files
       return FILES

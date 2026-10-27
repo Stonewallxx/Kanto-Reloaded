@@ -121,10 +121,48 @@ module Reloaded
             end
           end
           next if out.none? { |r| r.kind == :opt }
-          @rows[key] = out
+          @rows[key] = kr_chips(out)
           @kr_list << [key, _INTL(name)]
           @kr_entries[key] = entry
         end
+      end
+
+      # A feature's toggles in one chips group (their :chips) become one
+      # row of chips (SettingsScreen::ChipsOption); a :range's two sliders
+      # one two-handle bar, a :chip_pick choice a row of chips to pick
+      # (SettingsRangeRows.rb)
+      def kr_chips(list)
+        @kr_chip_state ||= {}
+        out = []
+        ss = Reloaded::SettingsScreen
+        list.each do |r|
+          k = r.kind == :opt && r.opt.respond_to?(:kr_key) ? r.opt.kr_key : nil
+          d = k ? Reloaded::Settings.definition(k) : nil
+          group = d && d[:chips]
+          last = out.last
+          if d && d[:range] && defined?(ss::RangeOption)
+            grp, which, name = d[:range]
+            if which == :ceiling && last && last.opt.is_a?(ss::RangeOption) && last.opt.group == grp
+              last.opt.ceiling = r.opt
+            else
+              label = _INTL((name || r.label).to_s)
+              out << ::KIF::SettingsScreen::Row.new(:opt, ss::RangeOption.new(label, grp, r.opt, @kr_chip_state), r.scope, label,
+                                                    r.section, r.heading, 0, nil, nil)
+            end
+          elsif d && d[:chip_pick] && defined?(ss::PickChipsOption)
+            out << ::KIF::SettingsScreen::Row.new(:opt, ss::PickChipsOption.new(r.label, r.opt, @kr_chip_state), r.scope, r.label,
+                                                  r.section, r.heading, 0, nil, nil)
+          elsif group && last && last.opt.is_a?(Reloaded::SettingsScreen::ChipsOption) && last.opt.name == _INTL(group)
+            last.opt.parts << r.opt
+            last.opt.labels << _INTL(d[:chip] || r.label)
+          elsif group
+            chips = Reloaded::SettingsScreen::ChipsOption.new(_INTL(group), [r.opt], [_INTL(d[:chip] || r.label)], @kr_chip_state)
+            out << ::KIF::SettingsScreen::Row.new(:opt, chips, r.scope, _INTL(group), r.section, r.heading, 0, nil, nil)
+          else
+            out << r
+          end
+        end
+        return out
       end
 
       # The sidebar: the sections under the title while they're open (the

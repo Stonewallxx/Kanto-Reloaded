@@ -214,7 +214,7 @@ module Reloaded
                    KREnum.new(name, d[:values].map { |v| _INTL(v) }, proc { s.get(key) }, proc { |v| s.set(key, v) }, desc)
                  when :slider
                    min = d[:min] || 0
-                   KRSlider.new(name, min, d[:max] || 100, d[:step] || 1, proc { s.get(key) - min },
+                   KRSlider.new(name, min, d[:max] || 100, s.slider_step(key), proc { s.get(key) - min },
                                 proc { |v| s.set(key, v + min) }, desc)
                  when :number
                    min = d[:min] || 0

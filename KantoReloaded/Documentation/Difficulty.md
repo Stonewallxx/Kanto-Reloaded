@@ -66,7 +66,7 @@ A Difficulty heading in the Kanto Reloaded section. The Difficulty row also take
 
 ## Hard's Trainer IVs
 
-On Hard, each of a trainer's Pokémon's IVs is at least 10: a floor on PIF's own (half the Pokémon's level, or what the trainer's data sets). There's no randomness, so the same trainer is the same every battle. Kanto Reloaded's hook on `GameData::Trainer#to_trainer` wraps KIF's own four (Endgame Challenge, Leader Teams, the Randomizer's trainers and items), so their Pokémon get the floor too.
+On Hard, each of a trainer's Pokémon's IVs is at least 10: a floor on PIF's own (half the Pokémon's level). IVs the trainer's data sets on purpose stay as they are, like the Expert trainers' deliberate 0s (Gentleman Nick's Trick Room team at Speed 0). There's no randomness, so the same trainer is the same every battle. Kanto Reloaded's hook on `GameData::Trainer#to_trainer` wraps KIF's own four (Endgame Challenge, Leader Teams, the Randomizer's trainers and items), so their Pokémon get the floor too.
 
 ## Bug Reports
 

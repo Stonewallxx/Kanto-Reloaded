@@ -217,8 +217,9 @@ module Reloaded
 
     # The hints along a strip HINT_H tall at y; returns their width. hover:
     # the hint drawn lit (the mouse is over it); spans: filled with [index,
-    # x0, x1] per hint, for clicks.
-    def draw_hints(b, x0, y, c, pairs, style = :xbox, hover = nil, spans = nil)
+    # x0, x1] per hint, for clicks; font: the labels in that pixel font
+    # instead of the small text.
+    def draw_hints(b, x0, y, c, pairs, style = :xbox, hover = nil, spans = nil, font = nil)
       x = x0
       pairs.each_with_index do |(button, label), i|
         start = x
@@ -242,14 +243,15 @@ module Reloaded
         else
           x += hint_button(b, x, y + 5, button.to_s, c, style) + 5
         end
-        x += small(b, x, y + 1, 300, 24, label, i == hover ? (c[:strong] || c[:white]) : c[:dim]) + 12
+        ink = i == hover ? (c[:strong] || c[:white]) : c[:dim]
+        x += (font ? text(b, x, y + 1, 300, 24, label, ink, font) : small(b, x, y + 1, 300, 24, label, ink)) + 12
         spans << [i, start, x - 12] if spans
       end
       return x - x0 - 12
     end
 
     # How wide those hints are.
-    def hints_width(probe, pairs, style = :xbox)
+    def hints_width(probe, pairs, style = :xbox, font = nil)
       x = 0
       pairs.each do |button, label|
         case button
@@ -259,6 +261,10 @@ module Reloaded
         else
           t = button.to_s
           x += (Reloaded::Controls::Inputs.valid?(t) ? Reloaded::ButtonIcons.width(t, style) : cap_width(t)) + 5
+        end
+        if font
+          x += pf.width(font, label.to_s) + 12
+          next
         end
         small_font(probe)
         x += probe.text_size(label.to_s).width + 12

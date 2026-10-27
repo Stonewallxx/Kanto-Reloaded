@@ -29,7 +29,7 @@ Other mods' item actions still show (they come from the game's list).
 
 A opens Kanto Reloaded's menu, each action explained under it:
 
-- The game's own first, in its order: Read, Use (or the item's own word), Give, Toss, Register or Deselect (the game's Ready Menu), Debug, and other mods' actions. KIF's Sort Bag is left out (Auto-Sort and the views replace it). On a TM or HM with the TM Vault on, **Teach** is in Use's place: it opens the TM Vault on that move.
+- The game's own first, in its order: Read, Use (or the item's own word), Give, Toss, Register or Deselect (the game's Ready Menu), Debug, and other mods' actions. KIF's Sort Bag is left out (Auto-Sort and the views replace it). On a TM or HM with the TM Vault on, **Teach** is in Use's place: it opens the TM Vault on that move. After it on a TM or HM, KIF's TM Search: **Who Can Learn** (every Pokémon that can learn its move, yours and the PC's first) and **Search TMs** (every TM and HM by its move), on KIF's own screens.
 - Then **Favorite** (or Remove Favorite), **Add to Quick Items** (or Remove From Quick Items: the Overworld Menu's seven slots), and **Move** where the pocket allows it.
 
 **Toss:** how many, with the item's picture and how many stay; then a question with Keep chosen first (a quick A twice throws nothing away); then a toast ("Tossed 2 Repels", 2 LEFT).

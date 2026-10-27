@@ -37,7 +37,7 @@ Everything else, settings included, starts on no page. You put what you want on 
 
 A layout saved before 2026-10-20 had Toggles and Info as built-in pages. The first start after it drops each one, unless you'd put an entry of another kind on it (then it stays, as a page of your own), and moves Time Changer up below Quick Items.
 
-Kanto Reloaded's later features add theirs: PokeVial (in place of KIF's Heal), Heal with Moves, TM Vault (see [TMVault.md](TMVault.md)), Reloaded Shop (in place of the Kuray Shop), Egg Manager and Wild Link.
+Kanto Reloaded's later features add theirs: PokeVial (in place of KIF's Heal), Heal with Moves, TM Vault (see [TMVault.md](TMVault.md)), Reloaded Shop (in place of the Kuray Shop), Egg Manager, EV Gains (the last battle's board: see [CriticalEVGain.md](CriticalEVGain.md)) and Wild Link.
 
 Something you can't use now shows dimmed with a lock, and says why when chosen: Fly where you can't fly, or Quick Save in the Safari Zone.
 

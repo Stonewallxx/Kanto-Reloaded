@@ -48,6 +48,8 @@
 #   Reloaded::Settings.register(:"controls.hold_time", :page => :controls,
 #     :name => "Hold Time", :type => :slider, :min => 10, :max => 60,
 #     :step => 5, :default => 25, :unit => " frames")
+# A slider with :steps => [1, 5] lets the player switch its step (Y in the
+# improved screen); the step chosen is kept for the session.
 #==============================================================================
 
 module Reloaded
@@ -325,6 +327,7 @@ module Reloaded
           :min         => options[:min],
           :max         => options[:max],
           :step        => options[:step] || 1,
+          :steps       => options[:steps] ? Array(options[:steps]).map(&:to_i) : nil,
           :unit        => options[:unit].to_s,
           :format      => options[:format],
           :bind        => options[:bind],
@@ -344,6 +347,13 @@ module Reloaded
           :pill        => !!options[:pill],          # the value drawn as a pill in its tone (Shown As)
           :tags        => options[:tags],            # proc { [[label, rgb or tone], ...] }: pills beside it (DEBUG)
           :goes_to     => options[:goes_to] ? options[:goes_to].to_sym : nil,
+          :chips       => options[:chips],           # a group's name: toggles that show as one row of chips (the improved screen)
+          :chip        => options[:chip],            # this toggle's chip label (ATK)
+          :range       => options[:range],           # [group, :floor / :ceiling, row name]: two sliders shown as one two-handle bar (IV Boundaries)
+          :range_shown => options[:range_shown],     # proc(group): [floor, ceiling] as the bar shows them (else the two settings)
+          :range_popup => options[:range_popup],     # proc(screen, option): A on the bar; [floor, ceiling] or nil
+          :chip_pick   => !!options[:chip_pick],     # a choice shown as chips, A picks one (the improved screen)
+          :locked_text => options[:locked_text],     # what A on a locked choice says, under its reason
           :commit      => options[:commit],
           :text        => options[:text],
           :added       => options[:added],
@@ -571,6 +581,26 @@ module Reloaded
           Array(found).each { |i| out[i.to_i] = "" }
         end
         return out
+      end
+
+      # A slider's step now: with :steps, the one chosen (kept for the
+      # session, the first to start), else its :step
+      def slider_step(key)
+        d = @definitions[key.to_sym]
+        return 1 unless d
+        steps = d[:steps]
+        return d[:step] unless steps && steps.length > 1
+        return (@slider_steps ||= {})[key.to_sym] || steps.first
+      end
+
+      # The next of a slider's :steps (Y in the improved screen); nil when it
+      # has only one
+      def next_slider_step(key)
+        d = @definitions[key.to_sym]
+        steps = d && d[:steps]
+        return nil unless steps && steps.length > 1
+        i = steps.index(slider_step(key)) || 0
+        return (@slider_steps ||= {})[key.to_sym] = steps[(i + 1) % steps.length]
       end
 
       # What value i of a choice does (:descriptions), or nil.

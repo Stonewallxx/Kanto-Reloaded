@@ -43,8 +43,10 @@ module Reloaded
           return TYPES[item_id(item)]
         end
 
+        # (made at boot, before the game's data loads: the type's name from
+        # its id, every one of the 17 a single word)
         def description(type)
-          name = (GameData::Type.get(type).name rescue type.to_s.capitalize)
+          name = type.to_s.capitalize
           return _INTL("Makes a Pokémon's Hidden Power {1}-type, and it's used up. Held, it powers up {1}-type moves.", name)
         end
 

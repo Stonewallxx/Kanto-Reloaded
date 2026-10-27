@@ -1,6 +1,48 @@
 {
   "ignore": [
     {
+      "rule": "names",
+      "file": "Core/IVBoundaries/MaxIVs.rb",
+      "text": "KantoReloaded",
+      "why": "The mod's id in mod.json (KIF's Locks name their owner by it), not its name"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/IVBoundaries/IVBoundaries.rb",
+      "text": "Perfect-ish",
+      "why": "-ish is a suffix, not a word: Title Case leaves it lowercase (HR's preset name, his approved chips)"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/IVBoundaries/IVBoundaries.rb",
+      "text": "#{name} Floor",
+      "why": "A source's name filled in: Wild Floor, Eggs Floor, Gifts Floor"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/IVBoundaries/IVBoundaries.rb",
+      "text": "#{name} Ceiling",
+      "why": "A source's name filled in: Wild Ceiling, Eggs Ceiling, Gifts Ceiling"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/CriticalEVGain/CriticalEVGain.rb",
+      "text": "EV Allocation Is On",
+      "why": "On is the KIF setting's value, written as KIF Settings shows it"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/CriticalEVGain/CriticalEVGain.rb",
+      "text": "No-EVs Mode Is On",
+      "why": "On is the KIF setting's value, written as KIF Settings shows it"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/CriticalEVGain/CriticalEVGain.rb",
+      "text": "EVs Train Mode Is On",
+      "why": "On is the KIF setting's value, written as KIF Settings shows it"
+    },
+    {
       "rule": "title_case",
       "file": "Core/Controls/Controls.rb",
       "text": "Swap A and B"
@@ -378,6 +420,42 @@
       "rule": "title_case",
       "file": "Core/Publish/Publish.rb",
       "text": "Publish a mod"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/DoubleAbilities/Banned.rb",
+      "text": "Attack x4",
+      "why": "A reason's short words after \"Can't pair with X:\" in a sentence, not a label"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/DoubleAbilities/Banned.rb",
+      "text": "Water moves' Attack x4",
+      "why": "A reason's short words after \"Can't pair with X:\" in a sentence, not a label"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/DoubleAbilities/Banned.rb",
+      "text": "The disguises clash",
+      "why": "A reason's short words after \"Can't pair with X:\" in a sentence, not a label"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/DoubleAbilities/Banned.rb",
+      "text": "Trapped and fainted",
+      "why": "A reason's short words after \"Can't pair with X:\" in a sentence, not a label"
+    },
+    {
+      "rule": "names",
+      "file": "Core/DoubleAbilities/DoubleAbilities.rb",
+      "text": "Pokemon",
+      "why": "The game's class name (a hook's target), not player text"
+    },
+    {
+      "rule": "names",
+      "file": "Core/DoubleAbilities/Fusing.rb",
+      "text": "Pokemon",
+      "why": "The game's class name (a hook's target), not player text"
     }
   ]
 }
