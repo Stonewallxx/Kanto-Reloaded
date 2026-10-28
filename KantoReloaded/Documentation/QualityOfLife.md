@@ -49,8 +49,3 @@ The new party screen (Roadmap topic Party Screen, built next) shows each Pokémo
 ## For Mod Makers
 
 `Reloaded::QualityOfLife.on?(:infinite_money)` says whether a toggle is On now (the feature on, and the toggle not at its first value); `value(:encounter_rate)` gives a choice's index. `level_cap(pokemon)` is the level it may reach now. `Reloaded::QualityOfLife::LevelLocks.get(pokemon)` / `set` / `clear` work a Pokémon's lock.
-
-## Tests
-
-- `ruby Tools/Tests/quality_of_life_test.rb "<KIF Beta>" <empty temp folder>`: each toggle On and Off on stand-ins for the game's classes, what a save remembers, level locks, Super Candy and the bug report lines.
-- `ruby Tools/Tests/quality_of_life_preview.rb "<KIF Beta>" <work dir with metrics.json>`: the three tools' screens and the toast on the preview tool, with Big Pokémon Icons On.

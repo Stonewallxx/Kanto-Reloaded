@@ -52,17 +52,3 @@ Reloaded::TMVault.open(tab: :relearn, pkmn: $Trainer.party[0])
 ```
 
 Events: `:tm_vault_registered` (`:move`, `:source`) and `:tm_vault_taught` (`:pokemon`, `:move`). The save keeps the moves, Favorites, what's been seen and the sort (SaveStore section `tm_vault`).
-
-## Tests
-
-```text
-ruby Tools/Tests/tm_vault_test.rb "<KIF Beta>" <empty temp folder>
-ruby Tools/Tests/tm_vault_preview.rb "<KIF Beta>" <work dir with metrics.json>
-python Tools/UIPreview/render.py "<KIF Beta>\Fonts" <work dir>
-```
-
-The first runs on stand-ins for the game's classes. It covers Tutor.net's unlocks and the Bag at load, a machine reaching the Bag, a move tutor, `pbTutorNetAdd`, the toast, NEW and Favorites, who knows, can learn or can't, Relearn (KIF's list and its Egg Moves), the level a move is learned at, Coverage, teaching (with room, and over a move in its place), the kinds read from map files, the Checklist, the Randomizer's note, the party menu's Relearn Moves, the menu entries, and Off.
-
-The second drives the screens: the Vault, the party, a Favorite, Sort, the Type Filter, Search, teaching, Move Compare, Relearn (from the party menu too), the Checklist, the mouse, an empty Vault, the toast, and Light.
-
-The mockups are in `Tools/Designs/tmvault`.

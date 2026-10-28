@@ -75,12 +75,6 @@ Kanto Reloaded's parts of a save (`Reloaded::SaveStore` sections) upgrade all or
 
 ## For Mod Makers
 
-```text
-ruby Tools/SaveChecker/save_check.rb "<KIF Beta>" "<save file>" [report.md]
-```
-
-This checks a save outside the game on KIF Beta's real data and prints the report. Every class in the save is stood in for while it's read, and its owner is found in the game's scripts and the Mods folder. Anything a script adds while the game runs (KIF's K-Eggs, items a mod's code makes) isn't in the data files, so outside the game it shows as Missing Content. The exit code is 0 for Healthy, 1 for problems.
-
 To keep a save loadable without your mod, store plain values only (Hash, Array, String, Symbol, numbers, true, false, nil, Time) in your save value. Then Mod Data shows your mod as Safe to Remove.
 
 ```ruby
@@ -92,20 +86,3 @@ Reloaded::SaveCheckScreen.open(path)         # the screen
 ## How It Reads a Save
 
 `SaveCheck::Reader` reads the file with Marshal, as the game does. When the save holds a class the game hasn't got, it makes a stand-in for the read (`SaveCheck::Stub`) and takes it away after. A stand-in keeps exactly what the save held, so anything written back out (Make It Loadable's side file, a fixed save) is written as it was read. Structs and user subclasses of String, Array and Hash can't be stood in for, and a save holding one is reported as one the checker can't open.
-
-## Tests
-
-```text
-ruby Tools/Tests/save_check_test.rb "<KIF Beta>" <empty temp folder>
-ruby Tools/Tests/save_check_preview.rb "<KIF Beta>" <work dir with metrics.json>
-python Tools/UIPreview/render.py "<KIF Beta>\Fonts" <work dir>
-```
-
-The first runs on KIF Beta's real data with saves written as PIF writes them. It covers:
-
-- every check, and the quick check behind the badge
-- Keep Aside, Remove, and Keep Aside's return
-- a removed mod's objects, the reader's stand-ins, and Make It Loadable
-- all-or-nothing upgrades, the report file, and the Tools script
-
-The second drives the screens, including the ways in from the Save Manager and the Load Screen.

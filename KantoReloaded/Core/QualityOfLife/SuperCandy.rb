@@ -48,7 +48,9 @@ module Reloaded
         end
 
         def raise_one(pkmn, lv)
+          from = pkmn.level
           pkmn.level = lv
+          Reloaded::TrainerCard::Counters.gained(pkmn, from) if defined?(Reloaded::TrainerCard::Counters)   # the card's Levels Gained
           pkmn.changeHappiness("vitamin") if pkmn.respond_to?(:changeHappiness)
           pkmn.calc_stats
           pkmn.getMoveList.each do |at, move|

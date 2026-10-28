@@ -233,11 +233,19 @@ module Reloaded
       "Core/DoubleAbilities/Fusing.rb",
       "Core/DoubleAbilities/EliteRedux.rb",
       "Core/UI/DoubleAbilitiesScreens.rb",
+      # A New Trainer Card: its switch and data, the counts (always on), the
+      # unlocks, its scene and its Style and Unlocks tabs
+      "Core/TrainerCard/TrainerCard.rb",
+      "Core/TrainerCard/Counters.rb",
+      "Core/TrainerCard/Unlocks.rb",
+      "Core/UI/TrainerCardScene.rb",
+      "Core/UI/TrainerCardStyle.rb",
       # Fixes to the game's own code
       "Core/Fixes/Fixes.rb",
       "Core/Fixes/CommandTextColours.rb",
       "Core/Fixes/EBDXCommandCursor.rb",
       "Core/Fixes/BagFixes.rb",
+      "Core/Fixes/CardBackgrounds.rb",
       # Last: rows for every feature registered above
       "Core/Settings/FeatureSwitches.rb"
     ].freeze
@@ -251,7 +259,7 @@ module Reloaded
     # to KIF Settings. Dev boots last, when it's there. PauseMenu boots
     # before Profiler and BugReport, so their hooks on the pause menu's
     # scene sit over its screen and still see it open.
-    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :EggManager, :Difficulty, :Randomizer, :NewGameSetup, :Publish, :HiddenPower, :CriticalEVGain, :IVBoundaries, :DoubleAbilities, :TitleVersions, :TitleLogo, :LivingTitle, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
+    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :EggManager, :Difficulty, :Randomizer, :NewGameSetup, :Publish, :HiddenPower, :CriticalEVGain, :IVBoundaries, :DoubleAbilities, :TrainerCard, :TitleVersions, :TitleLogo, :LivingTitle, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
 
     def self.files
       return FILES

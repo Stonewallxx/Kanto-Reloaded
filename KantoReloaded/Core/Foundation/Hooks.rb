@@ -269,6 +269,7 @@ module Reloaded
       # Returns what was put right: ["Graphics.update via __alias", ...].
       def repair_aliases
         fixed = []
+        failed = []
         mine = Reloaded::ROOT.to_s.tr("\\", "/") + "/"
         @before.each do |(klass, name), original|
           next unless original
@@ -279,14 +280,24 @@ module Reloaded
             next if copy.source_location == original.source_location      # already the method as it was
             file = copy.source_location && copy.source_location[0].to_s.tr("\\", "/")
             next unless file && file.start_with?(mine)
-            visibility = visibility_of(klass, m)
-            klass.send(:define_method, m, original)
-            klass.send(visibility, m) unless visibility == :public
-            fixed << "#{klass}##{name} via #{m}"
+            begin
+              visibility = visibility_of(klass, m)
+              klass.send(:define_method, m, original)
+              klass.send(visibility, m) unless visibility == :public
+              fixed << "#{klass}##{name} via #{m}"
+            rescue StandardError => e
+              failed << "#{klass}##{name} via #{m} (#{e.class}: #{e.message})"
+            end
           end
         end
+        # Put right, nothing is wrong any more: INFO, so a real warning
+        # stands out (his call, 2026-10-27; Alpha Encounters and KIF-ER do
+        # this every start). Only one that couldn't be put right warns.
         unless fixed.empty?
-          Reloaded::Log.warning("Another mod's alias copied Kanto Reloaded's hook (a loop), now the method as it was: #{fixed.join(", ")}", :hooks)
+          Reloaded::Log.info("Another mod's alias copied Kanto Reloaded's hook (a loop), now the method as it was: #{fixed.join(", ")}", :hooks)
+        end
+        unless failed.empty?
+          Reloaded::Log.warning("Another mod's alias copied Kanto Reloaded's hook (a loop) and it couldn't be put back, so that method may loop: #{failed.join(", ")}", :hooks)
         end
         return fixed
       rescue StandardError => e

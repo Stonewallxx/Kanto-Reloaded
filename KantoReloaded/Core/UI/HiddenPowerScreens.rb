@@ -352,14 +352,14 @@ module Reloaded
         type_badge(b, to, x + w + 18, y, w, h)
       end
 
-      # Your money, top right, in the plain text colour (his rule: the price
-      # is what's green or red)
+      # Your money, top right, always green (his rule: money is green, a
+      # price green or red)
       def money_plate(b, c)
         w = 150
         x = W - w - 6
         DG.send(:panel, b, c, x, 6, w, 28)
         P.small(b, x + 12, 12, 60, 16, _INTL("Money"), c[:dim])
-        P.text(b, x, 9, w - 12, 20, cash(money), c[:txt], PF::TEXT, 1)
+        P.text(b, x, 9, w - 12, 20, cash(money), c[:green], PF::TEXT, 1)
       end
 
       # Who: the icon, the name and the level

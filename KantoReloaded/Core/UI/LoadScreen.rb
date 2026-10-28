@@ -127,6 +127,15 @@ module Reloaded
         @kr_view.update_sprites
       end
 
+      # KIF's mouse reads the game's own command window when this scene has
+      # its focus; Kanto Reloaded's screen reads the pointer itself, so
+      # there's nothing for it here (the Pause Menu's NoMethodError, his
+      # test 2026-10-27)
+      def kif_mouse_frame
+        return super if !@kr_view && defined?(super)
+        nil
+      end
+
       def pbChoose(commands, continue_idx = -1, *rest)
         return super unless @kr_view
         if defined?(::KIF::SaveFolder) && ::KIF::SaveFolder.respond_to?(:reload) && ::KIF::SaveFolder.reload

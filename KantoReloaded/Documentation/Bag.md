@@ -97,17 +97,3 @@ Reloaded::BagScreen.during(:@title, ["Feed a Berry", "Feed"]) { ...open the game
 ```
 
 The save keeps the lists, Favorites, views, what's been seen and when each came (SaveStore section `bag`); nothing is kept on `$PokemonBag` itself (KIF's Self-Battle copies it).
-
-## Tests
-
-```text
-ruby Tools/Tests/bag_test.rb "<KIF Beta>" <empty temp folder>
-ruby Tools/Tests/bag_preview.rb "<KIF Beta>" <work dir with metrics.json>
-python Tools/UIPreview/render.py "<KIF Beta>\Fonts" <work dir>
-```
-
-The first runs on the game's own Bag with stand-ins for its items: each pocket's Auto-Sort, sorting in place, NEW, New Items, Favorites, the views, moving by hand, headings, Defaults, Export and Import (old Kanto Reloaded's file too), Kanto Reloaded Legacy's lists and modes, the Bag pages, and Off.
-
-The second drives the screens through the game's own `PokemonBagScreen`: the full Bag, the views, a Favorite, empty pockets skipped, TMs and a stone's party check, the actions, Teach, Move, Toss, Quick Items (all seven full too), Search, pickers and their banners, the mouse, Light, the Bag pages in KIF Settings (Export, Import, the Auto-Sort dropdown), the Custom List editor, and Off.
-
-The mockups are in `Tools/Designs/bag`.

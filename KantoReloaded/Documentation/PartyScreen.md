@@ -53,12 +53,3 @@ Reloaded::PartyScreen.add_command(:walk,
 It shows before Cancel in a Pokémon's menu, outside battle. A command added to the game's own list (by changing `PokemonPartyScreen#pbPokemonScreen`, or through KIF Beta's hooks) shows as it is.
 
 Kanto Reloaded's scene is a subclass of the game's `PokemonParty_Scene`, made whenever the game makes one while the screen is on. It replaces the game's command list and choosing at their innermost method (`kif_party_raw_commands` and `kif_party_pbChoosePokemon` with KIF Beta), so a mod that wraps them still runs around it.
-
-## Tests
-
-```text
-ruby Tools/Tests/party_screen_preview.rb "<KIF Beta>" <work dir with metrics.json>
-python Tools/UIPreview/render.py "<KIF Beta>\Fonts" <work dir>
-```
-
-It runs the game's own party logic (`016_UI/005_UI_Party.rb`) and KIF Beta's command hook on the preview tool's stand-ins. It covers the cards and details, the menu in the panel with KIF Beta's and a mod's commands, a submenu and B back to the menu, RLD Actions (Export only) and Relearn Moves, a message, X for the Summary, Y to move and Switch's preview, an Egg, the mouse, a question, teaching a move (Grey Out), four Pokémon, a battle's menu, Light, Frost and Glass, Big Pokémon Icons, and Reloaded Party Screen Off.

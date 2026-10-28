@@ -63,6 +63,45 @@ module Reloaded
           return lines.join("\n") + "\n"
         end
 
+        # Mod Timings as the game closed (Profiler.closing): each owner's
+        # time per frame and its slowest hooks
+        def append_mod_timings(snap)
+          File.open(path, "ab") { |f| f.write(render_mod_timings(snap)) }
+          return true
+        rescue StandardError => e
+          Reloaded::Log.exception("Mod Timings couldn't be added to the timing report", e, :profiler)
+          return false
+        end
+
+        def render_mod_timings(snap)
+          fr = snap["frames"] || {}
+          lines = ["=" * 100, "KANTO RELOADED TIMING PROFILE: Mod Timings, this play session", "=" * 100]
+          lines << format("%-12s %s", "Taken:", snap["taken"])
+          lines << format("%-12s %d on the map, %d in battle, %d elsewhere", "Frames:", fr["map"].to_i, fr["battle"].to_i, fr["other"].to_i)
+          lines << ""
+          lines << format("%-34s %14s %14s", "Owner", "Map ms/frame", "Battle ms/frame")
+          lines << "-" * 64
+          owners = snap["owners"] || []
+          per = proc { |v| v.nil? ? "-" : format("%.3f", v.to_f) }
+          owners.each { |o| lines << format("%-34s %14s %14s", o["owner"].to_s[0, 34], per.call(o["map_ms"]), per.call(o["battle_ms"])) }
+          lines << ""
+          lines << format("%-58s %7s %10s %9s %5s", "Slowest Hooks (by Peak)", "Calls", "Total ms", "Peak ms", "Slow")
+          lines << "-" * 93
+          owners.each do |o|
+            (o["hooks"] || []).each do |h|
+              label = "#{o["owner"]}: #{h["hook"]}"
+              lines << format("%-58s %7d %10.1f %9.1f %5d", label[0, 58], h["calls"].to_i, h["total_ms"].to_f, h["peak_ms"].to_f, h["slow"].to_i) +
+                       (h["where"] ? "  (#{h["where"]})" : "")
+            end
+          end
+          lines << ""
+          lines << "Notes:"
+          lines << "- A hook's time is its own: the layers it calls are taken off, and so is waiting for the next frame."
+          lines << "- \"PIF and KIF\" is the game's frame work less every mod's."
+          lines << ""
+          return lines.join("\n") + "\n"
+        end
+
         # Slowest peak first, Frame Work last.
         def ordered(s)
           list = s["sections"].to_a

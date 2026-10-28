@@ -95,8 +95,11 @@ Limits:
 
 - A layer written in C (the engine's own methods) can't be aimed at; its time counts toward whoever calls it.
 - Only the main thread is timed (Multiplayer's network threads aren't).
+- Code that runs inside the game's own frame update, under the profiler's frame clock (KIF's Ruby layers on `Graphics.update`, the engine drawing), counts as the wait for the next frame, as Frame Work does: it isn't timed as anyone's hook.
 - A mod's own screens and helpers that aren't hooks count only when a hook calls them.
 - TracePoints cost a little on every call to a timed hook, so per-frame numbers run slightly high on hooks called hundreds of times a frame.
+
+What Mod Timings finds is kept: in `Settings\Mod Timings.json` every 30 seconds while it runs (walking ends no session), and added to `Logging\TimingProfile.txt` as one table when the game closes (with Text Report On), so closing the game no longer loses it.
 
 ## Files
 
@@ -105,7 +108,8 @@ In the mod folder (`Mods\KantoReloaded`):
 | File | What It Holds |
 |---|---|
 | `Settings\Timing Sessions.json` | The kept sessions (Keep Sessions), for the Report Viewer after a restart |
-| `Logging\TimingProfile.txt` | Text Report: each session as a table, as old Kanto Reloaded's profiler wrote it. Past 2 MB it starts again, keeping `TimingProfile.old.txt` |
+| `Settings\Mod Timings.json` | Mod Timings as it last stood: each owner's time per frame on the map and in battle, its startup and its slowest hooks |
+| `Logging\TimingProfile.txt` | Text Report: each session as a table, as old Kanto Reloaded's profiler wrote it, and Mod Timings as the game closes. Past 2 MB it starts again, keeping `TimingProfile.old.txt` |
 
 Cody's frame log (`Logs\KIF_framelog.txt` in the game folder, KIF Beta's slow overworld steps) stays as it is.
 
@@ -129,13 +133,3 @@ Reloaded::Profiler::Probes.session("PokemonTrainerCard_Scene", :pbStartScene, :m
 ```
 
 `measure` does nothing unless a session is running, so it can stay in your code. After each session, `:profiler_session` fires with `{ :session }`.
-
-## Tests
-
-```text
-ruby Tools/Tests/profiler_test.rb "<KIF Beta>" <empty temp folder>
-ruby Tools/Tests/profiler_preview.rb "<KIF Beta>" <work dir with metrics.json>
-python Tools/UIPreview/render.py "<KIF Beta>\Fonts" <work dir>
-```
-
-The first checks the switches, sessions and sections against made-up game classes with known work and a known frame wait, kept sessions, the text report, and Mod Timings timing a made-up mod's alias hook and Kanto Reloaded's around hook on their own. The second drives the Report Viewer, Mod Timings and the profiler's headings in the Kanto Reloaded section on the preview's stand-ins.

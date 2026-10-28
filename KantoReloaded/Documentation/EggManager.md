@@ -83,14 +83,3 @@ Reloaded::EggManager::Eggs.all                          # every Egg: Entry(pkmn,
 ```
 
 Events: `:egg_hatched` (`:pokemon`, `:box`, `:slot`) and `:day_care_deposit` (`:pokemon`). The save keeps the Sort, the Egg Box, the alerts shown, the Day Care visited and incubators a mod gave (SaveStore section `egg_manager`).
-
-## Tests
-
-```text
-ruby Tools/Tests/egg_manager_test.rb "<KIF Beta>" <empty temp folder>
-ruby Tools/Tests/egg_manager_preview.rb "<KIF Beta>" <work dir with metrics.json>
-```
-
-The test loads KIF Beta's own `007_Overworld_DayCare.rb`. In the game, still to try: hatching in the PC with EBDX on and off, collecting with a full party and a free incubator, and a save without Kanto Reloaded.
-
-The design mockups are in `Tools/Designs/eggmanager/`.

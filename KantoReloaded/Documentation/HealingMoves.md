@@ -55,17 +55,3 @@ Reloaded::PartyScreen.take_field_move(:SOFTBOILED) { |scene, pkmn, move_id| true
 ```
 
 In the game's own party screen, Healing Moves hooks the game's field moves (`HiddenMoveHandlers`): listed, checked, used without closing the screen; Soft-Boiled and Milk Drink stay the game's own there.
-
-## Tests
-
-```text
-ruby Tools/Tests/healing_moves_test.rb "<KIF Beta>" <empty temp folder>
-ruby Tools/Tests/healing_moves_preview.rb "<KIF Beta>" <work dir with metrics.json>
-python Tools/UIPreview/render.py "<KIF Beta>\Fonts" <work dir>
-```
-
-The first runs on stand-ins for the game's classes. It covers what each kind of move does and its words, why one can't be used, the challenges, using one (HP, status, sleep, PP, a faint), Heal Everyone's plan (Heal Pulse before Soft-Boiled, no tiny top-ups, Soft-Boiled when it's the only way), the hooks on the game's field moves (listed, the party screen kept open, the game's own Wait passed through once), the Party Screen's takeover, and Off.
-
-The second drives the screens on the Overworld Menu's preview: the list, Pick a Pokémon, the Heal Preview, the toast, Heal Everyone, Morning Sun's choice, and Light.
-
-The mockups are in `Tools/Designs/healing`.

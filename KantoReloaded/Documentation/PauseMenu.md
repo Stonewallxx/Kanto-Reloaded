@@ -94,28 +94,3 @@ Reloaded::PauseMenu.register(:pokevial, "PokeVial",
 ```
 
 An alert (the PokeVial's Low HP Reminder) glows around the tile while the cursor is elsewhere, on its own layer (`Frame#alert_box`), pulsing about every two seconds.
-
-## Tests
-
-```text
-ruby Tools/Tests/pause_menu_preview.rb "<KIF Beta>" <work dir with metrics.json>
-python Tools/UIPreview/render.py "<KIF Beta>\Fonts" <work dir>
-```
-
-It runs PIF's own pause menu code with KIF's own registry, on the preview tool's stand-ins. It covers:
-
-- every entry known by its icon or KIF id
-- the left column, and no location pop-up
-- the carousel, and Your Row's Add, Set as Favorite and Move
-- Y opening the Favorite through KIF's registry, and landing back in the menu
-- an entry of PIF's (Options) and back to the menu on it
-- a locked tile and why
-- the PokeVial's tile in the Pinned row, and its Low HP glow
-- the mouse
-- the Safari Zone's lines, Quit, and Save locked
-- a Pinned entry of Kanto Reloaded's taking over KIF's Heal
-- Open Favorite from the map, and a Favorite that can't be used
-- Menu Animations Off, and Reloaded Pause Menu Off
-- Theme Mode Glass, Light and Frost: the colours, the panel and tiles see-through, the map washed pale
-
-Set `KR_PREVIEW_BACKDROP` to a 512x384 picture of a map to render the menu over it.

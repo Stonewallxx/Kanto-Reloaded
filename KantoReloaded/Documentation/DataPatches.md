@@ -841,7 +841,7 @@ The messages the first two give:
 
 - **Skipped:** The patch doesn't apply, and the game keeps its own data for that entry.
 - **The Whole Entry:** A target's check looks at the entry with every patch on it applied. When it refuses, every patch on that entry is rejected, from every mod. One mod's bad learnset patch also stops another mod's good one on the same Pokémon.
-- **Where It Shows:** In the Patch Viewer (the mod's Rejected rows), in the Patch Checker (an ERROR line), and in Kanto Reloaded's log.
+- **Where It Shows:** In the Patch Viewer (the mod's Rejected rows) and in Kanto Reloaded's log.
 
 ### The Log
 
@@ -855,7 +855,7 @@ Kanto Reloaded's log is `Mods\KantoReloaded\Logging\Kanto Reloaded.log` (the las
 [14:02:11] [INFO] [data_patches] Data patches: 4 of 6 applied from 2 mod(s), 2 warning(s), 2 error(s)
 ```
 
-Patches are numbered from 1 in their file, as in the Patch Viewer and the Patch Checker. The last line sums up the build, after every target's check. Warnings and errors also go to KIF's session log, so a KIF Beta bug report shows them. A message is logged once per session, even when Hot Reload builds again.
+Patches are numbered from 1 in their file, as in the Patch Viewer. The last line sums up the build, after every target's check. Warnings and errors also go to KIF's session log, so a KIF Beta bug report shows them. A message is logged once per session, even when Hot Reload builds again.
 
 ## Conflicts
 
@@ -923,39 +923,6 @@ With KIF's DEBUG option on (Settings > Advanced), Y in the Patch Viewer reloads 
 - **What It Refreshes:** The map you're on picks its encounter tables again, and the outfit lists refresh.
 - **What It Keeps:** Mods' scripts don't run again. Patches they registered (`Reloaded::Abilities.register`) are kept and applied again.
 - **The Report:** "Patches Reloaded", which mods changed and how long it took. Then each target that changed (`Items: 1 added, 1 changed`), how many patches are newly rejected (with the first reasons), how many are fixed, or "Nothing Changed". A, B or a click closes it.
-
-## The Patch Checker
-
-The Patch Checker checks a mod's patches against KIF Beta's real data, outside the game. It lists every error and warning by file and patch, in the words the Patch Viewer uses. Run it before a release. It changes nothing in KIF Beta or the mod.
-
-```text
-ruby Tools/PatchChecker/patch_check.rb "<KIF Beta>" "<mod folder>" [more mod folders]
-```
-
-- **Where:** Run it from Kanto Reloaded's folder (`Mods/KantoReloaded`). A mod folder can be a full path, or a path inside KIF Beta's folder (`"Mods/MyMod"`).
-- **More Mods:** Folders after the first load after it, in the order given, so conflicts between them show as warnings.
-- **Exit Code:** 0 when every patch applies (warnings allowed), 1 when one is rejected, 2 for a mistake in the command or a folder that isn't there.
-- **Scripts:** It doesn't run your mod's scripts, so an ability your scripts register with `Reloaded::Abilities.register` looks unknown to it.
-
-A made-up mod with a mistyped move and a mistyped target, checked with a second mod that changes the same price:
-
-```text
-> ruby Tools/PatchChecker/patch_check.rb "<KIF Beta>" "Mods/MyMod" "Mods/OtherMod"
-Loading KIF Beta's data... done (KIF Beta 0.21.55).
-
-My Mod (<KIF Beta>/Mods/MyMod)
-  items.json: 3 patches, 2 applied
-    WARNING patch 2 (Items POTION): Other Mod also changes Potion's price (Items); Other Mod loads last, so its value is used.
-    ERROR patch 3 (Items TM_ZAP): TM_ZAP teaches ZAPZAP, and there's no such move.
-  pikachu.json: 2 patches, 1 applied
-    ERROR patch 2 (species.learnset pikachu): No target is called "species.learnset"; did you mean "species.learnsets"?
-
-Other Mod (<KIF Beta>/Mods/OtherMod)
-  prices.json: 1 patch, 1 applied
-    WARNING patch 1 (Items POTION): My Mod also changes Potion's price (Items); Other Mod loads last, so its value is used.
-
-Result: 2 patches are rejected; the game skips them until fixed.
-```
 
 ## Events
 

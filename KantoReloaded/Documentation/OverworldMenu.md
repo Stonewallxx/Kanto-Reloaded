@@ -130,34 +130,3 @@ Reloaded::OverworldMenu.register_view(:weather, :name => "Weather View", :featur
 ``` The handler gets the menu, which has `hidden { }` (step aside for another screen), `notice`, `confirm`, `choose` and `focus_quick_items`.
 
 Errors in an entry are caught: the menu stays, says it didn't work, and the log has the details.
-
-## Tests
-
-```text
-ruby Tools/Tests/overworld_menu_preview.rb "<KIF Beta>" <work dir with metrics.json>
-python Tools/UIPreview/render.py "<KIF Beta>\Fonts" <work dir>
-```
-
-It opens the menu as the game does (F on the map), on the preview tool's stand-ins and stand-ins of the game's Bag, items, field moves, save screen, time and Safari Zone. It covers:
-
-- every page and its entries, the area panel (the map's name, "1 of 3 Caught"), Quick Save's colours, and Party View (Compact with three and with six, levels, statuses, a long name beside Lv 100, Full with battle sprites)
-- Y stepping through the views
-- its own button closing it
-- a Repel used from the menu, and Quick Items picked from the Bag and used
-- Main as the one built-in page (toggles and readouts on no page), and an older layout's Toggles and Info pages dropped
-- Field Moves: Surf picked from the list, used after the menu closes and the game's own question
-- settings as rows: KIF Settings' On/Off and choice settings, sliders and numbers, and its buttons read in (not rows that open another page, nor the Overworld Menu's own switch), Change Controls pressed from a page, a page of the test's own with a choice's dropdown (Text Speed: Fast), an On/Off switch flipped (Animations), Type Display's next choice, Speed-Up's dropdown, and Music Volume's slider (a step, L and R, B, a click on the bar)
-- a Kanto Reloaded setting from a hidden page (the Timing Profiler's, with DEBUG Off) out of sight on a page
-- Edit Pages > Add a Setting: KIF Settings in pick mode (Left and Right change nothing), Reloaded Settings picked onto Travel
-- every readout, on a page of the test's own
-- the entries players add: Area Encounters (its tabs, Seen and Caught, levels and rates, the rods under their headings, scrolling, silhouettes, a map with grass only), Last Used Item, KIF Beta's PC and Return, Level Cap (KIF's, PIF's, neither), Day Care (its popup with one there, then two and an Egg), Poké Radar Chain and Play Time
-- the newer rows: Quest Log, Bicycle (on, off, and each reason it can't), the Pokédex (opened), Badges (8 and 16 pips), Shiny Odds (with the Shiny Charm, during a chain), Coins, Roaming Pokémon (one, then two, and their list), and the ∞ marks on Repel and Safari Steps
-- both popups with Big Pokémon Icons on (battle sprites, the Egg's too)
-- the page editor: an entry taken off, moved, and a page of your own with Fly on it
-- Fly, the Time Changer (1 day ahead, the map refreshed) and Quick Save, each after the menu closes
-- never during a cutscene, and Overworld Menu Off
-- the Safari Zone's rows, Quick Save locked, and Quit Safari
-- the mouse, and Menu Animations Off
-- Theme Mode Glass, Light and Frost: the colours, the panels see-through, the fainter cursor and a dropdown in them; full screens staying dark
-
-Set `KR_PREVIEW_BACKDROP` to a 512x384 picture of a map to render the menu over it.

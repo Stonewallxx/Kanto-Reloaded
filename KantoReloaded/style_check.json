@@ -456,6 +456,24 @@
       "file": "Core/DoubleAbilities/Fusing.rb",
       "text": "Pokemon",
       "why": "The game's class name (a hook's target), not player text"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/TrainerCardScene.rb",
+      "text": "GUI trainer card open",
+      "why": "A sound effect's file name (PIF's own, as its card plays it), not a label"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/TrainerCardStyle.rb",
+      "text": "GUI trainer card open",
+      "why": "A sound effect's file name (PIF's own), not a label"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/TrainerCardStyle.rb",
+      "text": "Mart buy item",
+      "why": "A sound effect's file name (PIF's own), not a label"
     }
   ]
 }

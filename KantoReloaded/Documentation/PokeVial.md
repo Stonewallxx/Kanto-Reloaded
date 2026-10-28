@@ -98,17 +98,3 @@ Reloaded::PokeVial.unregister_callback(:before_use, :my_mod)
 ```
 
 Events: `:before_use`, `:after_use`, `:before_refill`, `:after_refill` and `:capacity_changed`, each with a context hash (`:source`, `:uses_before`, `:uses_after`, `:max_uses`, and more for each). A `:before_` handler that returns false stops it. `notify: false` skips the toast.
-
-## Tests
-
-```text
-ruby Tools/Tests/pokevial_test.rb "<KIF Beta>" <empty temp folder>
-ruby Tools/Tests/pokevial_preview.rb "<KIF Beta>" <work dir with metrics.json>
-python Tools/UIPreview/render.py "<KIF Beta>\Fonts" <work dir>
-```
-
-The first runs on stand-ins for the game's classes. It covers the menu entries taking over KIF's Heal Pokémon, Kuray QoL Off, the charges and Progressive Uses, the Heal Preview's words in each Heal Mode, using it (and a mod saying no), the cooldown, where it's blocked, the Low HP Reminder, refilling at a Pokémon Center (Ask, Automatic, Never, the cost, not enough money, a nurse made with a script), the items, the API, and switching it Off.
-
-The second drives the screens on the Overworld Menu's preview: the row and its glow, the dialog (ready, used, cooling down, empty), Cooldown Wait's toast, the refill dialog (Refill, Not Now, not enough money), the toasts, and Light. The Pause Menu's preview checks the tile and its glow.
-
-The mockups for its small popups (cooldown, capacity, charges, Low HP, item messages) are in `Tools/Designs/pokevial`.

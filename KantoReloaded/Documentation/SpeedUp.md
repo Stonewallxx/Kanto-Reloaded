@@ -56,17 +56,3 @@ Reloaded::SpeedUp.speed           # the speed now (1 to 10)
 Reloaded::SpeedUp.slow_down       # back to 1x, as Shiny Slowdown does
 Reloaded::SpeedUp.set_toggled(3)  # Toggle: the speed here (the overworld's or, Separate, the battle's)
 ```
-
-## Tests
-
-```text
-ruby Tools/Tests/speed_up_test.rb "<KIF Beta>" <empty temp folder>
-ruby Tools/Tests/speed_up_preview.rb "<KIF Beta>" <work dir with metrics.json>
-python Tools/UIPreview/render.py "<KIF Beta>\Fonts" <work dir>
-```
-
-The first runs PIF's own Better Fast-forward over stand-ins for the engine's Graphics and Input. It covers Hold (the speeds, Resting Speed, battles, PIF's fields), PIF's own speed-up kept out, Toggle (steps, Toggle Limit, Burst Speed's tap and hold, Next Speed and Reset Speed where they're allowed, Separate and Shared, Remember Speed), Shiny Slowdown (a wild battle, a trainer's, the map, Hold), Messages at 1x, Options at 2x at most, `pbDisallowSpeedup`, the window title, the Overworld Menu's row, PIF's rows in KIF Settings, Off, and a failure handing over to PIF's.
-
-The second drives the Controls screen's Speed-Up section (Hold and Toggle, locked rows, a dropdown, the Buttons and a button's editor, Reset Section), Global without the speed buttons, Search, KIF Settings, and the Speed Indicator in Dark and Light.
-
-The mockups are in `Tools/Designs/speedup` (and `Tools/Designs/spd_designs.rb`, the section's first designs).

@@ -80,26 +80,3 @@ Reloaded::BugReportScreen.open                                            # the 
 ```
 
 The Discord link is `Reloaded::BugReport::DISCORD_URL`. It's a channel link, which opens only for members of the server; an invite link (discord.gg/...) would reach everyone.
-
-## Tests
-
-```text
-ruby Tools/Tests/bug_report_test.rb "<KIF Beta>" <empty temp folder>
-ruby Tools/Tests/bug_report_preview.rb "<KIF Beta>" <work dir with metrics.json>
-python Tools/UIPreview/render.py "<KIF Beta>\Fonts" <work dir>
-```
-
-The first covers:
-
-- Recent Steps, on stand-in battles and maps hooked as in the game
-- this session's errors
-- the zip, read back with every file's CRC checked, and what's in it
-- the user name taken out
-- every log going in (Kanto Reloaded's and all of KIF's, not the READ ME or reports)
-- the Bug Reports folder in Logging, and older reports moved into it
-- the old files moved over from the save folder, the newer one kept
-- naming the mod a crash came from
-- the crash path, with PIF's box when ours can't show
-- the next start's offer
-
-The second drives the screen and the notices.

@@ -82,6 +82,15 @@ module Reloaded
         kr_drop
       end
 
+      # KIF's mouse, while this scene has its focus (KIF::PauseMenu's rows),
+      # reads the game's own command window; Kanto Reloaded's menu reads the
+      # pointer itself (Pointer.rb), so there's nothing for it here (it
+      # logged a NoMethodError at every pointer move: his test 2026-10-27)
+      def kif_mouse_frame
+        return super if !@kr_view && defined?(super)
+        nil
+      end
+
       private
 
       def kr_choose(list)

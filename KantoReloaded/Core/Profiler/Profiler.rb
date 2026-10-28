@@ -135,6 +135,26 @@ module Reloaded
         return if @installed
         @installed = true
         Reloaded::Hooks.guard(nil, :profiler_probes) { Probes.install } if defined?(Probes)
+        # KIF's session log finishes on every normal way out (the window,
+        # quitting, a soft reset): Mod Timings are kept then
+        if defined?(::KIF::SessionLog) && ::KIF::SessionLog.respond_to?(:finish)
+          Reloaded::Hooks.around(nil, ::KIF::SessionLog.singleton_class, :finish, :id => :profiler_mod_timings_kept) do |original, *args|
+            Reloaded::Profiler.closing
+            original.call(*args)
+          end
+        end
+      end
+
+      # The game is closing: what Mod Timings found goes to Mod Timings.json
+      # and, with Text Report on, into TimingProfile.txt (once per run)
+      def closing
+        return if @closed
+        snap = HookTiming.save(true)
+        return unless snap
+        @closed = true
+        Report.append_mod_timings(snap) if setting(:text_report) && defined?(Report) && Report.respond_to?(:append_mod_timings)
+      rescue StandardError => e
+        Reloaded::Log.exception("Mod Timings couldn't be kept as the game closed", e, :profiler)
       end
 
       def installed?
@@ -259,16 +279,28 @@ module Reloaded
         end
         @measures.each { |m| m[:chunk] = [m[:chunk], t - m[:mark]].max }
         HookTiming.on? ? HookTiming.frame_start(t) : HookTiming.disable
+        @in_wait = true
         return t
       end
 
+      # Inside the game's frame update, under the frame clock: all of it is
+      # the wait for the next frame to the profiler (Mod Timings leaves the
+      # layers there out, or their time came off their callers twice)
+      def in_wait?
+        return @in_wait ? true : false
+      end
+
       def frame_end(started)
+        @in_wait = false
         t = clock
         @waited += t - started
         @frame += 1
         @frame_end = t
         @measures.each { |m| m[:mark] = t }
         HookTiming.frame_end(t - started)
+        kept = clock - t            # Mod Timings' saving: counted as waiting, not the game's work
+        @waited += kept
+        @frame_end += kept
       end
 
       # The profiler is off: Mod Timings' TracePoints too.

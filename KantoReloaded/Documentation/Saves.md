@@ -148,14 +148,3 @@ Reloaded::ModIcons.draw(bitmap, x, y, Reloaded::ModIcons.for("My Mod"))   # its 
 ```
 
 Previews read the whole save (PIF has no small header) with PIF's raw reader, which nothing hooks and which never rewrites the file. They're kept until the file changes, and the light part of each (no party) is kept in `Kanto Reloaded\Save Previews.json`, so lists fill in at once.
-
-## Tests
-
-```text
-ruby Tools/Tests/saves_test.rb "<KIF Beta>" <empty temp folder>
-ruby Tools/Tests/saves_preview.rb "<KIF Beta>" <work dir with metrics.json>
-ruby Tools/Tests/update_checks_preview.rb "<KIF Beta>" <work dir with metrics.json>
-python Tools/UIPreview/render.py "<KIF Beta>\Fonts" <work dir>
-```
-
-The first checks safe saving (a save that doesn't read back, a crash mid-save), the library (previews and health, backups, restoring, the Backup Cap, the Deleted tab and old Kanto Reloaded's, notes, the run's mode, test copies) and What's New, on real save files with stand-in players. The second drives the Save Manager, the Load Screen and What's New, with the game's own icon and trainer files (small icons and big ones), the Run Tags, and a test copy made, listed and shown on the Load Screen. The third drives the startup checks on stand-ins that follow KIF's updater and mod catalog: the checks held until the load screen has faded in, Checking for Updates, mod updates (Open Updates, Update All, B), a new KIF (What's New, Later, Skip This Version, Update Now and its download), KIF's first-start questions after them, Updates Off, Startup Mod-Check Off (nothing comes up), and Reloaded Load Screen Off.
