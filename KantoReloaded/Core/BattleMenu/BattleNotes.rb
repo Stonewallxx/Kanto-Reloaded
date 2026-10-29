@@ -240,13 +240,23 @@ module Reloaded
         return "x#{m.round}"
       end
 
+      # The types a move can have: the 18 (PIF's ??? and its triple-fusion
+      # types, numbered after Fairy, are only ever a Pokémon's)
+      def attack_types
+        return @attack_types ||= begin
+          list = []
+          GameData::Type.each { |t| list << t.id unless t.pseudo_type || t.id == :SHADOW || t.id_number.to_i > 18 }
+          list
+        end
+      end
+
       # A foe's types against every attacking type: { :weak, :resist, :immune }
       # of [[type, multiplier], ...], the biggest first
       def profile(target)
         types = types_seen(target)
         out = { :weak => [], :resist => [], :immune => [] }
-        GameData::Type.each do |t|
-          next if t.pseudo_type || t.id == :SHADOW || t.id == :QMARKS
+        attack_types.each do |id|
+          t = GameData::Type.get(id)
           m = Effectiveness.calculate(t.id, *types).to_f / Effectiveness::NORMAL_EFFECTIVE
           if m == 0 then out[:immune] << [t.id, m]
           elsif m < 1 then out[:resist] << [t.id, m]
@@ -361,7 +371,7 @@ module Reloaded
       end
 
       # Other mods' ability rows (KIF Battle Info's providers: KIF-ER's
-      # innates): [[label, name or nil (not seen), seen as revealed], ...]
+      # innates): [[label, name or nil (not seen yet), its words], ...]
       def other_abilities(battle, battler)
         return [] unless defined?(::KIF::BattleInfo) && ::KIF::BattleInfo.respond_to?(:ability_providers)
         known = Reader.known?(battle, battler)
@@ -370,8 +380,9 @@ module Reloaded
           begin
             Array(prov.call(battle, battler)).each do |e|
               name = e[:name] || (e[:ability] && (GameData::Ability.get(e[:ability]).name rescue e[:ability].to_s))
+              words = e[:description] || (e[:ability] && (GameData::Ability.get(e[:ability]).description rescue nil))
               seen = known || e[:known] != false || ability_shown?(battle, battler, name)
-              out << [(e[:label] || "ABILITY").to_s.upcase, seen ? name.to_s : nil]
+              out << [(e[:label] || "ABILITY").to_s.upcase, seen ? name.to_s : nil, seen ? words.to_s : nil]
             end
           rescue StandardError => ex
             Reloaded::Log.warning_once("Battle Menu: #{id}'s ability rows failed (#{ex.class}: #{ex.message})", :battle_menu)

@@ -129,6 +129,7 @@ module Reloaded
     def matching
       words = @query.to_s.downcase.split(/\s+/)
       return C.actions.select do |a|
+        next false if C::Splits.left_out?(a.id)
         hay = "#{a.name} #{a.description} #{C.area_name(a.area)} #{a.group}".downcase
         words.all? { |w| hay.include?(w) }
       end
@@ -150,7 +151,7 @@ module Reloaded
         out << [:cols, _INTL("Buttons")] unless buttons.empty?
         return out + buttons.map { |a| [:row, a] }
       end
-      list = C.actions(id)
+      list = C.actions(id).reject { |a| C::Splits.left_out?(a.id) }
       list = list.reject { |a| a.group == SPEED_GROUP } if id == :global
       return action_items(list)
     end

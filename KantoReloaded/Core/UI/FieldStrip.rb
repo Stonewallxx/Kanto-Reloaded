@@ -4,10 +4,12 @@
 #==============================================================================
 # Design 1, Chips (his pick, 2026-10-28): over the battle menu's left while
 # you choose (Q19), each effect on the field a chip in its type's colour
-# with the turns it has left in gold; the foe's side's end in a red FOE tag;
-# endless weather and terrain show the gold infinity mark (Q20). The whole
-# field's first, then yours, then the foe's; two lines at most, growing up,
-# then a +N MORE chip (Battle Info's Field tab has them all).
+# with the turns it has left (his pick, 2026-10-29, as Battle Info's Field
+# tab: green on your side, red on the foe's, gold for the whole field); the
+# foe's side's end in a red FOE tag; endless weather and terrain show the
+# infinity mark (Q20) in the Theme's accent. The whole field's first, then
+# yours, then the foe's; two lines at most, growing up, then a +N MORE chip
+# (Battle Info's Field tab has them all).
 #
 # Drawn when a command box opens and only when the field changed since (a
 # signature of what it shows); nothing runs per frame. Above EBDX's command
@@ -63,6 +65,12 @@ module Reloaded
         @sprite = @viewport = @sig = nil
       end
 
+      # A turns badge's tone by whose it is: your side green, the foe's red,
+      # the whole field gold (Battle Info's Field tab too)
+      def turns_tone(side)
+        return side == 0 ? :green : (side == 1 ? :red : :gold)
+      end
+
       def visible?
         return @sprite && !@sprite.disposed? && @sprite.visible ? true : false
       end
@@ -116,9 +124,9 @@ module Reloaded
         ink = type ? Reloaded::PartyPaint.ink(c, Reloaded::PartyScreen.type_rgb(type)) : c[:strong]
         lx += P.text(b, lx, y, 300, CHIP_H + 1, words.upcase, ink, PF::TINY)
         if num == :inf
-          infinity(b, lx + 5, y + 6, c[:gold])
+          infinity(b, lx + 5, y + 6, c[:acc])
         elsif num
-          P.text(b, lx + 5, y, 40, CHIP_H + 1, num.to_s, c[:gold], PF::TINY)
+          P.text(b, lx + 5, y, 40, CHIP_H + 1, num.to_s, c[turns_tone(side)], PF::TINY)
         end
         if side == 1
           tw = P.width(PF::TINY, FOE_TAG) + 6

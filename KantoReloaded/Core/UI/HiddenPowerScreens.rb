@@ -36,7 +36,6 @@ module Reloaded
     DG = Reloaded::Dialogs
     W = 512
     H = 384
-    TYPES = "Graphics/Pictures/types"                      # PIF's 64 x 28 labels
     TYPES_SMALL = "Graphics/OverworldMenu/typesSmall16"    # KIF's 16 x 16 icons
     SPIN_FRAMES = 122             # about 2 seconds at the game's 60
     TURNS = 2                     # whole turns of the reel before it slows
@@ -333,9 +332,9 @@ module Reloaded
         return "$" + n.to_i.to_s.reverse.scan(/\d{1,3}/).join(",").reverse
       end
 
-      # The game's big type label (64 x 28), or scaled
+      # The game's big type label (64 x 28, rounded: PartyPaint.type_sheet), or scaled
       def type_badge(b, type, x, y, w = 64, h = 28)
-        bm = picture(TYPES)
+        bm = PP.type_sheet
         b.stretch_blt(Rect.new(x, y, w, h), bm, Rect.new(0, PP.type_row(type) * 28, 64, 28)) if bm
       end
 

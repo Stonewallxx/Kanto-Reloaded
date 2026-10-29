@@ -51,8 +51,9 @@ module Reloaded
          "The game speed back to normal, when Speed-Up toggles."]
       ].freeze
 
-      # Splits left out while a mod (Kanto Reloaded's mod.json, say) locks
-      # their KIF setting Off: split id => KIF setting
+      # Splits left out of the Controls screen while a mod locks their KIF
+      # setting Off (Kanto Reloaded's Battle Menu, while it's On): split id
+      # => KIF setting. They're still made, for when the lock goes.
       OFF_WHEN_LOCKED = { :battle_info => :cody_battleinfo }.freeze
 
       # KIF settings named after a split feature's key: shown by the feature's
@@ -100,7 +101,6 @@ module Reloaded
         def boot
           FEATURES.each do |id, button, files, name, area, group, desc|
             next unless ::Input.const_defined?(button) && Controls.button_action(::Input.const_get(button))
-            next if locked_off?(OFF_WHEN_LOCKED[id])
             add(id, :button => button, :files => files, :name => name, :area => area, :group => group,
                     :description => desc, :owner => :game)
           end
@@ -155,6 +155,11 @@ module Reloaded
           @splits << [id.to_sym, button, files]
           @cache = {}
           return id.to_sym
+        end
+
+        # Left out of the Controls screen now: its KIF setting is locked Off
+        def left_out?(id)
+          return locked_off?(OFF_WHEN_LOCKED[id.to_sym])
         end
 
         # Whether a check of this button might be a split's: the layer is

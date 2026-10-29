@@ -114,7 +114,7 @@ module Reloaded
     end
 
     def big_type(b, type, x, y)
-      sheet = picture(PP::TYPES_BIG)
+      sheet = PP.type_sheet
       b.stretch_blt(Rect.new(x, y, 38, 17), sheet, Rect.new(0, PP.type_row(type) * 28, 64, 28)) if sheet
       return 38
     end

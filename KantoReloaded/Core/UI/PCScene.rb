@@ -1884,7 +1884,7 @@ module Reloaded
     end
 
     def big_types(b, types, x, y, w)
-      sheet = picture(PP::TYPES_BIG)
+      sheet = PP.type_sheet
       return unless sheet
       total = types.length * 42 - 2
       types.each_with_index do |t, j|

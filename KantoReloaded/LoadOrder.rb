@@ -249,6 +249,7 @@ module Reloaded
       "Core/UI/FieldStrip.rb",
       "Core/UI/BattleMenuPanel.rb",
       "Core/UI/BattleInfoScreen.rb",
+      "Core/UI/BattleInfoPopups.rb",
       # Fixes to the game's own code
       "Core/Fixes/Fixes.rb",
       "Core/Fixes/CommandTextColours.rb",

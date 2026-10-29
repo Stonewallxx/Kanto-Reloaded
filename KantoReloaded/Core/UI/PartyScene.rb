@@ -830,7 +830,7 @@ module Reloaded
     # the game's big type labels, a little under two thirds their size
     # (his ask, 2026-10-21), centred in w from x
     def big_types(b, types, x, y, w)
-      sheet = picture(TYPES_BIG)
+      sheet = Reloaded::PartyPaint.type_sheet
       return unless sheet
       list = types.first(3)
       lw = 40

@@ -7,7 +7,7 @@
 # Info's Turn Log tab shows it, the latest turn first.
 #
 #   a move     who used it, the move (in its type's colour), at whom; the
-#              damage (a foe's in %, as its HP bar shows it; yours in HP),
+#              damage (HP lost, as a number: his pick 2026-10-29, foes' too),
 #              x4 / x1/2 / NO EFFECT, CRIT, MISSED, FAILED, FAINTED; what it
 #              changed: a status, stat stages, the weather, a side's screens
 #              or hazards, TRAPPED
@@ -59,11 +59,9 @@ module Reloaded
         row[:pills] << [label, tone] if row[:pills].length < MAX_PILLS && !row[:pills].any? { |l, _t| l == label }
       end
 
-      # HP as the screen shows it: a foe's in %, yours in HP
-      def hp_words(battler, amount, sign)
-        return "#{sign}#{amount} HP" if Reader.known?(battler.battle, battler)
-        pct = (amount * 100.0 / [battler.totalhp, 1].max).round
-        return "#{sign}#{[pct, 1].max}%"
+      # HP lost or restored as a number (his pick, 2026-10-29: no percentages)
+      def hp_words(_battler, amount, sign)
+        return "#{sign}#{amount} HP"
       end
 
       #------------------------------------------------------------------------

@@ -174,7 +174,7 @@ module Reloaded
       tx = side == :left ? x0 + 70 : x0 + 10
       P.text(top, tx, 40, w - 80, 18, PF.fit(PF::TEXT, pk.name.to_s, w - 84), c[:txt], PF::TEXT)
       P.text(top, tx, 58, 100, 12, _INTL("Lv. {1}", pk.level), c[:gold], PF::TINY)
-      sheet = picture(PP::TYPES_BIG)
+      sheet = PP.type_sheet
       return unless sheet
       types_of(pk).each_with_index do |t, j|
         top.stretch_blt(Rect.new(tx + j * 42, 72, 40, 18), sheet, Rect.new(0, PP.type_row(t) * 28, 64, 28))
@@ -286,7 +286,7 @@ module Reloaded
     # X: the two's moves in detail (his ask): each with its type, category,
     # power, accuracy and PP; the highlighted one's description at the foot
     def compare_moves(top, c, a, b)
-      sheet = picture(PP::TYPES_BIG)
+      sheet = PP.type_sheet
       side_w = W / 2 - 20
       [[a, 10, 0], [b, W / 2 + 10, 1]].each do |pk, x0, side|
         moves = (pk.moves || []).first(4)

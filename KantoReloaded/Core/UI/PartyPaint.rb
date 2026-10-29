@@ -53,6 +53,37 @@ module Reloaded
       return Color.new(*a)
     end
 
+    # PIF's big type labels (TYPES_BIG, 64 x 28 a row) with rounded corners
+    # (his ask, 2026-10-29, everywhere in Kanto Reloaded): one copy for
+    # every screen, made the first time it's needed and never disposed by
+    # them. Each corner loses TYPE_CORNER's pixels, row by row from the edge.
+    TYPE_CORNER = [3, 2, 1].freeze
+    TYPE_ROW_H = 28
+
+    def type_sheet(corner = TYPE_CORNER)
+      @type_sheets ||= {}
+      bm = @type_sheets[corner]
+      return bm if bm && !bm.disposed?
+      src = (Bitmap.new(pbResolveBitmap(TYPES_BIG) || TYPES_BIG) rescue nil)
+      return nil unless src
+      bm = Bitmap.new(src.width, src.height)
+      bm.blt(0, 0, src, Rect.new(0, 0, src.width, src.height))
+      src.dispose
+      clear = Color.new(0, 0, 0, 0)
+      (bm.height / TYPE_ROW_H).times do |r|
+        y0 = r * TYPE_ROW_H
+        y1 = y0 + TYPE_ROW_H - 1
+        corner.each_with_index do |n, k|
+          next if n <= 0
+          [y0 + k, y1 - k].each do |y|
+            bm.fill_rect(0, y, n, 1, clear)
+            bm.fill_rect(bm.width - n, y, n, 1, clear)
+          end
+        end
+      end
+      return @type_sheets[corner] = bm
+    end
+
     # Coloured words (the Bag's and the TM Vault's names), Vivid (his pick,
     # 2026-10-23: the old ones, mixed with white, weren't saturated
     # enough): the colour's hue at least 80% saturated, at one lightness

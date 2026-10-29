@@ -6,7 +6,7 @@ A menu of battle tools you open while choosing Fight, Bag, Pokémon or Run: Batt
 
 In every battle where you choose Fight, Bag, Pokémon or Run, in EBDX's battle screen and PIF's. The Safari Zone and the Bug-Catching Contest have their own menus and no Battle Menu.
 
-**Battle Menu** (KIF Settings > Kanto Reloaded > Core > Features, On by default) switches it. Off leaves the battle as KIF has it: no menu, no Field Strip.
+**Battle Menu** (KIF Settings > Kanto Reloaded > Core > Features, On by default) switches it. Off leaves the battle as KIF has it: no menu, no Field Strip, and KIF's own Battle Info back as you set it (KIF Settings, Others). The two can't be on together: while the Battle Menu is On, KIF's Battle Info is locked Off.
 
 ## The Menu
 
@@ -32,17 +32,19 @@ With the mouse, a click on an entry uses it, the wheel moves, the hints can be c
 
 A tab for each Pokémon in the battle (yours first, with a green dot; the foes' with a red one), then Matchup, Field and Turn Log. Left and Right (LB and RB too) turn the tabs.
 
-- **A Pokémon:** Its HP (a foe's in %, as its HP bar shows it) and status; its stat stages, each with six pips, the change and its multiplier; under them other mods' abilities (KIF: Elite Redux's innates, and a dual fusion's Ability 2); its types as they are now; its ability and held item; its effects with the turns they have left; and a foe's Moves Used.
+- **A Pokémon:** Its HP (a foe's in %, as its HP bar shows it) and status; its stat stages, each named and with six pips in the stat's colour (Attack and Sp. Atk red, Defense and Sp. Def blue, Speed pink, Accuracy gold, Evasion purple), the change in green or red, and its multiplier (green above x1, white at x1, yellow, orange and red below); under them other mods' abilities (KIF: Elite Redux's innates, and a dual fusion's Ability 2); its types as they are now; its ability and held item; its effects with the turns they have left; and a foe's Moves Used.
+- **Abilities (A):** Its abilities in full, with what each does: Its ability (a fusion's two with Double Abilities), KIF: Elite Redux's Ability 2, and its innates on a tab of their own (Left and Right). One the battle hasn't shown yet is ???.
+- **Moves (Y):** Each move with its type, category, power, accuracy, PP and what it does. A foe's show once it has used them, with its PP as its most.
 - **Only what the battle has shown:** A foe's ability shows once its pop-up has, and its held item once it's used or a message about that Pokémon names it (a message about yours never names the foe's). Until then they're ???. Turns show for the weather, terrain, rooms, screens, Taunt, Encore, Disable and trapping; confusion and sleep show without them. A foe in disguise (Illusion) shows as the Pokémon it copies until the disguise breaks.
-- **Matchup:** Your Pokémon's moves against each foe (x4 to x0, as the battle works out the move's type), with Up and Down for your other Pokémon in a double battle; then each foe's types as seen, what they're weak to, resist and are immune to. An ability that makes a foe immune counts once the battle has shown it.
-- **Field:** The whole field (weather, terrain, Trick Room and the other rooms), your side and the foe's side (screens, Tailwind, Safeguard, Mist, hazards), Future Sight and Wish.
-- **Turn Log:** Every turn of this battle, the latest first (Up and Down scroll). Each row is who did what at whom, with its result: The damage, x4 / x1/2 / NO EFFECT, CRIT, MISSED, FAILED, FAINTED, and what a move changed (a status, stat stages, the weather, a side's screens or hazards, TRAPPED). Under each turn, what happened at its end: HP lost or restored by the weather, poison, Leech Seed, Leftovers and the rest. It lasts for the battle.
+- **Matchup:** Your Pokémon's moves against each foe (x4 to x0, as the battle works out the move's type), with Up and Down for your other Pokémon in a double battle; then each foe's types as seen (its name between its two types), and a row each for what hits it x4, x2, x½, x¼ and x0. An ability that makes a foe immune counts once the battle has shown it.
+- **Field:** The whole field (weather, terrain, Trick Room and the other rooms), then your side and the foe's side next to each other (screens, Tailwind, Safeguard, Mist, hazards, Future Sight and Wish). The turns left are green on your side, red on the foe's and gold for the whole field; something that lasts until it's ended has an ∞ badge in the Theme's colour.
+- **Turn Log:** Every turn of this battle, the latest first (Up and Down scroll). Each row is who did what at whom, with its result: The damage (HP lost, as a number), x4 / x1/2 / NO EFFECT, CRIT, MISSED, FAILED, FAINTED, and what a move changed (a status, stat stages, the weather, a side's screens or hazards, TRAPPED). Under each turn, what happened at its end: HP lost or restored by the weather, poison, Leech Seed, Leftovers and the rest. It lasts for the battle.
 
 **Open Battle Info** (Controls > Battle, unbound at first) opens it straight from the battle menu.
 
 ## The Field Strip
 
-Chips over the battle menu's left while you choose, one for each effect on the field in its type's colour, with the turns it has left in gold (endless weather or terrain: a gold ∞). The foe's side's chips end in a red FOE tag. Two lines at most, then +N MORE (Battle Info's Field tab has them all). **Field Strip** (Kanto Reloaded > Battle Menu, On) switches it.
+Chips over the battle menu's left while you choose, one for each effect on the field in its type's colour, with the turns it has left (green on your side, red on the foe's, gold for the whole field; endless weather or terrain: an ∞ in the Theme's colour). The foe's side's chips end in a red FOE tag. Two lines at most, then +N MORE (Battle Info's Field tab has them all). **Field Strip** (Kanto Reloaded > Battle Menu, On) switches it.
 
 ## Controls
 

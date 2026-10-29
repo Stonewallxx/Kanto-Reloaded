@@ -18,6 +18,9 @@
 #                Open Battle Favorite and Open Battle Info (unbound) skip it
 #   remembers    the order on each page, the Favorite and the page left on,
 #                the same in every save: <mod folder>\Settings\Battle Menu.json
+#   Battle Info  KIF's own (cody's) can't be on while the Battle Menu is:
+#                KIF's Locks keep it Off then (KIF Settings says Kanto
+#                Reloaded set it); Off, the player's own value is back
 #
 # Entries register here. A mod's go on Mods, its owner the mod whose scripts
 # are loading (KIF::Mods.current); they hide at once while that mod is
@@ -53,6 +56,7 @@ module Reloaded
     FILE = "Battle Menu.json"
     OWNER = "kanto_reloaded"
     KR_MOD = "KantoReloaded"                     # Kanto Reloaded's id in KIF's Mods list
+    KIF_BATTLE_INFO = :cody_battleinfo           # KIF's Battle Info setting (0 Off)
     PAGES = ["main", "mods"].freeze
     COMMANDS = { :fight => 0, :bag => 1, :party => 2, :run => 3, :call => 4 }.freeze
     EXIT = :kr_battle_menu_exit
@@ -74,6 +78,9 @@ module Reloaded
           :description => "A menu of battle tools you open while choosing Fight, Bag, Pokémon or Run: Battle Info, the Turn Log and other mods' tools, " \
                           "and the Field Strip over the battle menu.")
         register_controls
+        Reloaded::Hooks.needs(:kif_option, KIF_BATTLE_INFO, :id => :battle_menu_kif_battle_info)
+        sync_kif_battle_info
+        Reloaded::Events.on(:feature_changed, :battle_menu_kif_battle_info) { |e| sync_kif_battle_info if e.is_a?(Hash) && e[:id] == FEATURE }
         Entries.register_all if const_defined?(:Entries, false)
         TurnLog.install if const_defined?(:TurnLog, false)
         Notes.install if const_defined?(:Notes, false)
@@ -92,6 +99,21 @@ module Reloaded
           :description => "The Battle Menu and the Field Strip over the battle menu.")
         s.register(STRIP, :page => PAGE, :priority => 10, :type => :toggle, :default => true, :name => "Field Strip",
           :description => "Weather, terrain, rooms, screens and hazards, with the turns they have left, over the battle menu while you choose.")
+      end
+
+      # KIF's Battle Info locked Off while the Battle Menu is On, freed when
+      # it's Off (KIF's Locks have no one-key unlock: the key leaves its table)
+      def sync_kif_battle_info
+        return unless defined?(::KIF::Locks) && ::KIF::Locks.respond_to?(:get)
+        lock = ::KIF::Locks.get(KIF_BATTLE_INFO)
+        mine = lock && lock[2].to_s == KR_MOD
+        if on?
+          ::KIF::Locks.set(KIF_BATTLE_INFO, 0, by: "Kanto Reloaded", owner: KR_MOD) unless mine
+        elsif mine
+          ::KIF::Locks.table.delete(KIF_BATTLE_INFO)
+        end
+      rescue StandardError => e
+        Reloaded::Log.exception("The Battle Menu couldn't lock or free KIF's Battle Info", e, :battle_menu)
       end
 
       def strip?
