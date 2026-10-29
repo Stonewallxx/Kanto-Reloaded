@@ -587,7 +587,7 @@ module Reloaded
       y = (H - h) / 2
       have = TC.money
       DL.frame(b, c, x, y, w, h, _INTL("Buy a Background?"))
-      thumb(b, b, c, id, x + 16, y + 44)
+      on_popup(c) { thumb(b, b, c, id, x + 16, y + 44) }
       tx = x + 156
       P.text(b, tx, y + 44, w - 172, 24, PF.fit(PF::ROW, name, w - 172), c[:strong], PF::ROW)
       P.small(b, tx, y + 70, w - 172, 16, _INTL("Price"), c[:dim])
@@ -630,7 +630,7 @@ module Reloaded
       x = (W - w) / 2
       y = (H - h) / 2
       DL.frame(b, c, x, y, w, h, PF.fit(PF::TEXT, name, w - 40))
-      preview(b, b, c, key, id, x + 16, y + 44, st == :locked)
+      on_popup(c) { preview(b, b, c, key, id, x + 16, y + 44, st == :locked) }
       tx = x + 156
       P.small(b, tx, y + 44, w - 172, 16, _INTL(ONE[key]), c[:dim])
       P.text(b, tx, y + 58, w - 172, 22, PF.fit(PF::TEXT, need.to_s, w - 172), c[:strong])

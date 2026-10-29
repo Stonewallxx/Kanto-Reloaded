@@ -349,13 +349,11 @@ module Reloaded
     def glass(b, c, x0, y0, x1, y1, r = 8, strength = 1.0)
       pl = plate_now
       if pl.nil?
-        a = (TC.glass_alpha(light?(c), @strength) * strength).round
+        a = [(TC.glass_alpha(light?(c), @strength) * strength).round, 245].min
         if light?(c)
-          P.ui.rbox(b, x0, y0, x1, y1, r, Color.new(250, 252, 255, [a, 245].min), Color.new(255, 255, 255, 225))
+          P.ui.rbox(b, x0, y0, x1, y1, r, see(Color.new(250, 252, 255), a), see(WHITE, 225))
         else
-          p = c[:panel]
-          l = c[:line]
-          P.ui.rbox(b, x0, y0, x1, y1, r, Color.new(p.red, p.green, p.blue, [a, 245].min), Color.new(l.red, l.green, l.blue, 235))
+          P.ui.rbox(b, x0, y0, x1, y1, r, see(c[:panel], a), see(c[:line], 235))
         end
         return
       end
@@ -367,17 +365,33 @@ module Reloaded
                else (deep ? 205 : 165) + (@strength.to_f * 25).round
                end
       a = [(base_a * strength).round, 245].min
-      edge = mix(Color.new(*rgb), WHITE, deep ? 0.35 : 0.6)
-      P.ui.rbox(b, x0, y0, x1, y1, r, Color.new(rgb[0], rgb[1], rgb[2], a), Color.new(edge.red, edge.green, edge.blue, 230))
+      col = Color.new(*rgb)
+      P.ui.rbox(b, x0, y0, x1, y1, r, see(col, a), see(mix(col, WHITE, deep ? 0.35 : 0.6), 230))
       return unless kind == :sheen && y1 - y0 > 40 && x1 - x0 > 60
       h = [(y1 - y0) / 4, 40].min
-      col = Color.new(*rgb)
       h.times do |k|
         t = (shine || (deep ? 0.30 : 0.45)) * (1.0 - k.to_f / h)**2
         next if t < 0.01
-        m = mix(col, WHITE, t)
-        b.fill_rect(x0 + r, y0 + 2 + k, x1 - x0 - 2 * r, 1, Color.new(m.red, m.green, m.blue, [a + (t * 60).round, 245].min))
+        b.fill_rect(x0 + r, y0 + 2 + k, x1 - x0 - 2 * r, 1, see(mix(col, WHITE, t), [a + (t * 60).round, 245].min))
       end
+    end
+
+    # A colour seen through at alpha: on the card it stays see-through (the
+    # art shows behind it); on a popup it's mixed with the popup's own
+    # colour and drawn solid, so a popup is never see-through (his rule)
+    def see(col, alpha)
+      return Color.new(col.red, col.green, col.blue, alpha) unless @solid_under
+      m = mix(@solid_under, col, alpha / 255.0)
+      return Color.new(m.red, m.green, m.blue, 255)
+    end
+
+    # Drawing on a popup: everything inside is solid over its panel
+    def on_popup(c)
+      before = @solid_under
+      @solid_under = c[:panel2]
+      return yield
+    ensure
+      @solid_under = before
     end
 
     # The words are PIF's dark-on-light ones on a light plate
