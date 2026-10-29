@@ -240,6 +240,15 @@ module Reloaded
       "Core/TrainerCard/Unlocks.rb",
       "Core/UI/TrainerCardScene.rb",
       "Core/UI/TrainerCardStyle.rb",
+      # The Battle Menu: its entries and pages, what it reads from a battle,
+      # the Turn Log, the panel, Battle Info and the Field Strip
+      "Core/BattleMenu/BattleMenu.rb",
+      "Core/BattleMenu/BattleNotes.rb",
+      "Core/BattleMenu/TurnLog.rb",
+      "Core/BattleMenu/Entries.rb",
+      "Core/UI/FieldStrip.rb",
+      "Core/UI/BattleMenuPanel.rb",
+      "Core/UI/BattleInfoScreen.rb",
       # Fixes to the game's own code
       "Core/Fixes/Fixes.rb",
       "Core/Fixes/CommandTextColours.rb",
@@ -259,7 +268,7 @@ module Reloaded
     # to KIF Settings. Dev boots last, when it's there. PauseMenu boots
     # before Profiler and BugReport, so their hooks on the pause menu's
     # scene sit over its screen and still see it open.
-    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :EggManager, :Difficulty, :Randomizer, :NewGameSetup, :Publish, :HiddenPower, :CriticalEVGain, :IVBoundaries, :DoubleAbilities, :TrainerCard, :TitleVersions, :TitleLogo, :LivingTitle, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
+    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :EggManager, :Difficulty, :Randomizer, :NewGameSetup, :Publish, :HiddenPower, :CriticalEVGain, :IVBoundaries, :DoubleAbilities, :TrainerCard, :BattleMenu, :TitleVersions, :TitleLogo, :LivingTitle, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
 
     def self.files
       return FILES

@@ -2,6 +2,12 @@
   "ignore": [
     {
       "rule": "names",
+      "file": "Core/BattleMenu/BattleMenu.rb",
+      "text": "KantoReloaded",
+      "why": "The mod's id in KIF's Mods list (KIF::Mods.current names a loading mod by it), not its name"
+    },
+    {
+      "rule": "names",
       "file": "Core/IVBoundaries/MaxIVs.rb",
       "text": "KantoReloaded",
       "why": "The mod's id in mod.json (KIF's Locks name their owner by it), not its name"

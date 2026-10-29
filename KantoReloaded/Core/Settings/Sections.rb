@@ -34,6 +34,7 @@ module Reloaded
       [:bag,             "Reloaded Bag",    [:bag, :bag_sort]],
       [:pokevial,        "PokeVial",        [:pokevial]],
       [:egg_manager,     "Egg Manager",     [:egg_manager]],
+      [:battle_menu,     "Battle Menu",     [:battle_menu]],
       [:critical_ev_gain, "Critical EV Gain", [:critical_ev_gain]],
       [:iv_boundaries,   "IV Boundaries",   [:iv_boundaries, :iv_boundaries_fusing]],
       [:double_abilities, "Double Abilities", [:double_abilities]],
