@@ -12,7 +12,7 @@ In every battle where you choose Fight, Bag, Pokémon or Run, in EBDX's battle s
 
 A panel in the middle of the screen, over the battle, with the battle menu still in view under it.
 
-- **Main:** Kanto Reloaded's entries: **Quick Throw** (the Quick Throw ball's count and its chance; see [Quick Throw](QuickThrow.md)), **Battle Info** and **Turn Log** (with the turn being played).
+- **Main:** Kanto Reloaded's entries: **Quick Throw** (the Quick Throw ball's picture, how many and its chance; see [Quick Throw](QuickThrow.md)), **Battle Info** and **Turn Log** (with the turn being played).
 - **Mods:** Every other mod's entries, each with its mod's name. A mod switched off in KIF's Mods list takes its entries with it at once; they come back where they were. With no other mod's entries there's only Main.
 - **The Favorite:** One entry, starred in gold. The Battle Menu button again, inside the menu, runs it (Quick Throw at first, which throws at once that way; Battle Info while Quick Throw is Off). With none, the button closes the menu.
 - **A locked entry** (one that can't be used right now) is dimmed with a padlock, and the description box says why in red.
@@ -63,7 +63,7 @@ A mod adds its entry to Mods while its scripts load (Kanto Reloaded first):
 
 ```ruby
 Reloaded::BattleMenu.register(:battle_camera, :name => "Battle Camera",
-  :icon => :POKEDEX,                              # an item's picture, or a picture's path
+  :icon => :POKEDEX,                              # an item's picture, a picture's path, or proc { |ctx| either }
   :description => "Hides the battle boxes for a screenshot.",
   :priority => 50,                                # its place among the Mods page's entries
   :mod => "Photo Mode",                           # its mod's name, when KIF's Mods list hasn't one

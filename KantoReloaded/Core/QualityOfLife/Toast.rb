@@ -3,14 +3,12 @@
 #==============================================================================
 # Auto-Repel Reuse's toast (his pick, 2026-10-21): an item's icon, what
 # happened, and a gold badge ("4 LEFT"). The shared toast draws it
-# (Core/UI/Toast.rb), so the map and the Bag move it on.
+# (Core/UI/Toast.rb), and it goes after 3 seconds as every toast does.
 #==============================================================================
 
 module Reloaded
   module QualityOfLife
     module Toast
-      FRAMES = 150
-
       class << self
         def install
           return true

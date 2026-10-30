@@ -353,7 +353,7 @@ The screen is built from these parts, which later Kanto Reloaded screens reuse:
 | `Frame` | What every settings-like screen shares: the layers, the pulsing cursor, the centred hint line that scrolls when it's too long, the title-bar boxes with their buttons beside them, the description box, running a dropdown, and alerts (`alert_box`: a red glow around a box, pulsing, on its own layer; the PokeVial's Low HP Reminder) |
 | `Dialogs` | Popups: `menu` (rows can lead with an input's icon), `picker`, `confirm`, `notice`, `ask` and `number` (with an item's picture and a line under it, `icon:` and `note:`), and `frame` for a popup a screen draws itself (`drawn` runs one with buttons, drawn with `button_row`: the Test Copy question). A settings button's popups draw on `SettingsScreen.showing` |
 | `RunTags` | A save's run as pills: its mode, its difficulty (Shown As) and DEBUG, on the Load Screen and in the Save Manager |
-| `Toast` | A short line at the top for a moment, no button: an icon, the words, a pill or a drawing of its own. The map moves it on (menus and messages too) and so does the Bag; it shows over the map menus |
+| `Toast` | A short line at the top for a moment, no button: an icon, the words, a pill or a drawing of its own. It goes after 3 seconds of real time (its last half second fading), whatever the game is doing; it shows over the map menus |
 | `Dropdown` | A choice's values, dropped down from its value (Option Dropdowns) |
 | `TextEntry` | Typing into a field, as KIF Settings' search does: the keyboard types straight in (Ctrl+V pastes), and a controller's A opens the game's naming screen |
 | `Presets` | KIF's 12 preset slots, with Kanto Reloaded's per-save settings, share codes, Rename and Delete |

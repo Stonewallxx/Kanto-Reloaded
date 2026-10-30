@@ -4,11 +4,11 @@
 # A short line at the top of the screen for a moment, with no button: you
 # keep going (his pick for Auto-Repel Reuse, 2026-10-21; the PokeVial's
 # toasts, 2026-10-22). An icon, what happened, and a pill at its end, or a
-# drawing of the caller's own there (the PokeVial's charges). It fades
-# after about two and a half seconds. The map moves it on, also while a
-# menu or a message is open (miniupdate), and so do the Bag and the party
-# screen, so an item used from the Bag or a move used from the party menu
-# can say what it did. It shows over the map menus, under popups.
+# drawing of the caller's own there (the PokeVial's charges). Every toast
+# goes after 3 seconds of real time, its last half second fading (his rule,
+# 2026-10-29), whatever the game is doing: the map, a menu, the Bag, a
+# battle, the game sped up. Checked each time the game draws a frame
+# (Graphics.update). It shows over the map menus, under popups.
 #
 #   Reloaded::Toast.show("Used Another Super Repel", :icon => :SUPERREPEL,
 #                        :pill => ["4 LEFT", :gold])
@@ -19,15 +19,15 @@
 # square frame: a Pokémon's icon); :pill's colour is :gold, :green or :red
 # (the Theme Mode's tone of it). :hold keeps it until the next toast (or
 # dispose): the startup checks' "Checking for Updates..." while the game
-# waits on them. The Load Screen moves it on too.
+# waits on them.
 #==============================================================================
 
 return unless defined?(Reloaded::Pixel) && defined?(::KIF::PixelFont)
 
 module Reloaded
   module Toast
-    FRAMES = 150
-    FADE = 30
+    SECONDS = 3.0          # on screen, in real time
+    FADE = 0.5             # its last half second fades
     H = 30
     P = Reloaded::Pixel
     PF = ::KIF::PixelFont
@@ -38,12 +38,13 @@ module Reloaded
       attr_reader :sprite
 
       def boot
-        h = Reloaded::Hooks
-        h.prepend(nil, "Scene_Map", Update, :id => :toast_map) if defined?(::Scene_Map)
-        h.prepend(nil, "Scene_Map", MiniUpdate, :id => :toast_map_menus) if defined?(::Scene_Map) && ::Scene_Map.method_defined?(:miniupdate)
-        h.prepend(nil, "PokemonBag_Scene", BagUpdate, :id => :toast_bag) if defined?(::PokemonBag_Scene)
-        h.prepend(nil, "PokemonParty_Scene", Update, :id => :toast_party) if defined?(::PokemonParty_Scene) && ::PokemonParty_Scene.method_defined?(:update)
+        Reloaded::Hooks.prepend(nil, ::Graphics.singleton_class, FrameHook, :id => :toast_frames) if defined?(::Graphics)
         return true
+      end
+
+      # Seconds on a clock that only goes forward (real time)
+      def now
+        return Process.clock_gettime(Process::CLOCK_MONOTONIC)
       end
 
       def show(text, icon: nil, pill: nil, paint: nil, hold: false)
@@ -74,7 +75,7 @@ module Reloaded
           fill = c[:light] ? Reloaded::Palette.mix(c[:panel2], tone, 0.22) : (FILLS[pill[1]] || FILLS[:gold])
           P.pill(o, w - 10, 7, pill[0].to_s, fill, tone, true)
         end
-        @left = hold ? nil : FRAMES
+        @shown_at = hold ? nil : now
         return true
       rescue StandardError => e
         Reloaded::Log.exception("A toast couldn't be shown", e, :interface)
@@ -84,21 +85,22 @@ module Reloaded
 
       # Shown and kept until the next one (:hold)
       def held?
-        return @sprite && !@sprite.disposed? && @left.nil? ? true : false
+        return @sprite && !@sprite.disposed? && @shown_at.nil? ? true : false
       end
 
+      # Its fade from the time it's been up (any number of calls a frame)
       def update
-        return unless @sprite && @left
-        @left -= 1
-        @sprite.opacity = [@left * 255 / FADE, 255].min
-        dispose if @left <= 0
+        return unless @sprite && @shown_at
+        left = SECONDS - (now - @shown_at)
+        return dispose if left <= 0
+        @sprite.opacity = [(255 * left / FADE).to_i, 255].min unless @sprite.disposed?
       end
 
       def dispose
         @sprite.bitmap.dispose if @sprite && !@sprite.disposed? && @sprite.bitmap
         @sprite.dispose if @sprite && !@sprite.disposed?
         @viewport.dispose if @viewport && !@viewport.disposed?
-        @sprite = @viewport = nil
+        @sprite = @viewport = @shown_at = nil
       end
 
       private
@@ -127,27 +129,11 @@ module Reloaded
       end
     end
 
-    module Update
+    # Every frame the game draws, on any screen
+    module FrameHook
       def update(*args)
         ret = super
-        Reloaded::Toast.update
-        ret
-      end
-    end
-
-    # the map while a menu or a message is open (pbUpdateSceneMap)
-    module MiniUpdate
-      def miniupdate(*args)
-        ret = super
-        Reloaded::Toast.update
-        ret
-      end
-    end
-
-    module BagUpdate
-      def pbUpdate(*args)
-        ret = super
-        Reloaded::Toast.update
+        Reloaded::Toast.update if Reloaded::Toast.sprite
         ret
       end
     end

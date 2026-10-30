@@ -21,10 +21,11 @@
 # the same way.
 #
 # Guarded: the method the battle runs is checked once against the two the
-# game ships (and KIF's Archipelago wrap, worked out too; Kanto Reloaded's
-# own Guaranteed Catch is read as a setting). Anything else (a KIF update,
-# another mod's wrap) and every chance is an estimate: "~" in front of it,
-# and the log says why (his pick).
+# game ships (and the wraps known around them: KIF's Archipelago, worked out
+# too, and Alpha Encounters', which changes nothing for a thrown ball; Kanto
+# Reloaded's own Guaranteed Catch is read as a setting). Anything else (a
+# KIF update, another mod's wrap) and every chance is an estimate: "~" in
+# front of it, and the log says why (his pick).
 #
 #   r = Reloaded::CatchChance.chance(battle, battler, :ULTRABALL)
 #   r.chance (0.0..1.0, nil: "?"), r.sure, r.mult, r.status (what it'd see),
@@ -47,6 +48,13 @@ module Reloaded
     PIF_CRC = 4006461737               # 001_PokeBattle_BattleCommon.rb:219-272
     ARCHIPELAGO_CRC = 1817373196       # Archipelago.rb:801-808, around one of them
     ARCHIPELAGO_ALIAS = :kif_ap_pbCaptureCalc
+    # Alpha Encounters (Mods/alpha_encounters/Raids.rb:1249-1254): an Alpha's
+    # catch rate x0.8, but only a rate passed in, and a thrown ball passes
+    # none (pbThrowPokeBall's catch_rate is nil), so the maths under it is
+    # what runs
+    ALPHA_CRC = 2119097976
+    ALPHA_ALIAS = :originalCaptureCalc
+    WRAPS = { ARCHIPELAGO_CRC => ARCHIPELAGO_ALIAS, ALPHA_CRC => ALPHA_ALIAS }.freeze
 
     class Unsafe < StandardError; end
 
@@ -91,10 +99,12 @@ module Reloaded
       # Which maths the battle runs: :kif, :pif, or nil (estimates)
       #------------------------------------------------------------------------
       def maths
-        return @maths if @maths_checked
-        @maths_checked = true
-        @maths, why = detect
-        Reloaded::Log.warning("Catch chances are estimates: #{why}", FEATURE) unless @maths
+        unless @maths_checked
+          @maths_checked = true
+          @maths, why = detect
+          Reloaded::Log.warning("Catch chances are estimates: #{why}", FEATURE) unless @maths
+        end
+        return gate_kif? ? :kif : :pif if @maths == :gate
         return @maths
       end
 
@@ -118,13 +128,15 @@ module Reloaded
             m = m.super_method
             next
           end
+          return gate_check if gate?(m)
           crc = Reloaded::Fixes.source_crc(m)
           case crc
           when KIF_CRC then return [:kif, nil]
           when PIF_CRC then return [:pif, nil]
-          when ARCHIPELAGO_CRC
-            return [nil, "Archipelago's wrap has nothing under it"] unless m.owner.method_defined?(ARCHIPELAGO_ALIAS)
-            m = m.owner.instance_method(ARCHIPELAGO_ALIAS)
+          when *WRAPS.keys
+            under = WRAPS[crc]
+            return [nil, "a wrap on pbCaptureCalc has nothing under it (#{under})"] unless owner.method_defined?(under)
+            m = owner.instance_method(under)
           else
             where = m.source_location ? File.basename(m.source_location[0].to_s) : "?"
             return [nil, "pbCaptureCalc isn't the game's (#{m.owner}, #{where}, fingerprint #{crc.inspect})"]
@@ -133,6 +145,58 @@ module Reloaded
         return [nil, "pbCaptureCalc ran out"]
       rescue StandardError => e
         return [nil, "#{e.class}: #{e.message}"]
+      end
+
+      #------------------------------------------------------------------------
+      # KIF's module gate (990_KIF/zz_ModuleGate/ModuleGate.rb): each method a
+      # KIF module changed becomes a switch, the module's version while it's
+      # on, the game's without it while it's off. Under pbCaptureCalc's that's
+      # Archipelago's wrap (worked out from KIF::AP), then KIF's maths
+      # (CriticalCaptures.rb, its Battles & Challenges module) or PIF's. The
+      # switch keeps them out of reach, so their sources are checked instead:
+      # PIF's as the gate kept it, KIF's and Archipelago's in their files.
+      #------------------------------------------------------------------------
+      GATE_FILE = "ModuleGate.rb"
+      KIF_FILE = "CriticalCaptures.rb"
+      ARCHIPELAGO_FILE = "Archipelago.rb"
+
+      def gate?(m)
+        loc = m.source_location
+        return loc && File.basename(loc[0].to_s) == GATE_FILE ? true : false
+      end
+
+      # [:gate, nil] when everything under the gate is the game's, else why not
+      def gate_check
+        snap = defined?(::KIF::Modules) && ::KIF::Modules.respond_to?(:snapshot) ? ::KIF::Modules.snapshot : nil
+        pif = snap ? snap[[::PokeBattle_BattleCommon, :pbCaptureCalc]] : nil
+        return [nil, "KIF's module gate kept no pbCaptureCalc of PIF's"] unless pif && Reloaded::Fixes.source_crc(pif) == PIF_CRC
+        return [nil, "KIF's #{KIF_FILE} isn't the game's"] unless file_crc(KIF_FILE) == KIF_CRC
+        ap = file_crc(ARCHIPELAGO_FILE)
+        return [nil, "KIF's #{ARCHIPELAGO_FILE} isn't the game's"] unless ap.nil? || ap == ARCHIPELAGO_CRC
+        return [:gate, nil]
+      end
+
+      # A KIF file's pbCaptureCalc fingerprint, nil when there's none
+      def file_crc(name)
+        path = Reloaded::Paths.script_file(name)
+        return nil unless path
+        at = File.readlines(path, :encoding => "UTF-8").index { |l| l =~ /\A\s*def pbCaptureCalc\b/ }
+        return at ? Reloaded::Fixes.lines_crc(path, at + 1) : nil
+      end
+
+      # KIF's maths runs while its module is on (asked each time: the player
+      # can switch it in KIF's Modules list)
+      def gate_kif?
+        return kif_module_on?(KIF_FILE)
+      end
+
+      def kif_module_on?(name)
+        return false unless defined?(::KIF::Modules) && defined?(::KIF::Features)
+        path = Reloaded::Paths.script_file(name)
+        return false unless path
+        return ::KIF::Modules.active?(::KIF::Features.key_for_file(path)) ? true : false
+      rescue StandardError
+        return false
       end
 
       #------------------------------------------------------------------------
@@ -151,8 +215,11 @@ module Reloaded
         return Situation.new(count, crits ? true : false, owned, guaranteed ? true : false, min)
       end
 
+      # Archipelago's wrap acts (its module on, behind KIF's gate, and a
+      # linked save)
       def archipelago?
-        return defined?(::KIF::AP) && ::KIF::AP.respond_to?(:on?) && ::KIF::AP.on? ? true : false
+        return false unless defined?(::KIF::AP) && ::KIF::AP.respond_to?(:on?) && ::KIF::AP.on?
+        return @maths != :gate || kif_module_on?(ARCHIPELAGO_FILE)
       rescue StandardError
         return false
       end

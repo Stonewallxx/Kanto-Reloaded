@@ -18,7 +18,8 @@
 #                  the Quick Throw ball by itself, never starred, and asks
 #                  before it's thrown. Run out of it: "Throw your best ball
 #                  instead?" (the saved ball stays)
-#   the order      the Bag's own (the Reloaded Bag's pocket order and
+#   the balls      the Bag's Poké Balls pocket only (his ask, 2026-10-29),
+#                  in its own order (the Reloaded Bag's pocket order and
 #                  Favorites), the Master Ball where the Bag puts it
 #   trainers       not offered (locked), except with KIF's Rocket Mode On:
 #                  then only the balls it lets through, the rest padlocked
@@ -39,7 +40,8 @@ module Reloaded
     GAUGE = :"quick_throw.gauge"
     SECTION = :quick_throw
     PROTECTED = [:MASTERBALL].freeze       # asks first, never starred, never saved by itself
-    THROWN = [4, 9].freeze                 # battle_use: thrown at a foe (Poké Balls)
+    POCKET = 3                             # the Bag's Poké Balls pocket: the only one Quick Throw reads (his ask)
+    THROWN = [4, 9].freeze                 # battle_use: thrown at a foe
     ROCKET_ONLY = 1                        # KIF's Rocket Mode: Rocket Balls only (2: every ball)
 
     Request = Struct.new(:battle, :index, :ball, :target)
@@ -88,7 +90,8 @@ module Reloaded
 
       def register_entry
         bm = Reloaded::BattleMenu
-        bm.register(:quick_throw, :owner => bm::OWNER, :name => "Quick Throw", :icon => :POKEBALL, :priority => 5,
+        bm.register(:quick_throw, :owner => bm::OWNER, :name => "Quick Throw", :priority => 5,
+          :icon => proc { |_ctx| Reloaded::QuickThrow.quick_ball || :POKEBALL },   # the Quick Throw ball's picture
           :feature => FEATURE,
           :description => "Throw a ball without opening the Bag: Every ball's chance of catching it, the best one starred.",
           :condition => proc { |ctx| Reloaded::QuickThrow.offered?(ctx.battle) },
@@ -110,9 +113,8 @@ module Reloaded
       def saved_ball
         d = data
         id = d && d["ball"]
-        return nil unless id
-        it = item(id)
-        return it ? it.id : nil
+        return nil unless id && ball?(id)
+        return item(id).id
       end
 
       def save_ball(id)
@@ -129,9 +131,11 @@ module Reloaded
         return nil
       end
 
+      # In the Poké Balls pocket and thrown at a foe (PIF's Firecracker is in
+      # the pocket but its battle use isn't a throw)
       def ball?(id)
         it = item(id)
-        return it && THROWN.include?(it.battle_use) ? true : false
+        return it && it.pocket == POCKET && THROWN.include?(it.battle_use) ? true : false
       end
 
       def protected?(id)
@@ -143,20 +147,19 @@ module Reloaded
         return bag.pbQuantity(id).to_i
       end
 
-      # Every ball in the Bag, in the Bag's own order: [[id, how many]]
+      # Every ball in the Poké Balls pocket, in the Bag's own order (the
+      # Reloaded Bag's, its Favorites first): [[id, how many]]
       def balls(bag = $PokemonBag)
         return [] unless bag
         rb = Reloaded::Bag
+        ids = rb.on? ? rb.rows(POCKET, 0, bag) : rb.slots(bag, POCKET).map { |s| s && s[0] }.compact
         out = []
-        rb.pockets.each do |p|
-          ids = rb.on? ? rb.rows(p, 0, bag) : rb.slots(bag, p).map { |s| s && s[0] }.compact
-          ids.each do |id|
-            it = item(id)
-            next unless it && THROWN.include?(it.battle_use)
-            next if out.any? { |o, _n| o == it.id }
-            n = count(it.id, bag)
-            out << [it.id, n] if n > 0
-          end
+        ids.each do |id|
+          next unless ball?(id)
+          it = item(id)
+          next if out.any? { |o, _n| o == it.id }
+          n = count(it.id, bag)
+          out << [it.id, n] if n > 0
         end
         return out
       end
@@ -418,9 +421,9 @@ module Reloaded
       # (never a protected one; Quick Throw's own throws don't change it)
       def remember(battle, idx, id)
         return if @own
-        return unless battle.pbOwnedByPlayer?(idx)
+        return unless battle.pbOwnedByPlayer?(idx) && ball?(id)
         it = item(id)
-        return unless it && THROWN.include?(it.battle_use) && !protected?(it.id)
+        return if protected?(it.id)
         save_ball(it.id)
       rescue StandardError => e
         Reloaded::Log.exception("Quick Throw couldn't note the ball thrown", e, FEATURE)

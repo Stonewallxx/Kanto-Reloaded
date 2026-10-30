@@ -28,7 +28,7 @@
 # they were.
 #
 #   Reloaded::BattleMenu.register(:battle_camera, :name => "Battle Camera",
-#     :icon => :POKEDEX,                          # an item's picture, or a picture's path
+#     :icon => :POKEDEX,                          # an item's picture, a picture's path, or proc { |ctx| either }
 #     :description => "Hides the battle boxes for a screenshot.",
 #     :priority => 50,
 #     :mod => "Photo Mode",                       # its mod's name, when KIF's list hasn't one
@@ -214,6 +214,17 @@ module Reloaded
       rescue StandardError => ex
         failed(e, ctx, ex)
         return _INTL("It stopped working in this battle.")
+      end
+
+      # Its picture now: an item, a path, or what its proc answers (Quick
+      # Throw's: the Quick Throw ball)
+      def icon(e, ctx)
+        return e.icon unless e.icon.respond_to?(:call)
+        return nil if broken?(e, ctx)
+        return e.icon.call(ctx)
+      rescue StandardError => ex
+        failed(e, ctx, ex)
+        return nil
       end
 
       # [words, tone] or nil

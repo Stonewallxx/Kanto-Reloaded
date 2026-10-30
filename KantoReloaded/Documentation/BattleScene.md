@@ -33,8 +33,8 @@ While you choose Fight, Bag, Party or Run, chips name the button that opens the 
 
 | Command Row | Looks |
 |---|---|
-| Plates (at first) | EBDX's buttons in the same places, as Kanto Reloaded plates: each word and a bar under it in its colour. The picked one is filled with its colour and raised, and the cursor sits on its edge, cut like the plate. |
-| Slim Bar | One slim bar along the bottom, thin lines between the commands. The picked one lights up its whole section in its colour; there's no ring. The Field Strip and the hints sit just above it. |
+| Plates (at first) | EBDX's buttons in the same places, as Kanto Reloaded plates: each word and a bar under it in its colour. The picked one is filled with its colour and raised, its word in a deeper or paler tone of that colour (whichever stands out from the fill), and the cursor sits on its edge, cut like the plate. |
+| Slim Bar | One slim bar along the bottom, thin lines between the commands. The picked one lights up its whole section in its colour, its word in a deeper or paler tone of it; there's no ring. The Field Strip and the hints sit just above it. |
 | Corner Panel | The four as a 2 x 2 of plates in a panel at the bottom right (Up and Down move a row too). A panel at the bottom left says "What will Pikachu do?", with the Field Strip and the hint chips in it. With more than four commands (KIF's INFO), that turn uses Plates. |
 | EBDX's Own | EBDX's buttons, with the cursor Battle Cursor picks. |
 

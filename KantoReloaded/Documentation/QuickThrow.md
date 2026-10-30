@@ -27,7 +27,7 @@ With two foes out, a ball thrown at once asks which one with the game's own targ
 
 ## The List
 
-Every ball you have, in the Bag's order (with the Reloaded Bag: its pocket order and Favorites first), each with its picture, how many, a bar and its chance. The best one is starred in gold; the Quick Throw ball has a QUICK THROW badge. Under the list, why the highlighted ball's chance is what it is ("Net Ball works x3 on Water and Bug types."), then the foe's HP, status and the turn.
+Every ball in your Bag's Poké Balls pocket, in its order (with the Reloaded Bag: its order and Favorites first), each with its picture, how many, a bar and its chance. The best one is starred in gold; the Quick Throw ball has a QUICK THROW badge. Under the list, why the highlighted ball's chance is what it is ("Net Ball works x3 on Water and Bug types."), then the foe's HP, status and the turn.
 
 | Button | Does |
 |---|---|
@@ -51,7 +51,7 @@ Worked out from the game's own catch maths, not rolled: the ball's bonus, HP, st
 - **Colours:** Red under 25%, gold under 50%, green from 50%.
 - **Balls that give a status** (PIF's Dream, Toxic, Scorch, Frost and Spark Balls) count the status they'd give, and say so ("Dream Ball puts it to sleep first, for x2.5."). Working the chance out never changes the battle.
 - **Guaranteed Catch** (Quality of Life) shows every ball at 100%.
-- **"~" in front:** When the game's catch maths isn't what Kanto Reloaded knows (a KIF update, another mod's change), every chance is an estimate, and Kanto Reloaded's log says why.
+- **"~" in front:** When the game's catch maths isn't what Kanto Reloaded knows (a KIF update, another mod's change), every chance is an estimate, and Kanto Reloaded's log says why. KIF's own switch for its modules (Battles & Challenges On: KIF's maths, Off: PIF's) and Alpha Encounters' change (it doesn't touch a thrown ball) are known, so the chances stay exact with them.
 
 ## The Ring by the HP Bar
 
@@ -63,5 +63,5 @@ PIF's Pure Ball ("works better on a Pokémon with no status") and Status Ball ("
 
 ## For Mod Makers
 
-- **Another mod's balls** work in the list and the ring like the game's: every ball with a Battle Use of 4 or 9 is listed, and its chance comes from its own catch rate handler. While the chance is worked out, a handler sees stand-ins of the battler and the battle that keep any change to themselves; a handler that tries to change the battle any other way shows "?".
+- **Another mod's balls** work in the list and the ring like the game's: every item in the Bag's Poké Balls pocket with a Battle Use of 4 or 9 (thrown at a foe) is listed, and its chance comes from its own catch rate handler. Nothing from another pocket is (Ghostly Possession's Cleanse Tag is aimed at a foe too). While the chance is worked out, a handler sees stand-ins of the battler and the battle that keep any change to themselves; a handler that tries to change the battle any other way shows "?".
 - **A chance:** `Reloaded::CatchChance.chance(battle, battler, :ULTRABALL)` gives `chance` (0 to 1), `sure`, `mult` (the ball's bonus), `status` and `status_set` (the status it would see, and whether the ball gave it); `Reloaded::CatchChance.percent(result)` writes it.

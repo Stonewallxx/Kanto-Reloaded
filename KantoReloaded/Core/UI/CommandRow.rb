@@ -126,8 +126,12 @@ module Reloaded
 
     def alpha(col, a); return Color.new(col.red, col.green, col.blue, a); end
 
-    def on_fill(col)
-      return (0.3 * col.red + 0.59 * col.green + 0.11 * col.blue) > 150 ? mix(col, BLACK, 0.72) : WHITE
+    # A picked command's words on its fill: a tone of its own colour that
+    # stands out from it, a deep shade on a light fill, a pale tint on a
+    # darker one (his pick, 2026-10-29, sheet battle-scene-word-tones)
+    def picked_ink(ink)
+      light = 0.3 * ink.red + 0.59 * ink.green + 0.11 * ink.blue > 150
+      return light ? mix(ink, BLACK, 0.62) : mix(ink, WHITE, 0.78)
     end
 
     # EBDX's colour for button i (its picture's row, CommandWindowEBDX#
@@ -176,7 +180,7 @@ module Reloaded
         bm.fill_rect(x + 3, y + h + 1, w - 4, 2, alpha(BLACK, 90)) if shadow
         PP.chamfer_grad(bm, x, y, x + w, y + h, PLATE_CUT, mix(ink, WHITE, 0.22), ink, mix(ink, BLACK, 0.35))
         bm.fill_rect(x + 8, y + 1, w - 16, 1, mix(ink, WHITE, 0.45))
-        P.text(bm, x, y + 5, w, 26, name, on_fill(ink), PF::TEXT, 2)
+        P.text(bm, x, y + 5, w, 26, name, picked_ink(ink), PF::TEXT, 2)
       else
         bm.fill_rect(x + 3, y + h, w - 4, 2, alpha(BLACK, 70)) if shadow
         PP.chamfer_grad(bm, x, y, x + w, y + h, PLATE_CUT, c[:panel2], c[:panel], c[:line])
@@ -209,7 +213,7 @@ module Reloaded
         end
         bm.fill_rect(fw, 0, lw, 1, c[:line])
         bm.fill_rect(fw, 1, lw, 1, mix(ink, WHITE, 0.5))
-        P.text(bm, fw, 2, sw, 20, name, on_fill(ink), PF::TEXT, 2)
+        P.text(bm, fw, 2, sw, 20, name, picked_ink(ink), PF::TEXT, 2)
         replace(b, bm)
         b.src_rect.set(0, 0, fw, SLIM_H)
         b.ox = 0

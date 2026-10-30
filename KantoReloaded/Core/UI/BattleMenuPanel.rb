@@ -286,7 +286,7 @@ module Reloaded
         @cursor_rect = [px + 8, ry, PW - 16, RH - 2] if i == @index
         locked = @bm.usable(e, @ctx) != true
         fav = @bm.favorite?(e)
-        icon(top, e.icon, px + 14, ry + 1, 26, locked)
+        icon(top, @bm.icon(e, @ctx), px + 14, ry + 1, 26, locked)
         nx = px + 46
         if fav
           PP.pixels(top, PP::STAR, nx, ry + 11, locked ? mix(c[:gold], c[:dim], 0.5) : c[:gold])

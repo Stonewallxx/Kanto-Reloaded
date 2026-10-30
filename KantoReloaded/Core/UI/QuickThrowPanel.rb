@@ -35,7 +35,7 @@ module Reloaded
     BI = Reloaded::ButtonIcons
     QT = Reloaded::QuickThrow
     CC = Reloaded::CatchChance
-    PW = 324          # the panel's width
+    PW = 392          # the panel's width: the longest ball name (Perfect Ball), its star, the badge and the count fit
     PY = 4            # its top
     RH = 23           # a row
     MAX_ROWS = 10     # rows before the list scrolls
@@ -182,6 +182,7 @@ module Reloaded
       end
       QT.save_ball(row[0])
       @quick = row[0]
+      Reloaded::CatchGauge.refresh_all(@ctx.scene) if defined?(Reloaded::CatchGauge)   # the ring by the HP bar follows now
       pbPlayDecisionSE
       refresh
     end
