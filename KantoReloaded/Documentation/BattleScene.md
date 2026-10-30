@@ -19,6 +19,8 @@ A ring in your **Cursor Color** (Kanto Reloaded > Interface; your Theme's colour
 
 **Battle Cursor** (Kanto Reloaded > Interface > Battle Scene): Reloaded, or EBDX's Own (its red corners).
 
+With [Effectiveness (EBDX)](MoveEffectiveness.md) On, the Fight menu's ring is in the picked move's color, and the target window's in each target's.
+
 ## Picking a Target
 
 Every Pokémon on its button is centred, so tall ones (Gyarados, Onix) keep their heads; EBDX cut the top off every icon. A fusion shows its own icon, its head and body, instead of EBDX's DNA placeholder. If you set PIF's **Fusion Icons** option to DNA, it stays DNA. The buttons always use the small icons, even with Big Pokémon Icons on: battle sprites came out too small on them.

@@ -22,7 +22,7 @@ module Reloaded
   module SettingsSections
     LIST = [
       [:core,            "Core",            [:systems, :features], "Each Kanto Reloaded system and feature, On or Off."],
-      [:interface,       "Interface",       [:interface, :battle_scene]],
+      [:interface,       "Interface",       [:interface, :battle_scene, :move_effectiveness]],
       [:controls,        "Controls",        [:controls]],
       [:speed_up,        "Speed-Up",        [:speed_up]],
       [:overworld_menu,  "Overworld Menu",  [:overworld_menu]],

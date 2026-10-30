@@ -19,7 +19,8 @@
 #
 # A ring's picture is made once per size, shape and colour and kept for the
 # battle (a handful of sizes ever appear); following a button costs a few
-# assignments a frame and makes nothing.
+# assignments a frame and makes nothing. A ring can take a colour of its
+# own (Effectiveness (EBDX): the picked move's, each target's).
 #==============================================================================
 
 module Reloaded
@@ -49,12 +50,13 @@ module Reloaded
       # corners of radius r) or round a w x h plate (:plate, cut r): its
       # picture and its top-left from the box's. corners (:edge): the
       # button's own corners (BattleCursor.corners), the ring filling the
-      # pixels they leave empty
-      def bitmap(w, h, shape, r, corners = nil)
-        key = [w, h, shape, r, corners]
+      # pixels they leave empty. col: the ring's own colour (nil: Cursor
+      # Color's)
+      def bitmap(w, h, shape, r, corners = nil, col = nil)
+        key = col ? [w, h, shape, r, corners, col.red.to_i, col.green.to_i, col.blue.to_i] : [w, h, shape, r, corners]
         hit = @bitmaps[key]
         return hit if hit && !hit[0].disposed?
-        col = colour
+        col ||= colour
         if shape == :plate
           m = RING + GLOW_W
           b = Bitmap.new(w + 2 * m, h + 2 * m)
@@ -155,16 +157,26 @@ module Reloaded
         @r = shape == :plate ? (options[:cut] || 7) : (options[:radius] || 6)
       end
 
+      # Its own colour (nil: Cursor Color's); the picture changes on the
+      # next place
+      def colour=(col)
+        return if col.equal?(@col)
+        same = col && @col && col.red == @col.red && col.green == @col.green && col.blue == @col.blue
+        @col = col
+        @recolour = true unless same
+      end
+
       # A ring whose box is x, y, w, h (:edge: its outer edge; :plate: the
       # plate's own); opacity scales the pulse (EBDX's half-strength buttons)
       def place(x, y, w, h, opacity = 255, corners = nil)
         return if disposed? || @broken
-        if w != @w || h != @h || !corners.equal?(@built) || @sprite.bitmap.nil? || @sprite.bitmap.disposed?
+        if w != @w || h != @h || !corners.equal?(@built) || @recolour || @sprite.bitmap.nil? || @sprite.bitmap.disposed?
           @w = w
           @h = h
           @built = corners
+          @recolour = false
           begin
-            @sprite.bitmap, @dx, @dy = Reloaded::BattleCursor.bitmap(w, h, @shape, @r, corners)
+            @sprite.bitmap, @dx, @dy = Reloaded::BattleCursor.bitmap(w, h, @shape, @r, corners, @col)
           rescue StandardError => e
             # a cursor that can't be drawn hides for the rest of the battle;
             # the battle carries on

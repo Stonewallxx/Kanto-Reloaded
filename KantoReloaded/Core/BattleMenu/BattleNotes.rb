@@ -191,20 +191,12 @@ module Reloaded
       end
 
       # The move's effectiveness against the foe as a multiplier (0, 0.25 ...
-      # 4), or nil for a status move. Its type as the battle works it out
-      # (Electrify, Ion Deluge, KR's Hidden Power), the foe's types as seen;
-      # an ability that makes it immune counts once the battle has shown it.
+      # 4), or nil when nothing shows (a status move, Thunder Wave aside):
+      # Reloaded::Matchup's, on what the battle has shown (BattleTools/
+      # Matchup.rb)
       def effectiveness(move, user, target)
-        return nil if move.nil? || move.statusMove?
-        type = calc_type(move, user)
-        return nil unless type
-        val = if Notes.disguise(target) then Effectiveness.calculate(type, *types_seen(target))
-              else (move.pbCalcTypeMod(type, user, target) rescue Effectiveness.calculate(type, *types_seen(target)))
-              end
-        val = Effectiveness::INEFFECTIVE if known_immunity?(move, type, user, target)
-        return val.to_f / Effectiveness::NORMAL_EFFECTIVE
-      rescue StandardError
-        return nil
+        val = Reloaded::Matchup.value(move, user, target)
+        return val.nil? ? nil : val.to_f / Reloaded::Matchup::NORMAL
       end
 
       # pbCalcType also sets the move's power boost: kept as it was
@@ -215,22 +207,6 @@ module Reloaded
         return type
       rescue StandardError
         return move.type
-      end
-
-      # Abilities that make their holder immune to a type (cody's list,
-      # Effectiveness.rb)
-      TYPE_IMMUNE = { :FLASHFIRE => :FIRE, :LIGHTNINGROD => :ELECTRIC, :MOTORDRIVE => :ELECTRIC,
-                      :VOLTABSORB => :ELECTRIC, :SAPSIPPER => :GRASS, :STORMDRAIN => :WATER,
-                      :WATERABSORB => :WATER, :DRYSKIN => :WATER, :LEVITATE => :GROUND }.freeze
-
-      def known_immunity?(move, type, user, target)
-        return false if user.respond_to?(:hasMoldBreaker?) && user.hasMoldBreaker?
-        ab = target.ability_id
-        return false unless ab && TYPE_IMMUNE[ab] == type
-        return false if ab == :LEVITATE && move.respond_to?(:hitsFlyingTargets?) && move.hitsFlyingTargets?
-        return Notes.ability_known?(target.battle, target)
-      rescue StandardError
-        return false
       end
 
       # "x4", "x1/2", "x0"
@@ -391,32 +367,43 @@ module Reloaded
         return out
       end
 
+      # Kept while the Battle Menu or Effectiveness (EBDX) is On: both
+      # show only what the battle has shown
+      def recording?
+        return true if Reloaded::BattleMenu.on?
+        return defined?(Reloaded::MoveEffectiveness) && Reloaded::MoveEffectiveness.on? ? true : false
+      end
+
       # The pop-up, items used up or set off, and messages: noted after the
-      # game's own code runs (nothing in the battle changes)
+      # game's own code runs (nothing in the battle changes). Core hooks:
+      # recording? decides
       def install
         h = Reloaded::Hooks
         return unless defined?(::PokeBattle_Battle)
         if ::PokeBattle_Battle.method_defined?(:pbShowAbilitySplash)
-          h.around(FEATURE, ::PokeBattle_Battle, :pbShowAbilitySplash, :id => :battle_menu_note_splash) do |original, *args|
-            Reloaded::BattleMenu::Notes.note_ability(args[0], args[3])
+          h.around(nil, ::PokeBattle_Battle, :pbShowAbilitySplash, :id => :battle_menu_note_splash) do |original, *args|
+            Reloaded::BattleMenu::Notes.note_ability(args[0], args[3]) if Reloaded::BattleMenu::Notes.recording?
             original.call(*args)
           end
         end
         [:pbDisplay, :pbDisplayPaused, :pbDisplayBrief].each do |m|
           next unless ::PokeBattle_Battle.method_defined?(m)
-          h.around(FEATURE, ::PokeBattle_Battle, m, :id => :"battle_menu_note_#{m}") do |original, *args|
-            battle = original.receiver
-            Reloaded::BattleMenu::Notes.note_message(battle, args[0])
-            Reloaded::BattleMenu::TurnLog.message(battle, args[0]) if defined?(Reloaded::BattleMenu::TurnLog)
+          h.around(nil, ::PokeBattle_Battle, m, :id => :"battle_menu_note_#{m}") do |original, *args|
+            if Reloaded::BattleMenu::Notes.recording?
+              battle = original.receiver
+              Reloaded::BattleMenu::Notes.note_message(battle, args[0])
+              Reloaded::BattleMenu::TurnLog.message(battle, args[0]) if Reloaded::BattleMenu.on? && defined?(Reloaded::BattleMenu::TurnLog)
+            end
             original.call(*args)
           end
         end
         return unless defined?(::PokeBattle_Battler)
         [:pbHeldItemTriggered, :pbConsumeItem].each do |m|
           next unless ::PokeBattle_Battler.method_defined?(m)
-          h.around(FEATURE, ::PokeBattle_Battler, m, :id => :"battle_menu_note_#{m}") do |original, *args|
-            b = original.receiver
-            Reloaded::BattleMenu::Notes.note_item(b, m == :pbHeldItemTriggered && args[0].is_a?(Symbol) ? args[0] : nil)
+          h.around(nil, ::PokeBattle_Battler, m, :id => :"battle_menu_note_#{m}") do |original, *args|
+            if Reloaded::BattleMenu::Notes.recording?
+              Reloaded::BattleMenu::Notes.note_item(original.receiver, m == :pbHeldItemTriggered && args[0].is_a?(Symbol) ? args[0] : nil)
+            end
             original.call(*args)
           end
         end
