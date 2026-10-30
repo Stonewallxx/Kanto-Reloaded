@@ -257,6 +257,12 @@ module Reloaded
       "Core/UI/CommandRow.rb",
       "Core/BattleScene/BattleScene.rb",
       "Core/BattleScene/TargetIcons.rb",
+      # Quick Throw: the catch chances, the feature and its throw, the gauge
+      # by a wild foe's HP bar, the panel and its popups
+      "Core/BattleTools/CatchChance.rb",
+      "Core/BattleTools/QuickThrow.rb",
+      "Core/BattleTools/CatchGauge.rb",
+      "Core/UI/QuickThrowPanel.rb",
       # Fixes to the game's own code
       "Core/Fixes/Fixes.rb",
       "Core/Fixes/CommandTextColours.rb",
@@ -264,6 +270,7 @@ module Reloaded
       "Core/Fixes/EBDXMoveLayers.rb",
       "Core/Fixes/BagFixes.rb",
       "Core/Fixes/CardBackgrounds.rb",
+      "Core/Fixes/PIFBalls.rb",
       # Last: rows for every feature registered above
       "Core/Settings/FeatureSwitches.rb"
     ].freeze
@@ -277,7 +284,7 @@ module Reloaded
     # to KIF Settings. Dev boots last, when it's there. PauseMenu boots
     # before Profiler and BugReport, so their hooks on the pause menu's
     # scene sit over its screen and still see it open.
-    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :EggManager, :Difficulty, :Randomizer, :NewGameSetup, :Publish, :HiddenPower, :CriticalEVGain, :IVBoundaries, :DoubleAbilities, :TrainerCard, :BattleMenu, :BattleScene, :TitleVersions, :TitleLogo, :LivingTitle, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
+    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :EggManager, :Difficulty, :Randomizer, :NewGameSetup, :Publish, :HiddenPower, :CriticalEVGain, :IVBoundaries, :DoubleAbilities, :TrainerCard, :BattleMenu, :BattleScene, :QuickThrow, :TitleVersions, :TitleLogo, :LivingTitle, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
 
     def self.files
       return FILES

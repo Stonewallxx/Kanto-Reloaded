@@ -182,7 +182,7 @@ module Reloaded
         return :close
       end
       pbPlayDecisionSE
-      return after_run(e, @bm.run(e, @ctx))
+      return after_run(e, @bm.run_as_favorite(e, @ctx))
     end
 
     # Y: the entry's options (KR's standard menu)

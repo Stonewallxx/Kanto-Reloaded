@@ -97,9 +97,10 @@ module Reloaded
       end
 
       # A question with buttons, and coloured lines under it (segments as
-      # Pixel.small_rich takes them). The chosen button's index.
-      def ask(scene, title, text, segments, buttons, choice = 0)
-        return buttons_dialog(scene, title, text, buttons, choice, segments)
+      # Pixel.small_rich takes them). The chosen button's index; Back gives
+      # the last one, or back: (nil when Back is neither button)
+      def ask(scene, title, text, segments, buttons, choice = 0, back: :last)
+        return buttons_dialog(scene, title, text, buttons, choice, segments, nil, back)
       end
 
       # A popup the block draws (bitmap, colours, the chosen button), its
@@ -108,8 +109,9 @@ module Reloaded
         return buttons_dialog(scene, nil, nil, Array.new(count), choice, nil, painter)
       end
 
-      # The chosen button's index; Back picks the last one.
-      def buttons_dialog(scene, title, text, buttons, choice = 0, segments = nil, painter = nil)
+      # The chosen button's index; Back picks the last one (or back).
+      def buttons_dialog(scene, title, text, buttons, choice = 0, segments = nil, painter = nil, back = :last)
+        back = buttons.length - 1 if back == :last
         redraw = true
         loop do
           if redraw
@@ -133,7 +135,7 @@ module Reloaded
             return i
           elsif pt.right?
             pbPlayCancelSE
-            return buttons.length - 1
+            return back
           elsif buttons.length > 1 && (Input.trigger?(Input::LEFT) || Input.trigger?(Input::RIGHT))
             choice = (choice + (Input.trigger?(Input::LEFT) ? -1 : 1)) % buttons.length
             pbPlayCursorSE
@@ -143,7 +145,7 @@ module Reloaded
             return choice
           elsif Input.trigger?(Input::BACK)
             pbPlayCancelSE
-            return buttons.length - 1
+            return back
           end
         end
       ensure

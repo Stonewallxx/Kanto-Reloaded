@@ -4,9 +4,10 @@
 #==============================================================================
 # While you choose Fight, Bag, Pokémon or Run (his picks, 2026-10-29): the
 # Battle Menu's button, and each Battle Menu shortcut you bound (Open Battle
-# Info, Open Battle Favorite), as chips in the Field Strip's look, in your
-# controller's style. Only what works now (Quick Throw joins when it's
-# built). Right-aligned over EBDX's command row (the Field Strip on the left
+# Info, Open Battle Favorite, Quick Throw), as chips in the Field Strip's
+# look, in your controller's style. Only what works now (Quick Throw's while
+# it's offered in this battle and there's a ball to throw). Right-aligned
+# over EBDX's command row (the Field Strip on the left
 # stops short of them), along the bottom of PIF's message box, or in the
 # Corner Panel's left panel (that row draws them itself with draw).
 #
@@ -40,6 +41,8 @@ module Reloaded
             e = bm.entry(bm.favorite_key) rescue nil
             out << [fav, e ? e.name.to_s : _INTL("Favorite")]
           end
+          qt = shown(:quick_throw)
+          out << [qt, _INTL("Quick Throw")] if qt && defined?(Reloaded::QuickThrow) && Reloaded::QuickThrow.hint?(@scene)
         end
         return out
       end
@@ -104,6 +107,7 @@ module Reloaded
 
       # The sprite over a command box (not the Corner Panel's: it has its own)
       def show(scene)
+        @scene = scene                       # whose battle the chips are for (Quick Throw's)
         ebdx = Reloaded::BattleScene.ebdx?(scene)
         if ebdx
           cw = scene.instance_variable_get(:@commandWindow)
@@ -147,7 +151,7 @@ module Reloaded
           @sprite.dispose
         end
         @viewport.dispose if @viewport && !@viewport.disposed?
-        @sprite = @viewport = @sig = @edge = nil
+        @sprite = @viewport = @sig = @edge = @scene = nil
       end
 
       # Over the battle (its viewports are 99,999), under the Battle Menu

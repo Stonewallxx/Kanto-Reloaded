@@ -59,16 +59,27 @@ module Reloaded
       # indent, line endings as LF. nil when the source can't be read.
       def source_crc(method)
         file, line = method.source_location
+        return lines_crc(file, line)
+      end
+
+      # The same for a handler the game adds with a proc (Foo.add(:X, proc { ...
+      # }) ): its first line to the "})" closing it
+      def handler_crc(prc)
+        file, line = prc.source_location
+        return lines_crc(file, line, "})")
+      end
+
+      def lines_crc(file, line, stop = nil)
         file = Reloaded::Paths.script_file(file) if file   # in game: only the file's name
         return nil unless file && line && File.file?(file)
         lines = File.readlines(file, :encoding => "UTF-8").map { |l| l.chomp.sub(/\r\z/, "") }
         first = lines[line - 1]
         return nil unless first
-        indent = first[/\A */]
+        stop ||= first[/\A */] + "end"
         out = []
         lines[(line - 1)..-1].each do |l|
           out << l
-          break if l == indent + "end"
+          break if l == stop
         end
         return Zlib.crc32(out.join("\n"))
       rescue StandardError

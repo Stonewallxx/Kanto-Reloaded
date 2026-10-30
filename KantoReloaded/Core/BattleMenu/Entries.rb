@@ -3,8 +3,8 @@
 # Kanto Reloaded: the Battle Menu's own entries
 #==============================================================================
 # Main's entries (his picks, 2026-10-28): Battle Info and the Turn Log.
-# Quick Throw joins them with Quick Throw and Catch Chances (Wave 6) and
-# becomes the default Favorite then.
+# Quick Throw registers its own, first on Main and the default Favorite
+# (BattleTools/QuickThrow.rb).
 #==============================================================================
 
 module Reloaded

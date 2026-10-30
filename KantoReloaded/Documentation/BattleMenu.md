@@ -1,6 +1,6 @@
 # Battle Menu
 
-A menu of battle tools you open while choosing Fight, Bag, Pokémon or Run: Battle Info, the Turn Log and other mods' tools, with the Field Strip over the battle menu. This is Roadmap topic battle-command-menu. The code is in `Core/BattleMenu/BattleMenu.rb` (the entries, pages, Favorite and the battle menu's hooks), `Core/BattleMenu/BattleNotes.rb` (what it reads from the battle, and what the battle has shown about the foes), `Core/BattleMenu/TurnLog.rb` (the Turn Log), `Core/BattleMenu/Entries.rb` (Main's entries), `Core/UI/BattleMenuPanel.rb` (the menu), `Core/UI/BattleInfoScreen.rb` (Battle Info) and `Core/UI/FieldStrip.rb` (the Field Strip).
+A menu of battle tools you open while choosing Fight, Bag, Pokémon or Run: Quick Throw, Battle Info, the Turn Log and other mods' tools, with the Field Strip over the battle menu. This is Roadmap topic battle-command-menu. The code is in `Core/BattleMenu/BattleMenu.rb` (the entries, pages, Favorite and the battle menu's hooks), `Core/BattleMenu/BattleNotes.rb` (what it reads from the battle, and what the battle has shown about the foes), `Core/BattleMenu/TurnLog.rb` (the Turn Log), `Core/BattleMenu/Entries.rb` (Main's entries), `Core/UI/BattleMenuPanel.rb` (the menu), `Core/UI/BattleInfoScreen.rb` (Battle Info) and `Core/UI/FieldStrip.rb` (the Field Strip).
 
 ## Where It Shows
 
@@ -12,9 +12,9 @@ In every battle where you choose Fight, Bag, Pokémon or Run, in EBDX's battle s
 
 A panel in the middle of the screen, over the battle, with the battle menu still in view under it.
 
-- **Main:** Kanto Reloaded's entries: **Battle Info** and **Turn Log** (with the turn being played).
+- **Main:** Kanto Reloaded's entries: **Quick Throw** (the Quick Throw ball's count and its chance; see [Quick Throw](QuickThrow.md)), **Battle Info** and **Turn Log** (with the turn being played).
 - **Mods:** Every other mod's entries, each with its mod's name. A mod switched off in KIF's Mods list takes its entries with it at once; they come back where they were. With no other mod's entries there's only Main.
-- **The Favorite:** One entry, starred in gold. The Battle Menu button again, inside the menu, runs it (Battle Info at first). With none, the button closes the menu.
+- **The Favorite:** One entry, starred in gold. The Battle Menu button again, inside the menu, runs it (Quick Throw at first, which throws at once that way; Battle Info while Quick Throw is Off). With none, the button closes the menu.
 - **A locked entry** (one that can't be used right now) is dimmed with a padlock, and the description box says why in red.
 
 | Button | Does |
@@ -53,8 +53,9 @@ Chips over the battle menu's left while you choose, one for each effect on the f
 | Battle Menu | Action (X on a controller, Z on a keyboard) | Opens the Battle Menu while you choose; inside it, runs the Favorite |
 | Open Battle Favorite | Unbound | Runs the Favorite straight from the battle menu |
 | Open Battle Info | Unbound | Opens Battle Info straight from the battle menu |
+| Quick Throw | Unbound | Throws the Quick Throw ball straight from the battle menu |
 
-All three are in Controls > Battle > Battle Menu. Mega Evolve shares the Action button in the Fight menu; the two never clash.
+All four are in Controls > Battle > Battle Menu. Mega Evolve shares the Action button in the Fight menu; the two never clash.
 
 ## For Mod Makers
 
@@ -72,10 +73,12 @@ Reloaded::BattleMenu.register(:battle_camera, :name => "Battle Camera",
   :handler => proc { |ctx| nil })                 # nil stays, :close, or :fight :bag :party :run :call
 Reloaded::BattleMenu.unregister(:battle_camera)
 Reloaded::BattleMenu.unregister_owner("PhotoMode")
+Reloaded::BattleMenu.shortcut(:my_action) { |ctx| nil }   # a Controls action (Battle area) read while the battle menu runs
 ```
 
 - **Its owner** is the mod whose scripts are loading (KIF's `KIF::Mods.current`); its entries hide while that mod is switched off in KIF's Mods list (Mod Manager's mods too). Kanto Reloaded's own entries can't be taken.
-- **ctx** (one each time the menu opens): `battle`, `index` (the Pokémon choosing), `battler`, `scene`, `first_action`, `wild?`, `trainer?`; `hidden { }` (the menu steps aside for a screen of your own), `notice(title, text)`, `confirm(title, text, yes, no)` (Kanto Reloaded's question, your mod's name under it; No first), `choose(title, labels, descriptions)`, `toast(text)`.
+- **ctx** (one each time the menu opens): `battle`, `index` (the Pokémon choosing), `battler`, `scene`, `first_action`, `wild?`, `trainer?`, `favorite` (true while it runs as the Favorite); `hidden { }` (the menu steps aside for a screen of your own), `notice(title, text)`, `confirm(title, text, yes, no)` (Kanto Reloaded's question, your mod's name under it; No first), `choose(title, labels, descriptions)`, `toast(text)`.
 - **A game command:** A handler that answers `:bag` (or `:fight`, `:party`, `:run`, `:call`) leaves the battle menu with it, as if that button had been picked (EBDX's cursor is kept for next turn as usual). `:run` only works for the first Pokémon to choose.
+- **A shortcut:** `shortcut(action) { |ctx| ... }` runs the block when that Controls action (one of the Battle area) is pressed while the battle menu runs; it answers as a handler does (Quick Throw's own button is one).
 - **Errors:** An entry whose condition, status or handler raises is logged and dims for the rest of the battle; the menu carries on.
 - **Ability rows on Battle Info** come from KIF Battle Info's providers (`KIF::BattleInfo.register_abilities`), as KIF: Elite Redux registers its innates.

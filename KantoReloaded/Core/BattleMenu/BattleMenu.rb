@@ -14,7 +14,7 @@
 #                entries there's only Main
 #   opens        its own Controls action, Battle Menu (Battle area), on the
 #                Action button at first. Inside the panel the same button
-#                runs the Favorite (Battle Info until Quick Throw is built);
+#                runs the Favorite (Quick Throw, else Battle Info);
 #                Open Battle Favorite and Open Battle Info (unbound) skip it
 #   remembers    the order on each page, the Favorite and the page left on,
 #                the same in every save: <mod folder>\Settings\Battle Menu.json
@@ -38,11 +38,14 @@
 #     :handler => proc { |ctx| nil })             # nil stays, :close, or :fight :bag :party :run :call
 #   Reloaded::BattleMenu.unregister(:battle_camera)
 #   Reloaded::BattleMenu.unregister_owner("PhotoMode")
+#   Reloaded::BattleMenu.shortcut(:my_action) { |ctx| nil }   # a Controls action of
+#                                               # the Battle area, read while the command box runs
 #
 #   ctx (one per opening): battle, index (the Pokémon choosing), battler,
-#   scene, first_action, wild?, trainer?; hidden { } (step aside for a screen
-#   of its own), notice(title, text), confirm(title, text, yes, no) (the
-#   mod's name under the words), choose(title, labels, descriptions), toast.
+#   scene, first_action, wild?, trainer?, favorite (run as the Favorite);
+#   hidden { } (step aside for a screen of its own), notice(title, text),
+#   confirm(title, text, yes, no) (the mod's name under the words),
+#   choose(title, labels, descriptions), toast.
 #
 # An entry whose condition, status or handler raises is logged and dims for
 # the rest of the battle; the Battle Menu itself carries on.
@@ -68,6 +71,7 @@ module Reloaded
                        :status, :handler, :mod)
 
     @entries = {}
+    @shortcuts = {}
 
     class << self
       attr_reader :opening            # the panel or a screen of it is open
@@ -169,6 +173,13 @@ module Reloaded
 
       def entries
         return @entries.values
+      end
+
+      # A Controls action read while the command box runs (Quick Throw's own
+      # button): the block gets the context and answers as a handler does
+      def shortcut(action, &block)
+        @shortcuts[action.to_sym] = block
+        return action
       end
 
       # The mod whose scripts are loading (Kanto Reloaded's own entries say
@@ -339,9 +350,10 @@ module Reloaded
         return true
       end
 
+      # The player's Favorite, else the first default one there (its feature On)
       def favorite_key
         return layout["favorite"] if layout.has_key?("favorite")
-        return FAVORITES.find { |k| @entries[k] }
+        return FAVORITES.find { |k| (e = @entries[k]) && (e.feature.nil? || Reloaded::Features.on?(e.feature)) }
       end
 
       def favorite?(e)
@@ -417,6 +429,7 @@ module Reloaded
         how = if trigger?(:battle_menu) then :panel
               elsif trigger?(:open_battle_favorite) then :favorite
               elsif trigger?(:open_battle_info) then :info
+              else @shortcuts.each_key.find { |id| trigger?(id) }
               end
         open(ctx, how) if how
       end
@@ -436,6 +449,7 @@ module Reloaded
                  when :panel then Reloaded::BattleMenuPanel.new(ctx).main
                  when :favorite then run_favorite(ctx)
                  when :info then open_info(ctx)
+                 else @shortcuts[how].call(ctx)
                  end
         command = command_of(result, ctx)
         throw(EXIT, [EXIT, command]) if command
@@ -467,6 +481,15 @@ module Reloaded
         ctx.entry = nil if ctx
       end
 
+      # The Favorite's press (Quick Throw throws at once then; its row opens
+      # its panel)
+      def run_as_favorite(e, ctx)
+        ctx.favorite = true
+        return run(e, ctx)
+      ensure
+        ctx.favorite = false
+      end
+
       # The Favorite straight from the command box (Open Battle Favorite)
       def run_favorite(ctx)
         e = entry(favorite_key)
@@ -474,7 +497,7 @@ module Reloaded
           pbPlayBuzzerSE if defined?(pbPlayBuzzerSE)
           return nil
         end
-        r = run(e, ctx)
+        r = run_as_favorite(e, ctx)
         if r.is_a?(Array) && r[0] == :locked
           Reloaded::Toast.show(r[1]) if defined?(Reloaded::Toast)
           return nil
@@ -495,7 +518,7 @@ module Reloaded
     #--------------------------------------------------------------------------
     class Context
       attr_reader :scene, :battle, :index, :first_action
-      attr_accessor :screen, :entry
+      attr_accessor :screen, :entry, :favorite
 
       def initialize(scene, battle, index, first_action)
         @scene = scene
