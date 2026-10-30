@@ -13,8 +13,9 @@
 #       power, accuracy, PP and words. A foe's once it has used them (its PP
 #       as its most).
 #
-# B (or A, or a click) closes them. Drawn solid on the popups' layer, the
-# Pokémon's icons under it.
+# B (or A, or a click) closes them. A list too long for the screen (a
+# KIF-ER fusion's six innates) scrolls with Up and Down (the wheel too).
+# Drawn solid on the popups' layer, the Pokémon's icons under it.
 #==============================================================================
 
 module Reloaded
@@ -43,14 +44,17 @@ module Reloaded
     private
 
     # Until B, A or a click (a click on a tab turns to it); Left and Right
-    # (LB and RB too) turn the tabs
+    # (LB and RB too) turn the tabs; Up and Down scroll a long one (the
+    # painter says how far it can: @pop_scroll_max)
     def popup_loop(count)
       on = 0
+      @pop_scroll = 0
       redraw = true
       loop do
         if redraw
           overlay.clear
           @pop_tab_hits = []
+          @pop_scroll_max = 0
           yield on
           redraw = false
         end
@@ -59,12 +63,21 @@ module Reloaded
         update_frame
         break if over?
         pt = Reloaded::Pointer
+        dir = pt.wheel != 0 ? -pt.wheel : (Input.repeat?(Input::UP) ? -1 : (Input.repeat?(Input::DOWN) ? 1 : 0))
         if count > 1 && pt.left? && (i = pt.hit(@pop_tab_hits)) && i != on
           on = i
+          @pop_scroll = 0
           pbPlayCursorSE
           redraw = true
         elsif count > 1 && (Input.repeat?(Input::LEFT) || Input.repeat?(Input::RIGHT) || Input.trigger?(Input::L) || Input.trigger?(Input::R))
           on = (on + (Input.repeat?(Input::LEFT) || Input.trigger?(Input::L) ? -1 : 1)) % count
+          @pop_scroll = 0
+          pbPlayCursorSE
+          redraw = true
+        elsif dir != 0 && @pop_scroll_max > 0
+          to = (@pop_scroll + dir).clamp(0, @pop_scroll_max)
+          next if to == @pop_scroll
+          @pop_scroll = to
           pbPlayCursorSE
           redraw = true
         elsif Input.trigger?(Input::BACK) || Input.trigger?(Input::USE) || pt.right? || pt.left?
@@ -99,6 +112,7 @@ module Reloaded
       end
       innates = []
       NT.other_abilities(@battle, bt).each do |label, name, words|
+        next if pair && label == "ABILITY 2"        # KIF-ER's Ability 2 is the pair's other one
         if label == "INNATE"
           innates << [name, label, name ? words.to_s : _INTL("Shown once it activates.")]
         else
@@ -126,26 +140,51 @@ module Reloaded
     def paint_abilities(c, bt, pages, on)
       rows = pages[on][1]
       tabs = pages.length > 1
-      blocks = rows.map { |name, label, words| [name, label, P.wrap(words.to_s, POP_W - 40)] }
-      room = (H - 16 - 40 - (tabs ? 30 : 0) - 32 - blocks.length * 38) / POP_LINE
-      if blocks.sum { |blk| blk[2].length } > room
-        each = [room / [blocks.length, 1].max, 1].max
-        blocks.each { |blk| blk[2] = blk[2].first(each) }
+      blocks = rows.map { |name, label, words| [name, label, P.wrap(words.to_s, POP_W - 40).first(3)] }
+      height = proc { |blk| 38 + blk[2].length * POP_LINE }
+      head = 40 + (tabs ? 30 : 0)
+      room = H - 16 - head - 32
+      # too many to fit (six innates): the ones from @pop_scroll that fit
+      if blocks.sum(&height) > room
+        fit = 0
+        used = 0
+        blocks.reverse_each { |blk| break if used + height.call(blk) > room; used += height.call(blk); fit += 1 }
+        @pop_scroll_max = blocks.length - fit
+        @pop_scroll = @pop_scroll.clamp(0, @pop_scroll_max)
+        shown = []
+        used = 0
+        blocks[@pop_scroll..-1].each { |blk| break if used + height.call(blk) > room; used += height.call(blk); shown << blk }
+        scrolled = true
+      else
+        shown = blocks
+        scrolled = false
       end
-      h = 40 + (tabs ? 30 : 0) + blocks.sum { |_n, _l, lines| 38 + lines.length * POP_LINE } + 32
+      h = scrolled ? H - 16 : head + shown.sum(&height) + 32
       b, px, py = popup_frame(c, _INTL("{1}'s Abilities", bt.name), h)
       pop_tabs(b, c, py + 42, pages.map(&:first), on) if tabs
       known = RD.known?(@battle, bt)
-      y = py + (tabs ? 72 : 44)
-      blocks.each_with_index do |(name, label, lines), i|
+      y = py + head + 4
+      shown.each_with_index do |(name, label, lines), i|
         P.text(b, px + 20, y, 340, 28, name ? PF.fit(PF::TITLE, name, 330) : "???", name ? c[:head] : c[:dim], PF::TITLE)
         pill(b, c, px + 26 + P.width(PF::TITLE, PF.fit(PF::TITLE, name, 330)), y + 8, _INTL("REVEALED"), :green) if name && !known
         pop_tag(b, c, px + POP_W - 16, y + 4, label)
         lines.each_with_index { |ln, k| P.text(b, px + 20, y + 31 + k * POP_LINE, POP_W - 40, POP_LINE, ln, name ? c[:txt] : c[:dim]) }
         y += 38 + lines.length * POP_LINE
-        b.fill_rect(px + 12, y - 6, POP_W - 24, 1, c[:line]) if i < blocks.length - 1
+        b.fill_rect(px + 12, y - 6, POP_W - 24, 1, c[:line]) if i < shown.length - 1
       end
-      pairs = tabs ? [[:lr, _INTL("Tabs")], [button(:B), _INTL("Close")]] : [[button(:B), _INTL("Close")]]
+      if scrolled
+        # the scroll bar at the right edge
+        top_y = py + head + 4
+        track = h - head - 32 - 8
+        len = [track * shown.length / blocks.length, 12].max
+        at = (track - len) * @pop_scroll / [@pop_scroll_max, 1].max
+        P.ui.rbox(b, px + POP_W - 8, top_y, px + POP_W - 5, top_y + track, 1, c[:line])
+        P.ui.rbox(b, px + POP_W - 8, top_y + at, px + POP_W - 5, top_y + at + len, 1, c[:selb])
+      end
+      pairs = []
+      pairs << [:lr, _INTL("Tabs")] if tabs
+      pairs << [:ud, _INTL("Scroll")] if scrolled
+      pairs << [button(:B), _INTL("Close")]
       pop_hints(b, c, py + h - 28, pairs)
     end
 

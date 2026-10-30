@@ -425,6 +425,29 @@ module Reloaded
         save_layout
       end
 
+      # A KIF entry one of Kanto Reloaded's takes over (Tutor.net, by the TM
+      # Vault) is replaced by it in Your Row and as the Favorite while that
+      # one's feature is on (his ask, 2026-10-29), instead of staying there
+      # locked. The screen asks before it builds its rows.
+      def replace_taken_over
+        map = {}
+        @registered.each_value do |e|
+          next unless e[:takes_over]
+          next if e[:feature] && !Reloaded::Features.on?(e[:feature])
+          map[e[:takes_over].to_s] = e[:key]
+        end
+        return false if map.empty?
+        replaced = row.map { |k| map[k] || k }.uniq
+        changed = replaced != row
+        row.replace(replaced) if changed
+        if (to = map[favorite.to_s])
+          layout["favorite"] = to
+          changed = true
+        end
+        save_layout if changed
+        return changed
+      end
+
       # Your Row with key moved one place left (-1) or right (1).
       def move_in_row(key, dir)
         i = row.index(key.to_s)

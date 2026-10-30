@@ -305,6 +305,7 @@ module Reloaded
       # The rows
       #------------------------------------------------------------------------
       def build
+        PM.replace_taken_over
         by_key = {}
         @items.each { |it| by_key[it.key] = it }
         @all = @items

@@ -14,6 +14,10 @@
 # Drawn when a command box opens and only when the field changed since (a
 # signature of what it shows); nothing runs per frame. Above EBDX's command
 # row, or PIF's command box. A Battle Menu setting, Field Strip, On.
+#
+# Battle Scene's Command Rows move it (BattleScene.strip_spot): over the Slim
+# Bar, stopping short of the hint chips, or into the Corner Panel's left
+# panel (drawn there, this sprite hidden).
 #==============================================================================
 
 module Reloaded
@@ -34,17 +38,19 @@ module Reloaded
     class << self
       def show(scene, battle)
         items = strip_items(battle)
-        if items.empty?
+        spot = defined?(Reloaded::BattleScene) ? Reloaded::BattleScene.strip_spot(scene) : nil
+        if items.empty? || spot == :none
           hide
           return
         end
         ebdx = ebdx?(scene)
+        bottom, x1 = spot || [ebdx ? EBDX_BOTTOM : PIF_BOTTOM, X0 + ROOM]
         c = Reloaded::Palette.map_menu
-        sig = [items, ebdx, c[:light] ? 1 : 0, Reloaded::Settings.get(:"interface.theme")]
+        sig = [items, bottom, x1, c[:light] ? 1 : 0, Reloaded::Settings.get(:"interface.theme")]
         make unless @sprite && !@sprite.disposed?
         if sig != @sig
           @sig = sig
-          draw(c, items, ebdx ? EBDX_BOTTOM : PIF_BOTTOM)
+          draw(c, items, bottom, x1)
         end
         @sprite.visible = true
       rescue StandardError => e
@@ -101,10 +107,10 @@ module Reloaded
         end
       end
 
-      def draw(c, items, bottom)
+      def draw(c, items, bottom, x1 = X0 + ROOM)
         b = @sprite.bitmap
         b.clear
-        flow(b, c, items, X0, X0 + ROOM, bottom)
+        flow(b, c, items, X0, x1, bottom)
       end
 
       def chip_w(words, num, side)
@@ -153,8 +159,9 @@ module Reloaded
       end
 
       # Chips in lines between x0 and x1, the first at y, the next ones
-      # going up; what doesn't fit becomes a +N MORE chip at the end
-      def flow(b, c, items, x0, x1, y)
+      # going up (or down: the Corner Panel's); what doesn't fit becomes a
+      # +N MORE chip at the end
+      def flow(b, c, items, x0, x1, y, step = -1)
         width = proc { |it| chip_w(it[0], it[1], it[2]) + 4 }
         lines = [[]]
         used = 0
@@ -176,7 +183,7 @@ module Reloaded
           lines.last << [:more, left.length]
         end
         lines.each_with_index do |line, r|
-          ly = y - r * (CHIP_H + 4)
+          ly = y + step * r * (CHIP_H + 4)
           x = x0
           line.each do |it|
             if it[0] == :more

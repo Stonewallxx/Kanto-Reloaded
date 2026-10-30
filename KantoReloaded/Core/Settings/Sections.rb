@@ -22,7 +22,7 @@ module Reloaded
   module SettingsSections
     LIST = [
       [:core,            "Core",            [:systems, :features], "Each Kanto Reloaded system and feature, On or Off."],
-      [:interface,       "Interface",       [:interface]],
+      [:interface,       "Interface",       [:interface, :battle_scene]],
       [:controls,        "Controls",        [:controls]],
       [:speed_up,        "Speed-Up",        [:speed_up]],
       [:overworld_menu,  "Overworld Menu",  [:overworld_menu]],
@@ -44,7 +44,7 @@ module Reloaded
     # Always last; a page nobody listed goes before them
     DEVELOPER = [:data_patches, :profiler].freeze
     # A name too long for the sidebar: the short one there
-    SHORT = { "Battle Cursor and Icons" => "Battle Cursor" }.freeze
+    SHORT = {}.freeze
     # A header's own name in its section where it isn't the page's (the
     # page keeps its name: the Overworld Menu finds its rows by it)
     HEADERS = { :bag => "Reloaded Bag" }.freeze

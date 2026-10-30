@@ -397,8 +397,11 @@ module Reloaded
       PP.bar(top, c, x0 + 68, y0 + 36, bar_w, bt.hp.to_f / [bt.totalhp, 1].max, hp_colour(c, bt))
       P.text(top, x0 + 68 + bar_w + 8, y0 + 28, hw + 2, 20, hp, c[:txt])
       status_pill(top, c, x0 + 250, y0 + 31, bt, true)
-      # the stat stages (closer together when other abilities follow)
-      extra = NT.other_abilities(@battle, bt)
+      # the stat stages (closer together when innates follow); its abilities
+      # (a second one under the first: his ask, 2026-10-29) on the right
+      main, innates = ability_pages(bt).map { |pg| pg[1] }
+      innates ||= []
+      extra = innates.map { |name, label, _w| [label, name] }
       step = extra.empty? ? 24 : 21
       sx = x0 + 14
       RD::STATS.each_with_index { |(stat, label), i| stage_row(c, sx, y0 + 58 + i * step, stat, label, bt.stages[stat].to_i) }
@@ -409,15 +412,22 @@ module Reloaded
       heading(top, c, rx, x1 - 12, y0 + 8, _INTL("Types"))
       tx = rx
       types.each { |t| tx += big_type(top, t, tx, y0 + 22) + 4 }
-      heading(top, c, rx, x1 - 12, y0 + 46, _INTL("Ability"))
+      heading(top, c, rx, x1 - 12, y0 + 46, main.length > 1 ? _INTL("Abilities") : _INTL("Ability"))
       known = RD.known?(@battle, bt)
-      if NT.ability_known?(@battle, bt)
-        aw = P.text(top, rx, y0 + 58, rw, 22, PF.fit(PF::TEXT, bt.abilityName.to_s, rw - 70), c[:txt])
-        pill(top, c, rx + aw + 6, y0 + 62, _INTL("REVEALED"), :green) unless known
-      else
-        aw = P.text(top, rx, y0 + 58, 40, 22, "???", c[:dim])
-        pill(top, c, rx + aw + 6, y0 + 62, _INTL("NOT SEEN YET"), :dim)
+      main.first(2).each_with_index do |(name, label, _w), k|
+        ay = y0 + 58 + k * 20
+        tagw = main.length > 1 ? P.width(PF::TINY, label) + 18 : 0
+        if name
+          room = rw - tagw - 6 - (known ? 0 : P.width(PF::TINY, _INTL("REVEALED")) + 18)
+          aw = P.text(top, rx, ay, room, 22, PF.fit(PF::TEXT, name.to_s, room), c[:txt])
+          pill(top, c, rx + aw + 6, ay + 4, _INTL("REVEALED"), :green) unless known
+        else
+          aw = P.text(top, rx, ay, 40, 22, "???", c[:dim])
+          pill(top, c, rx + aw + 6, ay + 4, _INTL("NOT SEEN YET"), :dim)
+        end
+        pill(top, c, x1 - 12, ay + 4, label, :blue, true) if main.length > 1
       end
+      y0 += 20 if main.length > 1            # the rest of the column moves down a row
       heading(top, c, rx, x1 - 12, y0 + 86, _INTL("Held Item"))
       item = NT.item_text(@battle, bt)
       if item.nil?

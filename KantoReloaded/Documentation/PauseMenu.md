@@ -12,7 +12,7 @@ The map stays behind it, dimmed. Its colours follow **Theme Mode** (Kanto Reload
   - **Safari Zone** or **Bug Contest:** Steps and balls (or what you caught) while you're in one.
   - **Favorite:** Y opens it.
 - **Pinned:** Kanto Reloaded's Shop, TM Vault, PokeVial and PC. Each fills its slot once it's built: the TM Vault (in Tutor.net's place, see [TMVault.md](TMVault.md)) and the PokeVial so far.
-- **Your Row:** Up to 4 entries you pick, with an **Add** tile while there's room.
+- **Your Row:** Up to 4 entries you pick, with an **Add** tile while there's room. A KIF entry a Kanto Reloaded feature takes over (Tutor.net, by the TM Vault) becomes that feature's entry here and as the Favorite, while the feature is On.
 - **All:** A carousel of every entry you can use now, in the game's order. Kanto Reloaded's and KIF's entries are in it too.
 
 PIF's own location pop-up stays away while the menu is on, since the left column shows the same.

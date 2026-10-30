@@ -76,14 +76,37 @@ module Reloaded
       small_font(b)
       b.font.color = color
       sw = b.text_size(str).width
+      paint = align == 2 ? small_ink(b, str) : nil
       tx = case align
            when 1 then x + w - sw
-           when 2 then x + (w - sw) / 2
+           when 2 then paint ? x + (w - (paint[1] - paint[0] + 1)) / 2 - paint[0] : x + (w - sw) / 2
            else x
            end
       top, ink = SMALL_CAPS
       b.draw_text(tx, y + (h - ink) / 2 - top, sw + 4, SMALL_LINE, str, 0)
       return sw
+    end
+
+    # Where the small font really paints a string: [first, last] column
+    # from where it's drawn, measured once per string and size. The font's
+    # width counts the room after the last letter, so centred words (badges,
+    # pills) sat a pixel or two left of centre (his ask, 2026-10-29: every
+    # pill's words centred). nil where pixels can't be read.
+    def small_ink(b, str)
+      @small_ink ||= {}
+      key = [b.font.name, b.font.size, str]
+      return @small_ink[key] if @small_ink.key?(key)
+      w = b.text_size(str).width + 8
+      probe = Bitmap.new(w, SMALL_LINE + 4)
+      probe.font.name = b.font.name
+      probe.font.size = b.font.size
+      probe.font.color = Color.new(255, 255, 255)
+      probe.draw_text(4, 0, w, SMALL_LINE, str, 0)
+      cols = (0...w).select { |cx| (0...probe.height).any? { |cy| probe.get_pixel(cx, cy).alpha > 40 } }
+      probe.dispose
+      return @small_ink[key] = cols.empty? ? nil : [cols.first - 4, cols.last - 4]
+    rescue StandardError
+      return @small_ink[key] = nil
     end
 
     def small_font(b)

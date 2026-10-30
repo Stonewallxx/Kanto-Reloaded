@@ -250,10 +250,18 @@ module Reloaded
       "Core/UI/BattleMenuPanel.rb",
       "Core/UI/BattleInfoScreen.rb",
       "Core/UI/BattleInfoPopups.rb",
+      # Battle Scene: the battle cursor, the hint chips, the command rows,
+      # the feature and its hooks on EBDX's windows, the target pictures
+      "Core/UI/BattleCursor.rb",
+      "Core/UI/HintChips.rb",
+      "Core/UI/CommandRow.rb",
+      "Core/BattleScene/BattleScene.rb",
+      "Core/BattleScene/TargetIcons.rb",
       # Fixes to the game's own code
       "Core/Fixes/Fixes.rb",
       "Core/Fixes/CommandTextColours.rb",
       "Core/Fixes/EBDXCommandCursor.rb",
+      "Core/Fixes/EBDXMoveLayers.rb",
       "Core/Fixes/BagFixes.rb",
       "Core/Fixes/CardBackgrounds.rb",
       # Last: rows for every feature registered above
@@ -269,7 +277,7 @@ module Reloaded
     # to KIF Settings. Dev boots last, when it's there. PauseMenu boots
     # before Profiler and BugReport, so their hooks on the pause menu's
     # scene sit over its screen and still see it open.
-    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :EggManager, :Difficulty, :Randomizer, :NewGameSetup, :Publish, :HiddenPower, :CriticalEVGain, :IVBoundaries, :DoubleAbilities, :TrainerCard, :BattleMenu, :TitleVersions, :TitleLogo, :LivingTitle, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
+    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :EggManager, :Difficulty, :Randomizer, :NewGameSetup, :Publish, :HiddenPower, :CriticalEVGain, :IVBoundaries, :DoubleAbilities, :TrainerCard, :BattleMenu, :BattleScene, :TitleVersions, :TitleLogo, :LivingTitle, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
 
     def self.files
       return FILES
