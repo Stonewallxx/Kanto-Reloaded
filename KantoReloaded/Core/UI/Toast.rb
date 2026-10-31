@@ -16,10 +16,15 @@
 #                        :paint => [width, proc { |b, x0, y0, colours| ... }])
 #
 # :icon is an item (its Bag icon), a picture's path, or a Bitmap (its first
-# square frame: a Pokémon's icon); :pill's colour is :gold, :green or :red
-# (the Theme Mode's tone of it). :hold keeps it until the next toast (or
-# dispose): the startup checks' "Checking for Updates..." while the game
-# waits on them.
+# square frame: a Pokémon's icon); :pill's colour is :gold, :green, :red,
+# :blue or :pink (the Theme Mode's tone of it). :hold keeps it until the
+# next toast (or dispose): the startup checks' "Checking for Updates..."
+# while the game waits on them. :sub is a second, smaller line in gold, and
+# :coin a gold coin with a number in it in the icon's place (Trainer
+# Control's streak toast, his pick):
+#
+#   Reloaded::Toast.show("Word of your streak spreads...", :coin => "10",
+#                        :sub => "Leaders are ready for you.")
 #==============================================================================
 
 return unless defined?(Reloaded::Pixel) && defined?(::KIF::PixelFont)
@@ -29,10 +34,12 @@ module Reloaded
     SECONDS = 3.0          # on screen, in real time
     FADE = 0.5             # its last half second fades
     H = 30
+    H2 = 44                # with a second line
     P = Reloaded::Pixel
     PF = ::KIF::PixelFont
     # Dark's pill fills (on Light, the pill is the palette's pale mix)
-    FILLS = { :gold => Color.new(70, 58, 20), :green => Color.new(24, 60, 36), :red => Color.new(70, 26, 24) }.freeze
+    FILLS = { :gold => Color.new(70, 58, 20), :green => Color.new(24, 60, 36), :red => Color.new(70, 26, 24),
+              :blue => Color.new(32, 47, 62), :pink => Color.new(60, 32, 40) }.freeze
 
     class << self
       attr_reader :sprite
@@ -47,33 +54,40 @@ module Reloaded
         return Process.clock_gettime(Process::CLOCK_MONOTONIC)
       end
 
-      def show(text, icon: nil, pill: nil, paint: nil, hold: false)
+      def show(text, icon: nil, pill: nil, paint: nil, hold: false, sub: nil, coin: nil)
         dispose
         c = Reloaded::Palette.map_menu   # Theme Mode, as the map menus
         text = text.to_s
         tw = P.width(PF::TEXT, text)
+        sw = sub ? small_width(sub.to_s) : 0
         end_w = if paint then paint[0].to_i
                 elsif pill then P.width(PF::TINY, pill[0].to_s) + 12
                 else 0
                 end
-        lx = icon ? 34 : 12
-        w = lx + tw + (end_w > 0 ? 10 + end_w : 0) + 10
+        lx = coin ? 40 : (icon ? 34 : 12)
+        h = sub ? H2 : H
+        w = lx + [tw + (end_w > 0 ? 10 + end_w : 0), sw].max + (coin ? 14 : 10)
         @viewport = Viewport.new(0, 0, Graphics.width, Graphics.height)
         @viewport.z = 100_300
         @sprite = Sprite.new(@viewport)
-        @sprite.bitmap = Bitmap.new(w, H)
+        @sprite.bitmap = Bitmap.new(w, h)
         @sprite.x = (Graphics.width - w) / 2
         @sprite.y = 10
         o = @sprite.bitmap
-        P.ui.rbox(o, 0, 0, w - 1, H - 1, 7, c[:panel], c[:line])
-        draw_icon(o, icon, 18, H / 2) if icon
-        P.text(o, lx, 6, tw + 2, 18, text, c[:txt], PF::TEXT)
+        P.ui.rbox(o, 0, 0, w - 1, h - 1, 7, c[:panel], c[:line])
+        if coin
+          draw_coin(o, c, 20, h / 2, 13, coin.to_s)
+        elsif icon
+          draw_icon(o, icon, 18, h / 2)
+        end
+        ty = sub ? 5 : 6
+        P.text(o, lx, ty, tw + 2, 18, text, c[:txt], PF::TEXT)
+        P.small(o, lx, 24, sw + 4, 16, sub.to_s, c[:gold]) if sub
         if paint
-          paint[1].call(o, w - 10 - end_w, 7, c)
+          paint[1].call(o, w - 10 - end_w, ty + 1, c)
         elsif pill
-          tone = c[pill[1]] || c[:gold]
-          fill = c[:light] ? Reloaded::Palette.mix(c[:panel2], tone, 0.22) : (FILLS[pill[1]] || FILLS[:gold])
-          P.pill(o, w - 10, 7, pill[0].to_s, fill, tone, true)
+          fill, tone = pill_colours(c, pill[1])
+          P.pill(o, w - 10, ty + 1, pill[0].to_s, fill, tone, true)
         end
         @shown_at = hold ? nil : now
         return true
@@ -81,6 +95,13 @@ module Reloaded
         Reloaded::Log.exception("A toast couldn't be shown", e, :interface)
         dispose
         return false
+      end
+
+      # A pill's [fill, words] in a tone: Dark's own fill, Light's pale mix
+      def pill_colours(c, key)
+        tone = c[key] || c[:gold]
+        fill = c[:light] ? Reloaded::Palette.mix(c[:panel2], tone, 0.22) : (FILLS[key] || FILLS[:gold])
+        return [fill, tone]
       end
 
       # Shown and kept until the next one (:hold)
@@ -104,6 +125,25 @@ module Reloaded
       end
 
       private
+
+      def small_width(str)
+        probe = Bitmap.new(8, 8)
+        P.small_font(probe)
+        return probe.text_size(str).width
+      ensure
+        probe.dispose if probe
+      end
+
+      # The gold coin, a number in it (Trainer Control's streak)
+      def draw_coin(o, c, cx, cy, r, text)
+        pp = Reloaded::PartyPaint
+        gold = c[:light] ? Color.new(214, 160, 30) : Color.new(240, 200, 80)
+        pp.disc(o, cx, cy, r + 1, Reloaded::Palette.mix(gold, pp::BLACK, 0.45))
+        pp.disc(o, cx, cy, r, gold)
+        pp.disc(o, cx - 2, cy - 2, r - 4, Reloaded::Palette.mix(gold, pp::WHITE, 0.25))
+        pp.disc(o, cx, cy, r - 3, gold)
+        P.text(o, cx - r, cy - 7, 2 * r, 14, text, Color.new(70, 46, 8), PF::TINY, 2)
+      end
 
       # An item's Bag icon at 24 pixels, or a picture fitted in 24 by 24
       def draw_icon(o, icon, cx, cy)

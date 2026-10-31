@@ -71,6 +71,7 @@ Reloaded::Events.on(:save_loaded, :my_feature) { |context| ... }
 | `:data_patches_apply` | Data Patches' targets make the game's data from the patches (theirs only) |
 | `:data_patches_loaded` | Every mod's data patches were applied and checked (`{ :summary, :patches, :errors }`) |
 | `:profiler_session` | The Timing Profiler finished a session (`{ :session }`) |
+| `:trainer_battle_ended` | A trainer battle ended, counted by Trainer Control or not (`{ :battle, :won, :people }`: see [Trainer Control](TrainerControl.md)) |
 
 ## Features
 

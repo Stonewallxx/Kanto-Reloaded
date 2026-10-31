@@ -177,10 +177,18 @@ module Reloaded
       labels = [_INTL("Save as Image"), _INTL("Copy Trainer ID")]
       words = [_INTL("Saves this card as a picture in Kanto Reloaded's Trainer Cards folder."),
                _INTL("Copies {1} for a friend's Secret Base.", $Trainer.id)]
+      # The Records side: Trainer Control's Battle Records first
+      records = TABS[@tab] == :records && defined?(Reloaded::BattleRecordsScreen)
+      if records
+        labels.unshift(_INTL("Battle Records"))
+        words.unshift(_INTL("Every trainer you've battled: Your record with them, their last team, your bond and the MVPs."))
+      end
       pick = with_hints([[:ud, _INTL("Choose")], [button(:C), _INTL("Pick")], [button(:B), _INTL("Back")]]) do
         DL.menu(self, _INTL("Trainer Card"), labels, words, 0)
       end
+      pick -= 1 if pick && records
       case pick
+      when -1 then hidden { Reloaded::TrainerControl.open_records }
       when 0 then save_image
       when 1 then copy_id
       end

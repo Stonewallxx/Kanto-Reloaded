@@ -270,6 +270,22 @@ module Reloaded
       "Core/BattleTools/QuickThrow.rb",
       "Core/BattleTools/CatchGauge.rb",
       "Core/UI/QuickThrowPanel.rb",
+      # Trainer Control (always on): who a trainer is, which battles count,
+      # the battle-result event, a record per person, the bond steps, Team
+      # Expansion, Adaptation, Level Scaling, the trainers' pictures, the
+      # toasts, the Battle Records screen, the bond moments, Pink Slips
+      "Core/TrainerControl/TrainerControl.rb",
+      "Core/TrainerControl/Records.rb",
+      "Core/TrainerControl/Bond.rb",
+      "Core/TrainerControl/TeamExpansion.rb",
+      "Core/TrainerControl/Adaptation.rb",
+      "Core/TrainerControl/LevelScaling.rb",
+      "Core/TrainerControl/PinkSlips.rb",
+      "Core/TrainerControl/Pictures.rb",
+      "Core/TrainerControl/Toasts.rb",
+      "Core/UI/BattleRecordsScreen.rb",
+      "Core/UI/BondMoments.rb",
+      "Core/UI/PinkSlipScreens.rb",
       # Fixes to the game's own code
       "Core/Fixes/Fixes.rb",
       "Core/Fixes/CommandTextColours.rb",
@@ -292,7 +308,7 @@ module Reloaded
     # to KIF Settings. Dev boots last, when it's there. PauseMenu boots
     # before Profiler and BugReport, so their hooks on the pause menu's
     # scene sit over its screen and still see it open.
-    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :EggManager, :Difficulty, :Randomizer, :NewGameSetup, :Publish, :HiddenPower, :CriticalEVGain, :IVBoundaries, :DoubleAbilities, :TrainerCard, :Matchup, :BattleMenu, :BattleScene, :MoveEffectiveness, :QuickThrow, :TitleVersions, :TitleLogo, :LivingTitle, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
+    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :EggManager, :Difficulty, :Randomizer, :NewGameSetup, :Publish, :HiddenPower, :CriticalEVGain, :IVBoundaries, :DoubleAbilities, :TrainerCard, :Matchup, :BattleMenu, :BattleScene, :MoveEffectiveness, :QuickThrow, :TrainerControl, :TitleVersions, :TitleLogo, :LivingTitle, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
 
     def self.files
       return FILES

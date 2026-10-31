@@ -252,7 +252,13 @@ module Reloaded
                 original.call(*args)
               end
             end
-            if ::PokeBattle_Battle.method_defined?(:pbEndOfBattle)
+            if defined?(Reloaded::TrainerControl)
+              # one place counts a trainer battle's end: Trainer Control's
+              # (its records and these never disagree)
+              Reloaded::Events.on(:trainer_battle_ended, :trainer_card_counts) do |context|
+                Reloaded::TrainerCard::Counters.battle_ended(context[:battle])
+              end
+            elsif ::PokeBattle_Battle.method_defined?(:pbEndOfBattle)
               h.around(nil, ::PokeBattle_Battle, :pbEndOfBattle, :id => :trainer_card_battle_end) do |original, *args|
                 Reloaded::TrainerCard::Counters.battle_ended(original.receiver)
                 original.call(*args)

@@ -38,6 +38,7 @@ module Reloaded
       [:critical_ev_gain, "Critical EV Gain", [:critical_ev_gain]],
       [:iv_boundaries,   "IV Boundaries",   [:iv_boundaries, :iv_boundaries_fusing]],
       [:double_abilities, "Double Abilities", [:double_abilities]],
+      [:trainer_control, "Trainer Control", [:trainer_control, :trainer_control_levels, :trainer_control_teams, :trainer_control_rewards]],
       [:data_patches,    "Data Patches",    [:data_patches]],
       [:profiler,        "Timing Profiler", [:profiler, :profiler_time, :profiler_report]]
     ].freeze

@@ -31,11 +31,12 @@ For everyone, with the Reloaded Trainer Card On or Off (`Core/Fixes/CardBackgrou
 | Button | Does |
 |---|---|
 | LB / RB | The tab before or after (Left / Right too, on Front, Records and Stats) |
-| A | Actions: Save as Image, Copy Trainer ID (on Style: Keep; on Unlocks: Buy or Details) |
+| A | Actions: Save as Image, Copy Trainer ID (on Records: Battle Records first; on Style: Keep; on Unlocks: Buy or Details) |
 | B | Close |
 
 With the mouse, a click on a tab opens it, and the hints at the bottom can be clicked. A right click closes the card.
 
+- **Battle Records:** On the Records side, opens Trainer Control's Battle Records: every trainer you've battled ([TrainerControl.md](TrainerControl.md)).
 - **Save as Image:** Writes the card as a picture, twice its size (1024 x 768), into the **Trainer Cards** folder in Kanto Reloaded's folder (`Mods/KantoReloaded/Trainer Cards`). **Card Saved** shows it, with Open Folder (on a phone: Copy the Path).
 - **Copy Trainer ID:** Puts your full Trainer ID on the clipboard, for a friend's Secret Base, and says so at the top. Where there's no clipboard (a phone), **Couldn't Copy** shows the ID to write down.
 
@@ -58,7 +59,7 @@ With the mouse, a click on a tab opens it, and the hints at the bottom can be cl
 
 | Shown | Counted |
 |---|---|
-| Wins, Losses, streaks, Recent Battles | Trainer battles only. Link battles, the battle facilities and Multiplayer's battles are left out. Counting starts the first time Kanto Reloaded sees the save; Losses start from the game's own count |
+| Wins, Losses, streaks, Recent Battles | Trainer battles only, counted from Trainer Control's battle end (`:trainer_battle_ended`, the one place a battle's end is counted). Link battles, the battle facilities and Multiplayer's battles are left out. Counting starts the first time Kanto Reloaded sees the save; Losses start from the game's own count |
 | Gym Rematches | The game's own count (the Fighting Arena's leader rematches) |
 | Caught | Every catch from now, started with the Pokémon you own that you met yourself |
 | Shinies Found | Every shiny you meet in a wild battle, catch, hatch or receive, each one once |
