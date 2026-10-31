@@ -7,7 +7,7 @@
 #
 #   the cursor     Battle Scene's ring round the picked move in its colour:
 #                  x4 Cyan, x2 Green, x1 the usual Cursor Color, x1/2
-#                  Yellow, x1/4 Red, x0 grey (each changeable; always Dark's
+#                  Red, x1/4 Yellow, x0 grey (each changeable; always Dark's
 #                  tones: EBDX's screen is the same in every Theme Mode)
 #   multiplier     a Colour Pill beside the picked move's PP (x1/2 and x1/4
 #                  as a small stacked fraction); none for neutral moves
@@ -50,13 +50,15 @@ module Reloaded
       :x4   => [:"move_effectiveness.x4_color", "x4 Color", "Cyan", "4 times the damage or more"],
       :x2   => [:"move_effectiveness.x2_color", "x2 Color", "Green", "twice the damage"],
       :x1   => [:"move_effectiveness.x1_color", "x1 Color", nil, "the usual damage"],
-      :x1_2 => [:"move_effectiveness.x1_2_color", "x1/2 Color", "Yellow", "half the damage"],
-      :x1_4 => [:"move_effectiveness.x1_4_color", "x1/4 Color", "Red", "a quarter of the damage or less"]
+      :x1_2 => [:"move_effectiveness.x1_2_color", "x1/2 Color", "Red", "half the damage"],
+      :x1_4 => [:"move_effectiveness.x1_4_color", "x1/4 Color", "Yellow", "a quarter of the damage or less"]
     }.freeze
     GREY = Color.new(150, 154, 162)              # x0, always
     WARN = Color.new(232, 64, 64)                # your partner would be hurt
     DARK = { :light => false }.freeze            # PartyPaint.ink's Dark tones
     CHOOSING = :@kr_move_effectiveness_target    # on the battle while a target is picked: [user, move]
+
+    @changes = {}
 
     class << self
       def boot
@@ -69,6 +71,7 @@ module Reloaded
           @colours = nil if key.start_with?("move_effectiveness.")
         end
         register_swatch
+        user_change(:mega, proc { |win| win.instance_variable_get(:@megaActive) }, proc { |_win, u| mega_view(u) })
         install
         return true
       end
@@ -170,6 +173,76 @@ module Reloaded
       #------------------------------------------------------------------------
       # The hooks
       #------------------------------------------------------------------------
+      #------------------------------------------------------------------------
+      # Fight menu buttons that change your Pokémon before the turn
+      #------------------------------------------------------------------------
+      # While a button like Mega Evolution is pressed, the moves are worked
+      # out with your Pokémon as it will be (its ability and types change a
+      # move's type and what the foes are immune to). Another mod's button:
+      #   Reloaded::MoveEffectiveness.user_change(:my_button,
+      #     proc { |win| win.instance_variable_get(:@my_button_on) },   # pressed?
+      #     proc { |win, user| ... })    # a changed copy of user (a copy already), or nil
+      # The Fight menu checks on? each frame and works everything out again
+      # when one changes.
+      def user_change(id, on, apply)
+        @changes[id.to_sym] = [on, apply]
+        return true
+      end
+
+      # Which buttons are pressed now, as bits (no allocation: read each frame)
+      def changes_key(win)
+        key = 0
+        bit = 1
+        @changes.each_value do |on, _apply|
+          key |= bit if (on.call(win) rescue false)
+          bit <<= 1
+        end
+        return key
+      end
+
+      # Your Pokémon for the maths: a copy, as each pressed button makes it
+      def user(win, battler)
+        u = battler.dup
+        @changes.each do |id, (on, apply)|
+          next unless (on.call(win) rescue false)
+          begin
+            v = apply.call(win, u)
+            u = v if v
+          rescue StandardError => e
+            Reloaded::Log.warning_once("Effectiveness (EBDX): #{id}'s change to your Pokémon couldn't be worked out (#{e.class}: #{e.message})", FEATURE)
+          end
+        end
+        return u
+      end
+
+      # Mega Evolution, or the Megas mod's Primal Reversion on the same
+      # button: the user's copy holding a copy of its Pokémon made Mega
+      # (PIF's makeMega, or the mod's), with that one's ability and types.
+      # nil when it changes neither
+      def mega_view(u)
+        pk = u.pokemon
+        return nil unless pk && (pk.respond_to?(:makeMega) || pk.respond_to?(:makePrimal))
+        now = [pk.ability_id, pk.type1, pk.type2]
+        [:makeMega, :makePrimal].each do |m|
+          next unless pk.respond_to?(m)
+          copy = pk.dup
+          copy.send(m)
+          next if [copy.ability_id, copy.type1, copy.type2] == now
+          v = u.dup
+          v.instance_variable_set(:@pokemon, copy)
+          v.instance_variable_set(:@form, copy.form) if copy.respond_to?(:form)
+          v.instance_variable_set(:@type1, copy.type1)
+          v.instance_variable_set(:@type2, copy.type2)
+          v.instance_variable_set(:@ability_id, copy.ability_id)
+          # KIF-ER's innates are the Mega's own
+          if v.instance_variable_defined?(:@innate_ids) && defined?(::KIFER) && ::KIFER.respond_to?(:battle_innates)
+            v.instance_variable_set(:@innate_ids, ::KIFER.battle_innates(copy))
+          end
+          return v
+        end
+        return nil
+      end
+
       # While true (inside EBDX's Fight menu, the feature On), KIF's own
       # Move Effectiveness is Off: its markers and words on EBDX's buttons
       # (C-BATTLE-01, its FightWindowEBDX part) give way to these
@@ -243,6 +316,10 @@ module Reloaded
 
       def update
         fx = @kr_effect
+        if fx && fx.changed?(self)
+          kr_regenerate
+          fx = @kr_effect
+        end
         fx.pick(@index, @kr_scene) if fx
         return super unless @kr_quiet
         Reloaded::MoveEffectiveness.quiet_kif = true
@@ -252,6 +329,24 @@ module Reloaded
           Reloaded::MoveEffectiveness.quiet_kif = false
         end
         fx.follow(@index) if fx
+      end
+
+      # A button that changes your Pokémon before the turn was pressed:
+      # EBDX makes its move buttons again (every mod's drawing on them too,
+      # and this feature's, worked out with the change), each where and as it
+      # was, the pick kept (no hop)
+      def kr_regenerate
+        keep = (0...@nummoves.to_i).map do |i|
+          b = @button["#{i}"]
+          b && !b.disposed? ? [b.x, b.y, b.z, b.visible, b.opacity] : nil
+        end
+        generateButtons
+        keep.each_with_index do |k, i|
+          b = @button["#{i}"]
+          next unless k && b
+          b.x, b.y, b.z, b.visible, b.opacity = k
+        end
+        @oldindex = @index
       end
 
       def show

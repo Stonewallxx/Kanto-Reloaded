@@ -278,6 +278,7 @@ module Reloaded
       "Core/Fixes/BagFixes.rb",
       "Core/Fixes/CardBackgrounds.rb",
       "Core/Fixes/PIFBalls.rb",
+      "Core/Fixes/KIFMapZoom.rb",
       # Last: rows for every feature registered above
       "Core/Settings/FeatureSwitches.rb"
     ].freeze

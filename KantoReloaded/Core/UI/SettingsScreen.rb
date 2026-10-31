@@ -1105,11 +1105,13 @@ module Reloaded
       return [m[1], m[2], PF.width(PF::TEXT, m[1]) + COUNT_GAP + PF.width(PF::TINY, m[2])]
     end
 
-    # Why a Kanto Reloaded row can't be changed right now (another setting
-    # decides it), or nil
+    # Why a row can't be changed right now (another setting decides it), or
+    # nil: a Kanto Reloaded row's lock, or KIF's greyed rows (KIF 1.2.13's
+    # KIF::SettingsScreen.grey_reason: EV Allocation and EV Training)
     def kr_lock(opt)
-      return nil unless opt && opt.respond_to?(:kr_key) && opt.kr_key
-      return Reloaded::Settings.lock_reason(opt.kr_key)
+      return nil unless opt
+      return Reloaded::Settings.lock_reason(opt.kr_key) if opt.respond_to?(:kr_key) && opt.kr_key
+      return ::KIF::SettingsScreen.respond_to?(:grey_reason) ? ::KIF::SettingsScreen.grey_reason(opt) : nil
     rescue StandardError
       return nil
     end

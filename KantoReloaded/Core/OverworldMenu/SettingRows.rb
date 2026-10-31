@@ -13,7 +13,11 @@
 # from inside it). A Kanto Reloaded setting whose page is hidden now (the
 # Timing Profiler's and Developer Tools' with DEBUG off) is out of sight.
 #
-# A row's key is "setting:<section>/<heading>/<name>". A setting that isn't
+# A row's key is "setting:<section>/<heading>/<name>", the setting's own
+# name (KIF Settings may show it shorter under its heading, and KIF renames
+# those between versions: 1.2.13 shows Type Display as Type Icons). A key
+# saved under a shown name (Kanto Reloaded before KIF 1.2.13) still finds
+# its row. A setting that isn't
 # there now (its module Off, its mod removed) stays in the layout, out of
 # sight. The settings are read the way KIF Settings reads them, once, and
 # again after KIF Settings closes (a module switched there can change them).
@@ -87,8 +91,9 @@ module Reloaded
           return false
         end
 
-        def key_for(row)
-          return PREFIX + [row.section, row.heading, row.label.to_s.strip].compact.map(&:to_s).join("/")
+        def key_for(row, shown = false)
+          name = !shown && row.opt.respond_to?(:name) && row.opt.name ? row.opt.name : row.label
+          return PREFIX + [row.section, row.heading, name.to_s.strip].compact.map(&:to_s).join("/")
         end
 
         # { key => KIF::SettingsScreen::Row }: every on/off and choice
@@ -96,6 +101,7 @@ module Reloaded
         def index
           return @index if @index
           @index = {}
+          @shown = {}                    # a key by the shown name => the row's key
           return @index unless available?
           screen = ::KifSettingsScreen.allocate
           screen.instance_variable_set(:@inloadscreen, false)
@@ -103,7 +109,12 @@ module Reloaded
           @screen = screen               # its PIF scenes own their options' procs
           (screen.instance_variable_get(:@rows) || {}).each do |sid, rows|
             next if [:modules, :mods, :presets].include?(sid)
-            rows.each { |r| @index[key_for(r)] ||= r if fits_row?(r) }
+            rows.each do |r|
+              next unless fits_row?(r)
+              key = key_for(r)
+              @index[key] ||= r
+              @shown[key_for(r, true)] ||= key
+            end
           end
           return @index
         rescue StandardError => e
@@ -114,17 +125,23 @@ module Reloaded
         # Read the settings again next time (KIF Settings closed).
         def forget
           @index = nil
+          @shown = nil
           @entries = nil
           @screen = nil
         end
 
         def row(key)
-          return index[key.to_s]
+          key = key.to_s
+          return index[key] || ((k = @shown && @shown[key]) ? index[k] : nil)
         end
 
-        # The key of the first setting with this name, or nil.
+        # The key of the first setting with this name (its own, or as KIF
+        # Settings shows it), or nil.
         def key_named(name)
-          return index.keys.find { |k| k.split("/").last == name }
+          hit = index.keys.find { |k| k.split("/").last == name }
+          return hit if hit
+          shown = (@shown || {}).find { |k, _key| k.split("/").last == name }
+          return shown ? shown[1] : nil
         end
 
         # An entry for the menu (Reloaded::OverworldMenu::Entry), or nil
@@ -228,14 +245,17 @@ module Reloaded
         end
 
         # "Set by <mod> while that mod is On.", "Locked: Toggle Only." (a
-        # Kanto Reloaded setting another one decides now), or nil
+        # Kanto Reloaded setting another one decides now), KIF's own reason
+        # for a greyed row (KIF 1.2.13: EV Allocation and EV Training), or nil
         def lock_reason(key)
           r = row(key)
           return nil unless r
           by = @screen ? @screen.send(:locked_by, r.opt) : nil
           return _INTL("Set by {1} while that mod is On.", by) if by
           kr = r.opt.respond_to?(:kr_key) && r.opt.kr_key ? Reloaded::Settings.lock_reason(r.opt.kr_key) : nil
-          return kr ? _INTL("Locked: {1}.", kr) : nil
+          return _INTL("Locked: {1}.", kr) if kr
+          grey = ::KIF::SettingsScreen.respond_to?(:grey_reason) ? ::KIF::SettingsScreen.grey_reason(r.opt) : nil
+          return grey ? _INTL(grey) : nil
         rescue StandardError
           return nil
         end

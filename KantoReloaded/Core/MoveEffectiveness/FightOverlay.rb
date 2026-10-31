@@ -9,8 +9,9 @@
 #
 #   picked half    the Colour Pill in the 33 px between the category icon
 #                  and the PP (y 47), the "!" inside the frame's top right
-#                  (184, 13) when your partner would be hurt
-#   other half     the dot under where the "!" sits (184, 29), r 4 with a
+#                  (177, 19, where KIF draws its No effect X) when your
+#                  partner would be hurt
+#   other half     the dot under where the "!" sits (177, 29), r 4 with a
 #                  dark edge; none for neutral and status moves
 #   pills          Double Battles: one row per move (each target's name,
 #                  outlined in its colour), above the picked move
@@ -31,8 +32,8 @@ module Reloaded
       PP_RIGHT = 191                   # EBDX's PP: right-aligned in 0...191
       PILL_Y = 47
       PILL_H = 19
-      MARK = [184, 13]                 # the "!", inside the picked half's frame
-      DOT = [HALF + 184, 29]           # the dot, under it on the other half
+      MARK = [177, 19]                 # the "!", inside the picked half's frame (KIF's No effect X, x 170-184, y 12-26)
+      DOT = [HALF + 177, 29]           # the dot, under it on the other half
       EDGE = Color.new(20, 22, 28)
       WHITE = Color.new(255, 255, 255)
       BLACK = Color.new(0, 0, 0)
@@ -56,29 +57,30 @@ module Reloaded
       # failed, logged)
       def build(win)
         clear
-        battle = win.instance_variable_get(:@battle)
-        battler = win.instance_variable_get(:@battler)
+        @win = win
         buttons = win.instance_variable_get(:@button)
-        return false unless battle && battler && buttons
-        me = Reloaded::MoveEffectiveness
-        @pills = me.setting?(PILLS) && (battle.pbSideSize(0) > 1 || battle.pbSideSize(1) > 1)
-        @warning = me.setting?(WARNING)
-        u = battler.dup
+        return false unless win.instance_variable_get(:@battle) && win.instance_variable_get(:@battler) && buttons
         win.instance_variable_get(:@nummoves).to_i.times do |i|
           spr = buttons["#{i}"]
-          move = battler.moves[i]
-          next unless spr && move && !spr.disposed?
-          @buttons[i] = spr
-          s = Reloaded::Matchup.summary(battle, battler, move, u)
-          @colours[i] = me.level_colour(s[:best]) unless s[:best].nil?
-          draw_button(spr.bitmap, move, s, me) if spr.bitmap.width == HALF * 2 && spr.bitmap.height == BUTTON_H
-          @rows[i] = pill_row(s) if @pills
+          @buttons[i] = spr if spr && !spr.disposed?
         end
-        @index = nil
+        @changes = Reloaded::MoveEffectiveness.changes_key(win)
+        work_out
         return true
       rescue StandardError => e
         Reloaded::Log.exception("Effectiveness (EBDX): the Fight menu couldn't be worked out", e, FEATURE)
         clear
+        return false
+      end
+
+      # Was a button that changes your Pokémon before the turn (Mega
+      # Evolution, or another mod's) pressed since this menu was worked out?
+      # Read each frame: a few comparisons, nothing made
+      def changed?(win)
+        return false if @broken || @win.nil?
+        return Reloaded::MoveEffectiveness.changes_key(win) != @changes
+      rescue StandardError => e
+        broken(e)
         return false
       end
 
@@ -128,6 +130,8 @@ module Reloaded
         @colours = []
         @buttons = []
         @bounds = []
+        @win = nil
+        @changes = nil
         @index = nil
         @broken = false
         @row.bitmap = nil unless @row.disposed?
@@ -140,6 +144,31 @@ module Reloaded
       end
 
       private
+
+      # Each move against its targets, with your Pokémon as the Fight menu's
+      # buttons would make it (MoveEffectiveness.user), drawn
+      def work_out
+        win = @win
+        battle = win.instance_variable_get(:@battle)
+        battler = win.instance_variable_get(:@battler)
+        me = Reloaded::MoveEffectiveness
+        @pills = me.setting?(PILLS) && (battle.pbSideSize(0) > 1 || battle.pbSideSize(1) > 1)
+        @warning = me.setting?(WARNING)
+        u = me.user(win, battler)
+        @buttons.each_with_index do |spr, i|
+          move = battler.moves[i]
+          next unless spr && move && !spr.disposed?
+          s = Reloaded::Matchup.summary(battle, battler, move, u)
+          @colours[i] = me.level_colour(s[:best]) unless s[:best].nil?
+          draw_button(spr.bitmap, move, s, me) if ebdx_button?(spr.bitmap)
+          @rows[i] = pill_row(s) if @pills
+        end
+        @index = nil                   # the ring and the pills follow on the next frame
+      end
+
+      def ebdx_button?(b)
+        return b && !b.disposed? && b.width == HALF * 2 && b.height == BUTTON_H
+      end
 
       #------------------------------------------------------------------------
       # Into the button's picture
