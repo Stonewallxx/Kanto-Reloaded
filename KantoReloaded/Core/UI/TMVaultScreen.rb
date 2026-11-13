@@ -50,7 +50,7 @@ module Reloaded
     MAX_CHIPS = 11
     KIND_PILLS = { :ground => ["GROUND", :green], :store => ["STORE", :gold], :gift => ["GIFT", :blue] }.freeze
     # PIF's own words (his ask, 2026-10-24: Learned, Able)
-    CHECK_WORDS = { :knows => ["Learned", :blue], :learn => ["Able", :green], :cant => ["Not Able", :dim] }.freeze
+    CHECK_WORDS = { :knows => ["Known", :blue], :learn => ["Able", :green], :cant => ["Not Able", :dim] }.freeze   # Known: PIF's Learned ran into the next Pokémon (his ask, 2026-11-08)
     SEARCH_BOX = [6, 4, 132, 26].freeze
     SORT_BOX = [W - 132, 4, W - 6, 26].freeze
 

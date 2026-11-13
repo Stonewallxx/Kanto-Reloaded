@@ -59,8 +59,18 @@ module Reloaded
         def record_for(key, type, name, shown)
           rec = (people[key] ||= { "type" => type.to_s, "name" => name.to_s, "kind" => TrainerControl.kind(type).to_s,
                                    "wins" => 0, "losses" => 0, "streak" => 0, "best" => 0 })
+          rec["kind"] = kind_of(rec)
           rec["shown"] = shown.to_s unless shown.to_s.empty?
           return rec
+        end
+
+        # A record's kind as the groups are now (a record made before a class
+        # moved group, Team Rocket's executives into the leaders, follows)
+        def kind_of(rec)
+          return "" unless rec
+          return "rival" if rec["kind"].to_s == "rival"
+          return rec["kind"].to_s if rec["type"].to_s.empty?        # (no class to go by: as it was stored)
+          return TrainerControl.kind(rec["type"]).to_s
         end
 
         #----------------------------------------------------------------------
@@ -195,16 +205,27 @@ module Reloaded
         def list(filter = :all, query = nil, sort = 0)
           out = people.values.select { |r| in_filter?(r, filter) }
           out = out.select { |r| matches?(r, query) } if query && !query.empty?
-          return sorted(out, sort)
+          return sorted(out, sort) unless filter == :pink_slips
+          return sorted(out.select { |r| pink_group(r) == :can }, sort) + sorted(out.select { |r| pink_group(r) == :done }, sort)
         end
 
         def in_filter?(rec, filter)
           case filter
           when :rivalries then return rematchable?(rec)
-          when :leaders then return rec["kind"] == "leader"
-          when :pink_slips then return rec["pink"].is_a?(Hash)
+          when :leaders then return kind_of(rec) == "leader"
+          when :pink_slips then return !pink_group(rec).nil?
           end
           return true
+        end
+
+        # The Pink Slips filter's two groups (his pick, 2026-11-01): :can, a
+        # trainer you can battle again and haven't wagered (while Pink Slips
+        # are On); :done, wagered (once per trainer, ever); else nil
+        def pink_group(rec)
+          return :done if rec["pink"].is_a?(Hash)
+          return nil unless kind_of(rec) == "trainer" && rematchable?(rec)
+          return nil if defined?(TrainerControl::PinkSlips) && !TrainerControl::PinkSlips.on?
+          return :can
         end
 
         def matches?(rec, query)
@@ -233,7 +254,7 @@ module Reloaded
                   when "Win Rate" then [-rate(r), -battles(r), by_name.call(r)]
                   when "Best Streak" then [-r["best"].to_i, by_name.call(r)]
                   when "Place" then [last_place(r).downcase, by_name.call(r)]
-                  when "Next Step" then Bond.can_reach?(r) ? [0, Bond.next_step(r)[2], by_name.call(r)] : [1, 0, by_name.call(r)]
+                  when "Next Step" then (n = Bond.can_reach?(r) ? Bond.next_step(r) : nil) ? [0, n[2], by_name.call(r)] : [1, 0, by_name.call(r)]
                   else [-last_time(r), by_name.call(r)]
                   end
             [key, r]

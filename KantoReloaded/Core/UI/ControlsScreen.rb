@@ -786,10 +786,9 @@ module Reloaded
                  _INTL("B runs, X or Start opens the menu, Y the Ready Menu, RT speeds up. Your keys stay."),
                  [:pokemon])
         L.list.each_with_index do |l, i|
-          add.call(l["name"], _INTL("Your layout: Load it, save over it, rename it or share it."), [:mine, i])
+          add.call(l["name"], _INTL("Your layout: Load it, save over it or rename it."), [:mine, i])
         end
         add.call(_INTL("Save as New Layout"), _INTL("Keep your controls and Feel as a layout of your own."), [:new]) unless L.full?
-        add.call(_INTL("Paste Share Code"), _INTL("Add a layout someone copied for you."), [:paste])
         reset_text = case section_id
                      when :feel then _INTL("Puts the Feel settings back to their defaults.")
                      when :speed_up then _INTL("Puts the Speed-Up settings and buttons back to their defaults.")
@@ -806,7 +805,6 @@ module Reloaded
         when :cancel then return nil
         when :mine   then return nil if my_layout(i) == :loaded
         when :new    then new_layout
-        when :paste  then paste_layout
         else
           reset_layout(pick, rows[index], name)
           return nil
@@ -861,7 +859,6 @@ module Reloaded
       actions = [[:load, _INTL("Load"), _INTL("Replace your controls and Feel with this layout.")],
                  [:save, _INTL("Save Over"), _INTL("Keep your controls and Feel as they are now in this layout.")],
                  [:rename, _INTL("Rename"), _INTL("Give this layout a new name.")],
-                 [:copy, _INTL("Copy Share Code"), _INTL("Copy this layout as text, to paste into Layouts in another game.")],
                  [:delete, _INTL("Delete"), _INTL("Remove this layout.")],
                  [:cancel, _INTL("Cancel"), _INTL("Back to the layouts.")]]
       k = Reloaded::Dialogs.menu(self, name, actions.map { |a| a[1] }, actions.map { |a| a[2] })
@@ -881,11 +878,6 @@ module Reloaded
       when :rename
         text, how = run_entry(:name, _INTL("Type a Name"), name, L::NAME_MAX, :prompt => _INTL("Layout Name?"))
         L.rename(i, text) if how == :enter && !text.to_s.strip.empty?
-      when :copy
-        code = L.share_code(i)
-        ok = code && Reloaded::ShareCodes.copy(code)
-        d.notice(self, name, ok ? _INTL("{1}'s share code is copied. Paste it into Layouts in any game.", name)
-                                : _INTL("The share code couldn't be copied."))
       when :delete
         return nil unless d.confirm(self, name, _INTL("Delete {1}? Its controls will be gone.", name), _INTL("Delete"), _INTL("Cancel"), false)
         L.delete(i)
@@ -902,22 +894,6 @@ module Reloaded
       name = ok ? L.list.last["name"] : text.strip
       Reloaded::Dialogs.notice(self, name, ok ? _INTL("Your controls and Feel are saved as {1}.", name)
                                               : _INTL("The layout couldn't be saved."))
-      refresh
-    end
-
-    def paste_layout
-      d = Reloaded::Dialogs
-      title = _INTL("Paste Share Code")
-      layout = L.read_code(Reloaded::ShareCodes.clipboard)
-      if layout.nil?
-        d.notice(self, title, _INTL("The clipboard doesn't hold a layout's share code. Copy one first."))
-      elsif L.full?
-        d.notice(self, title, _INTL("You have {1} layouts already. Delete one first.", L::MAX))
-      elsif L.add_layout(layout)
-        d.notice(self, title, _INTL("{1} is in your layouts. Load it to use it.", L.list.last["name"]))
-      else
-        d.notice(self, title, _INTL("The layout couldn't be saved."))
-      end
       refresh
     end
 

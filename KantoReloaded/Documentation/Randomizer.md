@@ -19,6 +19,7 @@ During a run, the Randomizer opens in Kanto Reloaded's settings layout wherever 
 - **Y: Randomize Now?** lists the waiting changes, old to new. Your party and boxes stay.
 - **Leaving with changes waiting** asks Randomize, Undo or Later. Later is the default and what B picks: the changes wait in the save until next time.
 - **A save linked to Archipelago:** The rows Archipelago holds (Entrances, Found and Given Items and TMs, NPC Requests) show the value it holds, locked, with why.
+- **References Filter** (Trainers): cody's, one step in under Custom Sprites Only and locked while it's Off (it picks among custom sprites, as in PIF); turning Custom Sprites Only Off turns it Off too. **Reference Sets** under it opens PIF's picker and shows All or how many are chosen; the choice waits for Randomize Now like any change.
 - **Door Kinds** (Entrances): While Which Doors is Custom, its seven kinds are rows under it, each with how many doors it has. With every kind Off, the description says NO DOORS SHUFFLED in red.
 
 ## The Settings Code and Presets

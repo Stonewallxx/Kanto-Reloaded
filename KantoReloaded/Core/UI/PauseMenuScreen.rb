@@ -71,10 +71,16 @@ module Reloaded
       # own menu; the screen answers with the chosen row's index, or -1.
       def pbShowCommands(commands)
         return super unless @kr_view
-        if defined?(::KIF::PauseMenu) && ::KIF::PauseMenu.respond_to?(:show_commands)
-          return ::KIF::PauseMenu.show_commands(self, commands) { |list| kr_choose(list) }
+        begin
+          if defined?(::KIF::PauseMenu) && ::KIF::PauseMenu.respond_to?(:show_commands)
+            return ::KIF::PauseMenu.show_commands(self, commands) { |list| kr_choose(list) }
+          end
+          return kr_choose(commands)
+        rescue FellBack
+          # the game's own menu, KIF's entries put in once (as without Kanto Reloaded)
+          pif(:pbStartScene)
+          return super
         end
-        return kr_choose(commands)
       end
 
       def pbEndScene
@@ -93,14 +99,19 @@ module Reloaded
 
       private
 
+      # Kanto Reloaded's menu gave way (below): out of KIF's loop, to the
+      # game's own menu
+      class FellBack < StandardError; end
+
       def kr_choose(list)
-        return pif(:pbShowCommands, list) unless @kr_view       # it fell back during this menu
+        raise FellBack unless @kr_view                          # it fell back during this menu
         return @kr_view.choose(list)
+      rescue FellBack
+        raise
       rescue StandardError => e
         Reloaded::Log.exception("The Pause Menu broke; the game's own instead", e, :pause_menu)
         kr_drop
-        pif(:pbStartScene)
-        return pif(:pbShowCommands, list)
+        raise FellBack
       end
 
       def kr_drop
@@ -111,11 +122,11 @@ module Reloaded
         @kr_view = nil
       end
 
-      # PIF's own method, under every hook.
+      # PIF's own method, as it was before Kanto Reloaded's hooks
+      # (Reloaded::Hooks keeps it; one Kanto Reloaded doesn't hook is as it is).
       def pif(name, *args)
-        m = method(name)
-        m = m.super_method while m && m.owner != ::PokemonPauseMenu_Scene
-        return m ? m.call(*args) : -1
+        m = Reloaded::Hooks.before(::PokemonPauseMenu_Scene, name) || (::PokemonPauseMenu_Scene.instance_method(name) rescue nil)
+        return m ? m.bind_call(self, *args) : -1
       end
     end
 

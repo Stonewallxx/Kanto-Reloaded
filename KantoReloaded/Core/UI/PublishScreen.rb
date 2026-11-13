@@ -383,10 +383,13 @@ module Reloaded
       empty_ok ? refresh : changed!
     end
 
-    # The folder that goes up: the ModDev Folder's copy when there is one
+    # The folder that goes up (the ModDev Folder's copy when there is one),
+    # its path to paste: the game opens no File Explorer (KIF 2.0.0's Mod
+    # Safety)
     def open_folder
       return pbPlayBuzzerSE unless mod
-      system("explorer \"#{mod.source.tr("/", "\\")}\"")
+      pbPlayDecisionSE
+      copy_for_phone(File.expand_path(mod.source), _INTL("Where the mod's folder is, ready to paste."))
     rescue StandardError
       pbPlayBuzzerSE
     end
@@ -721,7 +724,7 @@ module Reloaded
       out = [[:ud, _INTL("Choose")]]
       case @step
       when 0
-        out << [button(:X), _INTL("Folder"), :open_folder]
+        out << [button(:X), _INTL("Copy Path"), :open_folder]
         out << [button(:R), _INTL("Next Step"), :next_hint] if mod.readable?
       when 1
         id = row_id
@@ -731,7 +734,7 @@ module Reloaded
       when 2
         k, t = check_items[@sel[2]]
         out << [button(:C), _INTL("Go to It"), :press] if k == :problem && PB.field_of(t)
-        out << [button(:X), _INTL("Folder"), :open_folder]
+        out << [button(:X), _INTL("Copy Path"), :open_folder]
         out << [button(:L), _INTL("Back a Step"), :prev_hint] << [button(:R), _INTL("Next Step"), :next_hint]
       else
         id = row_id

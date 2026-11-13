@@ -57,10 +57,10 @@ module Reloaded
     # PIF's rows, by their icon (016_UI/001_UI_PauseMenu.rb: ICON_*)
     BASE_ICONS = { "POKEDEX" => "pokedex", "POKEMON" => "pokemon", "BAG" => "bag", "POKENAV" => "pokenav",
                    "PLAYER" => "trainer", "OUTFITS" => "outfit", "SAVE" => "save", "OPTIONS" => "options",
-                   "DEBUG" => "debug", "TITLE" => "title", "SAFARI" => "quit" }.freeze
+                   "DEBUG" => "debug", "TITLE" => "title", "SAFARI" => "quit", "PC" => "safari_pc" }.freeze
     BASE_NAMES = { "pokedex" => "Pokédex", "pokemon" => "Pokémon", "bag" => "Bag", "pokenav" => "PokéNav",
                    "outfit" => "Outfit", "save" => "Save", "options" => "Options", "debug" => "Debug",
-                   "title" => "Title", "quit" => "Quit", "quit_contest" => "Quit Contest" }.freeze
+                   "title" => "Title", "quit" => "Quit", "quit_contest" => "Quit Contest", "safari_pc" => "PC" }.freeze
     # Tiles draw these: [file, scale]. Graphics/PauseMenu is the mod's own
     # (Hoenn Reloaded's menu icons, fitted to 56 pixels); the rest is the
     # game's. Anything else draws its list icon at double size.
@@ -77,6 +77,7 @@ module Reloaded
       "debug"         => [ICON_DIR + "DEBUG", 1],
       "title"         => [ICON_DIR + "TITLE", 1],
       "kif_pc"        => [ICON_DIR + "PC", 1],
+      "safari_pc"     => [ICON_DIR + "PC", 1],
       "kif_heal"      => [ICON_DIR + "POKEVIAL", 1],
       "kif_shop"      => [ICON_DIR + "RELOADEDMART", 1],
       "kif_tutornet"  => [ICON_DIR + "TMVAULT", 1],
@@ -84,8 +85,8 @@ module Reloaded
       "kif_er_return" => ["Graphics/Items/ESCAPEROPE", 1]
     }.freeze
     # Only there in the Safari Zone or the Bug Contest: never in Your Row
-    # or the Favorite
-    SITUATIONAL = ["quit", "quit_contest"].freeze
+    # or the Favorite (PIF 6.9's PC: Hoenn's Safari Zone only)
+    SITUATIONAL = ["quit", "quit_contest", "safari_pc"].freeze
 
     # A row of the list as a tile: key, label, [icon file, scale], its index
     # in the list (nil: not in the list now, so locked)

@@ -2,7 +2,7 @@
 #==============================================================================
 # Kanto Reloaded: how well a move does against a Pokémon, as the player knows it
 #==============================================================================
-# One helper for Effectiveness (EBDX)'s Fight menu and Battle Info's
+# One helper for Effectiveness's Fight menus and Battle Info's
 # Matchup tab. cody's rules (C-BATTLE-01_Effectiveness, credited)
 # on what the battle has shown (his pick, 2026-10-30):
 #

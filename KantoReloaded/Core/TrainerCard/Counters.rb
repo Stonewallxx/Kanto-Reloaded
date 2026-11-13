@@ -202,6 +202,7 @@ module Reloaded
                 when 2 then false
                 end
           return if won.nil? || !counts?(battle)
+          return if won == false && (battle.canLose rescue false)     # a battle the story lets you lose: its loss doesn't count (his pick)
           c = counts
           if won
             add(:wins)

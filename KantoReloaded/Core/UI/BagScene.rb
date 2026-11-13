@@ -96,15 +96,14 @@ module Reloaded
         path = Reloaded::Bag.export_lists
         screen = settings_screen
         return say(_INTL("Lists Exported"), _INTL("Saved to the Kanto Reloaded folder: Exports\\{1}", File.basename(path))) unless screen
-        phone = defined?(Reloaded::Runtime) && Reloaded::Runtime.phone?
+        # the path to paste (the game opens no File Explorer: KIF 2.0.0's Mod Safety)
         choice = on_screen(screen) do
           Reloaded::Dialogs.ask(screen, _INTL("Lists Exported"), _INTL("Saved to the Kanto Reloaded folder: Exports\\{1}", File.basename(path)),
                                 [[tally_words(Reloaded::Bag.current_tally) + ".", screen.palette[:dim]]],
-                                [phone ? _INTL("Copy the Path") : _INTL("Open Folder"), _INTL("OK")], 1)
+                                [_INTL("Copy the Path"), _INTL("OK")], 1)
         end
         return unless choice == 0
-        return on_screen(screen) { screen.copy_for_phone(File.expand_path(path), _INTL("Where the lists are, ready to paste.")) } if phone
-        system("explorer /select,\"#{File.expand_path(path).tr("/", "\\")}\"")
+        on_screen(screen) { screen.copy_for_phone(File.expand_path(path), _INTL("Where the lists are, ready to paste.")) }
       rescue StandardError => e
         Reloaded::Log.exception("The Bag's lists couldn't be exported", e, :bag)
         say(_INTL("Lists Not Exported"), _INTL("The file couldn't be written. The log has why."))
@@ -275,7 +274,7 @@ module Reloaded
     PP = Reloaded::PartyPaint
     B = Reloaded::Bag
     # PIF's own words (his ask, 2026-10-24: Learned, Able)
-    CHECK_WORDS = { :knows => ["Learned", :blue], :learn => ["Able", :green], :cant => ["Not Able", :dim] }.freeze
+    CHECK_WORDS = { :knows => ["Known", :blue], :learn => ["Able", :green], :cant => ["Not Able", :dim] }.freeze   # Known: PIF's Learned ran into the next Pokémon (his ask, 2026-11-08)
     # What a healing item does, for Who Needs It (his pick, 2026-10-24:
     # the party in its details, as the TMs' check): :hp, :restore (HP and
     # status), :revive, :status (any), :pp, or the statuses it cures

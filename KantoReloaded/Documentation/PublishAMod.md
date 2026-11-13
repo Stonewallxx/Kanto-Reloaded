@@ -16,7 +16,7 @@ Four steps on a strip under the title. **L1** and **R1** move between them (a cl
   - **Description** is typed in a box of a few lines (one or two lines is plenty).
   - **Tags:** A opens the catalog's 12 tags (Mod Manager 2.0's) in two columns of tick boxes. A tag your `mod.json` had that isn't one of them stays.
   - A row the catalog's check has a problem with is marked red, and the description box says what's wrong.
-- **Check:** The catalog's own check, on the folder as it would be uploaded, run again a moment after each change. **Problems** (red) must be fixed before the mod can be published; A on one about a detail goes to its row, and the rest need fixing in the folder. **Things to look at** (amber) don't stop it: the reviewer reads them closely, so say why the mod needs them in your notes. Everything it finds is in `Logs/KIF_log.txt` too. A long one's words scroll in the description box: by themselves, or with the right stick or the mouse wheel over the box.
+- **Check:** The catalog's own check, on the folder as it would be uploaded, run again a moment after each change. **Problems** (red) must be fixed before the mod can be published; A on one about a detail goes to its row, and the rest need fixing in the folder. **Things to look at** (amber) don't stop it: the reviewer reads them closely, so say why the mod needs them in your notes. They include what KIF's Mod Safety scan says about the mod ("scan is yellow: ...") and a nudge to list what it needs in mod.json's permissions, which players see before they install. Everything it finds is in `Logs/KIF_log.txt` too. A long one's words scroll in the description box: by themselves, or with the right stick or the mouse wheel over the box.
 - **Publish:** The pull request's questions, remembered for each mod:
   - **Permission:** Did you make this mod, or do you have its author's permission to share it (credited in `mod.json`)? Without it, the mod can't be published.
   - **Tested in KIF:** Did you test it in KIF (it loads, a battle works, the game saves and loads)?
@@ -30,7 +30,7 @@ A mod you work on in `Mods` often has things that shouldn't be shared: dev tools
 
 - **The ModDev Folder** is `ModDev` in KIF's own folder (made when it isn't there), unless you set another: KIF Settings > Mods > For Modders > **ModDev Folder**, right under Publish a mod. A types the folder in the title bar (Ctrl+V pastes one); empty goes back to KIF's ModDev. Its chip shows the folder's name.
 - **A copy is found by its ID:** a folder there whose `mod.json` has the mod's ID (capitals, _ and - aside) is that mod's copy, whatever the folder is called. It can be a folder down too: a repo with its README at the top and the mod in a folder of its own.
-- **MODDEV:** A mod with a copy says so in Step 1 and on each step. Its details come from the copy, its check runs on the copy, and the copy is what's uploaded. Details you change are saved to both copies, so they stay the same. **Folder** opens the copy.
+- **MODDEV:** A mod with a copy says so in Step 1 and on each step. Its details come from the copy, its check runs on the copy, and the copy is what's uploaded. Details you change are saved to both copies, so they stay the same. **Copy Path** puts the copy's path on the clipboard (the game opens no File Explorer).
 - A copy in KIF's own `ModDev` isn't listed twice: its row in `Mods` (with MODDEV) is the one.
 
 ## Publishing
@@ -40,8 +40,8 @@ Publish asks first: **Publish Ghostly Possession 1.0.1?** A window opens that si
 Then one of these:
 
 - **Publish Window Open** (green): Follow the window's steps; it may ask to install Git or the GitHub CLI first. Catalog contributors publish straight away, and players get the mod at their next catalog check. Everyone else gets a pull request, which opens in the browser; it's checked and reviewed before the mod goes live.
-- **Run It Yourself** (amber): Open a terminal and run the command saved in `Cache/Publish/command.txt` (in the game folder). **Open Folder** opens it.
-- **The Window Didn't Open** (red): See `Logs/KIF_log.txt`. The script is `Tools/publish_mod` in the game folder; **Open Folder** opens it.
+- **Run It Yourself** (amber): Open a terminal and run the command saved in `Cache/Publish/command.txt` (in the game folder). **Copy the Path** puts the file's path on the clipboard.
+- **The Window Didn't Open** (red): See `Logs/KIF_log.txt`. The script is `Tools/publish_mod` in the game folder; **Copy the Path** puts its path on the clipboard.
 
 ## When Something Goes Wrong
 

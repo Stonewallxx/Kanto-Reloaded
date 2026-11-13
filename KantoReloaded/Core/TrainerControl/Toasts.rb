@@ -12,11 +12,11 @@
 #                wager. When they spot you (their event starts: the "!",
 #                as they walk over) or you talk to them; nothing on a first
 #                meeting; gone before the battle's transition (a toast up
-#                as a battle starts would sit over it).
-#   The streak   The same toast with the gold coin and a second line, when
-#                your overall win streak (the Trainer Card's) reaches 10:
-#                "Word of your streak spreads... Leaders are ready for
-#                you." Shown back on the map after that battle.
+#                as a battle starts would sit over it). Its Record Toast
+#                row (On to start, his pick 2026-11-10) turns it off.
+#   (The streak toast at a 10-win streak, "Leaders are ready for you",
+#   retired 2026-11-01: leaders' counter Pokémon moved to Notoriety's
+#   Feared, and its tier toast says so.)
 #
 # Who an event battles is read from its own commands: the game's
 # pbTrainerBattle and pbDoubleTrainerBattle calls (the trainer's class and
@@ -31,7 +31,7 @@ module Reloaded
     module Toasts
       BATTLE = /pb(?:Double)?TrainerBattle\(\s*(?:PBTrainers::|:)(\w+)\s*,\s*["']([^"']+)["']/
       STREAK_PILL = 3                   # the STREAK pill from 3 wins in a row
-      LEADERS_READY = 10                # your overall streak when leaders get ready
+      ROW = :"trainer_control.record_toast"   # its row (his pick, 2026-11-10: On to start)
       P = Reloaded::Pixel
       PF = ::KIF::PixelFont
 
@@ -47,7 +47,6 @@ module Reloaded
               original.call(*args)
             end
           end
-          Reloaded::Events.on(:trainer_battle_ended, :trainer_control_streak, 110) { |c| Reloaded::TrainerControl::Toasts.streak_check(c) }
         end
 
         #----------------------------------------------------------------------
@@ -88,7 +87,7 @@ module Reloaded
           people = people_in(list)
           return unless people.length == 1
           rec = Records.get(people.keys[0])
-          record(rec) if rec && Records.battles(rec) > 0
+          record(rec) if rec && Records.battles(rec) > 0 && on?
         rescue StandardError => e
           Reloaded::Log.warning_once("Trainer Control's record toast couldn't be shown: #{e.message}", :trainer_control)
         end
@@ -99,10 +98,8 @@ module Reloaded
         def pills(rec)
           out = []
           out << [_INTL("STREAK {1}", rec["streak"].to_i), :gold] if rec["streak"].to_i >= STREAK_PILL
-          if Bond.can_reach?(rec)
-            kind, at, _left = Bond.next_step(rec)
-            out << [_INTL("{1} AT {2}", Bond.word(kind).upcase, at), :blue]
-          end
+          nxt = Bond.can_reach?(rec) ? Bond.next_step(rec) : nil
+          out << [_INTL("{1} AT {2}", Bond.word(nxt[0]).upcase, nxt[1]), :blue] if nxt     # (none once the bond is complete)
           out << [_INTL("PINK SLIP"), :pink] if defined?(PinkSlips) && PinkSlips.offered?(rec)
           return out
         end
@@ -128,10 +125,22 @@ module Reloaded
           end]
         end
 
+        # "Veteran Hiker Marcos": a Rematch Rank's word in its colour (his
+        # pick, Rank Word), written over the toast's own words
+        def on?
+          return !defined?(Reloaded::Settings) || Reloaded::Settings.get(ROW) != false
+        end
+
         def record(rec)
           face = Pictures.face(rec["type"])
-          shown = Reloaded::Toast.show(Records.title(rec), :icon => face, :paint => paint(rec))
+          r = defined?(RematchRanks) ? RematchRanks.rank(rec) : nil
+          word = r ? _INTL(r.name) : nil
+          shown = Reloaded::Toast.show(word ? "#{word} #{Records.title(rec)}" : Records.title(rec), :icon => face, :paint => paint(rec))
           @sprite = shown ? Reloaded::Toast.sprite : nil
+          if shown && word
+            col = Reloaded::PartyPaint.ink(Reloaded::Palette.map_menu, r.rgb)
+            Reloaded::Pixel.text(@sprite.bitmap, face ? 34 : 12, 6, Reloaded::Pixel.width(::KIF::PixelFont::TEXT, word) + 2, 18, word, col, ::KIF::PixelFont::TEXT)
+          end
           return shown
         ensure
           face.dispose if face && !face.disposed?
@@ -145,24 +154,6 @@ module Reloaded
           @sprite = nil
         end
 
-        #----------------------------------------------------------------------
-        # The streak toast
-        #----------------------------------------------------------------------
-        def streak_check(context)
-          return unless context[:won] && defined?(Reloaded::TrainerCard::Counters)
-          @streak_due = true if Reloaded::TrainerCard::Counters.get(:streak).to_i == LEADERS_READY
-        end
-
-        def after_battle
-          return unless @streak_due
-          @streak_due = false
-          streak
-        end
-
-        def streak
-          return Reloaded::Toast.show(_INTL("Word of your streak spreads..."), :coin => LEADERS_READY.to_s,
-                                      :sub => _INTL("Leaders are ready for you."))
-        end
       end
 
       # The game setting an event off (Interpreter#setup)

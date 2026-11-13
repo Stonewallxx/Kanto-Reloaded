@@ -105,13 +105,13 @@ module Reloaded
         end
         FIELD_TIMED.each do |k, words, t|
           n = eff(f.effects, k).to_i
-          out << [_INTL(words), n, :field, t] if n > 0
+          out << [_INTL(words), held?(battle, k, :field) ? nil : n, :field, t] if n > 0
         end
         [0, 1].each do |side|
           e = battle.sides[side].effects
           SIDE_TIMED.each do |k, words, t|
             n = eff(e, k).to_i
-            out << [_INTL(words), n, side, t] if n > 0
+            out << [_INTL(words), held?(battle, k, side) ? nil : n, side, t] if n > 0
           end
           HAZARDS.each do |k, words, t|
             v = eff(e, k)
@@ -133,6 +133,12 @@ module Reloaded
       rescue StandardError => e
         Reloaded::Log.exception("Battle Menu: reading the field", e, :battle_menu)
         return out || []
+      end
+
+      # A gym's rule holds it all battle (Trainer Control's Gym Rules): endless
+      def held?(battle, effect, side)
+        gr = defined?(Reloaded::TrainerControl::GymRules) ? Reloaded::TrainerControl::GymRules : nil
+        return gr ? gr.held?(battle, effect, side) : false
       end
 
       def weather_name(id)
@@ -367,7 +373,7 @@ module Reloaded
         return out
       end
 
-      # Kept while the Battle Menu or Effectiveness (EBDX) is On: both
+      # Kept while the Battle Menu or Effectiveness is On: both
       # show only what the battle has shown
       def recording?
         return true if Reloaded::BattleMenu.on?

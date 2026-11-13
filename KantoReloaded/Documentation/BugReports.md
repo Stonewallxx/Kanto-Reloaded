@@ -17,7 +17,7 @@ Go to **KIF Settings > Kanto Reloaded > Bug Report > Make a Bug Report**. The sc
   - **Copy:** the save to copy (Left / Right). It starts on the one you're playing, or the newest.
   - **Make a Test Copy:** where the copy goes (the first free File slot, with its TEST pill). A asks first, then makes it. Loaded with Kanto Reloaded, the copy counts as Debug (see [Difficulty.md](Difficulty.md), Test Copy).
 
-**Make Report** (Y, or the box at the top right) saves the file and shows **Report Made**. That says where the file is and how big it is, with **Open the Folder**, **Open Discord** (Kanto Reloaded's bug reports channel) and **Done**. On a phone they're **Copy the Path** and **Copy the Link**, which put the report's full path or Discord's link on the clipboard and say **Copied**.
+**Make Report** (Y, or the box at the top right) saves the file and shows **Report Made**. That says where the file is and how big it is, with **Copy the Path** (the report's full path on the clipboard: the game opens no File Explorer), **Open Discord** (Kanto Reloaded's bug reports channel, through KIF's link opener, which asks first) and **Done**. On a phone Open Discord is **Copy the Link**, which puts Discord's link on the clipboard and says **Copied**.
 
 ## What's in the File
 
@@ -34,7 +34,7 @@ Go to **KIF Settings > Kanto Reloaded > Bug Report > Make a Bug Report**. The sc
 | `screenshot.png` | The screenshot you picked |
 | `save/<slot>.rxdata` | Only with Include the Save |
 
-Your Windows user name is taken out of every text file. Your home folder becomes `%USERPROFILE%`, and any folder named after you becomes `USERNAME`.
+Your user name is taken out of every text file. Your home folder (worked out from where your saves are) becomes `~`, and any folder named after you becomes `USERNAME`.
 
 ## Recent Steps
 

@@ -13,6 +13,9 @@
 #   Saves.archive(slot)             to the Deleted tab (DELETED SAVES, as old
 #                                   Kanto Reloaded kept it), restore_archive,
 #                                   delete_archive
+#   Saves.trim_backups(slot, cap)   the Backup Cap: a save's old backups to
+#                                   its one Old Backups entry in the Deleted
+#                                   tab (his pick, 2026-11-05)
 #   Saves.note / tag                a save's note and color tag
 #
 # A preview reads the whole file (PIF has no small header), with PIF's raw
@@ -38,6 +41,8 @@ module Reloaded
     NOTES_FILE = "Save Notes.json".freeze
     PREVIEWS_FILE = "Save Previews.json".freeze
     MANIFEST = "manifest.json".freeze
+    OLD_BACKUPS = "Old Backups".freeze      # DELETED SAVES\<slot> Old Backups (the Backup Cap's)
+    RESTORED = "Restored".freeze            # the name restored old backups get (named: the cap keeps them)
     TAGS = [["None", nil], ["Red", [230, 80, 80]], ["Orange", [240, 150, 60]], ["Yellow", [235, 205, 70]],
             ["Green", [100, 200, 110]], ["Blue", [90, 150, 235]], ["Purple", [160, 110, 220]],
             ["Pink", [235, 120, 180]], ["Grey", [150, 150, 160]]].freeze
@@ -277,17 +282,43 @@ module Reloaded
       end
 
       # Backup Cap: plain backups (not named, not autosaves) beyond cap go to
-      # the Recycle Bin, oldest first; one that can't go there is kept. nil
-      # cap keeps them all. Returns how many went.
+      # the save's one Old Backups entry in the Deleted tab (his pick: one
+      # entry a save, so the tab stays short; the Recycle Bin needed
+      # Windows' own code, which KIF 2.0.0's Mod Safety grades red). One
+      # that can't go there is kept. nil cap keeps them all. Returns how
+      # many went.
       def trim_backups(slot, cap)
         return 0 unless cap
         plain = backups(slot).select { |b| b[:name].nil? && !b[:auto] }
         extra = plain[cap..-1] || []
-        gone = extra.count { |b| Reloaded::Paths.recycle(b[:path]) }
+        return 0 if extra.empty?
+        folder = old_backups_dir(slot)
+        into = Reloaded::Paths.ensure_dir(File.join(folder, BACKUPS))
+        gone = extra.count do |b|
+          to = File.join(into, File.basename(b[:path]))
+          next false if File.exist?(to)
+          begin
+            File.rename(b[:path], to)
+            true
+          rescue StandardError
+            false
+          end
+        end
+        manifest = { "schema_version" => 1, "slot" => slot.to_s, "kind" => "old_backups",
+                     "archived_at" => Time.now.utc.strftime("%Y-%m-%dT%H:%M:%SZ"), "kanto_reloaded" => {} }
+        if gone > 0
+          Reloaded::Paths.write_atomic(File.join(folder, MANIFEST), Reloaded::JSON.generate(manifest, true))
+        elsif remove_if_empty(into).empty?
+          remove_if_empty(folder)                   # nothing went: no empty entry left behind
+        end
         if gone < extra.length
-          Reloaded::Log.warning_once("The Backup Cap couldn't put backups in the Recycle Bin, so they were kept", :saves)
+          Reloaded::Log.warning_once("The Backup Cap couldn't move some old backups to the Deleted tab, so they were kept", :saves)
         end
         return gone
+      end
+
+      def old_backups_dir(slot)
+        return File.join(dir, DELETED, "#{slot} #{OLD_BACKUPS}")
       end
 
       #------------------------------------------------------------------------
@@ -347,7 +378,9 @@ module Reloaded
       end
 
       # The Deleted tab: newest first, [{ :dir, :slot, :archived_at (Time),
-      # :file (the save inside), :note, :tag, :name, :map, :seconds, :old }]
+      # :file (the save inside), :note, :tag, :name, :map, :seconds, :old }];
+      # a save's Old Backups (the Backup Cap's) has :kind :old_backups,
+      # :count and, as :file, its newest backup
       def archived
         root = File.join(dir, DELETED)
         return [] unless File.directory?(root)
@@ -357,6 +390,12 @@ module Reloaded
           m = read_manifest(folder)
           next unless m
           slot = m["slot"].to_s
+          if m["kind"] == "old_backups"
+            files = old_backup_files(folder, slot)
+            next if files.empty?
+            next { :dir => folder, :slot => slot, :kind => :old_backups, :count => files.length, :file => files.first,
+                   :archived_at => iso_time(m["archived_at"]) || File.mtime(folder), :old => false }
+          end
           kr = m["kanto_reloaded"].is_a?(Hash) ? m["kanto_reloaded"] : {}
           file = File.join(folder, "#{slot}.rxdata")
           { :dir => folder, :slot => slot, :archived_at => iso_time(m["archived_at"]) || File.mtime(folder),
@@ -366,9 +405,19 @@ module Reloaded
         return list.compact.sort_by { |a| a[:archived_at].to_f }.reverse
       end
 
+      # An Old Backups entry's backups, newest first (paths)
+      def old_backup_files(folder, slot)
+        into = File.join(folder, BACKUPS)
+        return [] unless File.directory?(into)
+        pattern = /\A#{Regexp.escape(slot)}_(\d{14})\.rxdata\z/
+        return Dir.children(into).select { |f| f =~ pattern }.sort.reverse.map { |f| File.join(into, f) }
+      end
+
       # Back to its slot, or to the first free one when that's taken (the
-      # files renamed to it). Returns the slot.
+      # files renamed to it). Returns the slot. A save's Old Backups go back
+      # in its Backups list instead.
       def restore_archive(entry, slot = nil)
+        return restore_old_backups(entry) if entry[:kind] == :old_backups
         slot ||= File.file?(path(entry[:slot])) ? free_slot : entry[:slot]
         raise ArgumentError, "Every File slot is taken" unless slot
         raise ArgumentError, "#{slot} is taken" if File.file?(path(slot))
@@ -405,6 +454,25 @@ module Reloaded
         File.delete(File.join(entry[:dir], MANIFEST)) rescue nil
         left = remove_if_empty(entry[:dir])
         Reloaded::Log.warning("#{slot} is back; these stayed in #{entry[:dir]}: #{left.join(", ")}", :saves) unless left.empty?
+        return slot
+      end
+
+      # A save's Old Backups back in its Backups list, each named Restored so
+      # the Backup Cap keeps them (one whose name is taken stays in the
+      # entry). Returns the slot.
+      def restore_old_backups(entry)
+        slot = entry[:slot].to_s
+        to = Reloaded::Paths.ensure_dir(File.join(dir, BACKUPS, slot))
+        old_backup_files(entry[:dir], slot).each do |file|
+          stamp = File.basename(file)[/_(\d{14})\.rxdata\z/, 1]
+          target = File.join(to, "#{slot}_#{stamp}_#{RESTORED}.rxdata")
+          next if File.exist?(target)
+          File.rename(file, target)
+        end
+        if remove_if_empty(File.join(entry[:dir], BACKUPS)).empty?
+          File.delete(File.join(entry[:dir], MANIFEST)) rescue nil
+          remove_if_empty(entry[:dir])
+        end
         return slot
       end
 

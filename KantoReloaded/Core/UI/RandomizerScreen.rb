@@ -160,6 +160,7 @@ module Reloaded
       end
       return seed_menu if o.is_a?(RW::SeedRow)
       return open_bans(o.kind) if o.is_a?(RW::BanRow)
+      return open_references(o) if o.is_a?(RW::RefRow)
       case o.respond_to?(:rkey) ? o.rkey : nil
       when :btn_settings_code then return code_card
       when :btn_view_log then return open_viewer(:log)
@@ -174,6 +175,16 @@ module Reloaded
     def open_bans(kind)
       pbPlayDecisionSE
       hidden { Reloaded::RandomizerBans.new(kind, intro?).main }
+      after_change
+      return nil
+    end
+
+    # His Reference Sets: PIF's own picker (KIF 2.0.0); the choice waits
+    # for Randomize Now like any change
+    def open_references(o)
+      return pbPlayBuzzerSE if kr_lock(o)
+      pbPlayDecisionSE
+      hidden { o.trigger }
       after_change
       return nil
     end
@@ -363,6 +374,11 @@ module Reloaded
       if o.is_a?(RW::BanRow)
         n = o.get
         P.text(top, VAL_X1 - 180, y, 180, ROW_H - 2, n == 1 ? _INTL("1 Banned") : _INTL("{1} Banned", n), n > 0 ? c[:opt] : c[:dim], nil, 1)
+        return
+      end
+      if o.is_a?(RW::RefRow)
+        n = o.get
+        P.text(top, VAL_X1 - 180, y, 180, ROW_H - 2, RW.ref_text(n), n > 0 && !kr_lock(o) ? c[:opt] : c[:dim], nil, 1)
         return
       end
       super

@@ -345,13 +345,12 @@ module Reloaded
 
     def save_report
       file = SC.write_report(@report)
-      phone = Reloaded::Runtime.phone?        # no File Explorer: the path is copied instead
+      # the path to paste (the game opens no File Explorer: KIF 2.0.0's Mod Safety)
       choice = Reloaded::Dialogs.buttons_dialog(self, _INTL("Report Saved"),
                  _INTL("Saved as {1} in Kanto Reloaded's Logs, Save Checks folder.", File.basename(file)),
-                 [phone ? _INTL("Copy the Path") : _INTL("Open Folder"), _INTL("OK")], 1)
+                 [_INTL("Copy the Path"), _INTL("OK")], 1)
       return unless choice == 0
-      return copy_for_phone(File.expand_path(file), _INTL("Where the report is, ready to paste.")) if phone
-      system("explorer \"#{File.dirname(file).tr("/", "\\")}\"")
+      copy_for_phone(File.expand_path(file), _INTL("Where the report is, ready to paste."))
     rescue StandardError => e
       failed(_INTL("Save the Report"), e)
     end

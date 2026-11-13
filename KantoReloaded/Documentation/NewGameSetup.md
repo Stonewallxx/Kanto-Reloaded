@@ -10,10 +10,10 @@ A new game's choices in one screen, before Professor Oak's talk: the game mode, 
 
 Four steps on a strip along the top. **L1** and **R1** move between them (a click on one jumps there), and the done ones are ticked.
 
-- **Game Mode:** Classic, Remix, Randomized and Legendary, each on its card. The mode follows the cursor, and its words show under the cards. Legendary shows locked until New Game+ (beat the League on a save first). **From a Preset** and **Share Code** are under the cards. A goes on to Trainer; B asks **Back to the Title?** (Stay is first).
+- **Game Mode:** Classic, Remix, Randomized and Legendary, each on its card. The mode follows the cursor, and its words show under the cards. Legendary shows locked until New Game+ (beat the League on a save first). **From a Preset** is under the cards. A goes on to Trainer; B asks **Back to the Title?** (Stay is first).
 - **Trainer:** The Trainer Application Form beside your trainer, who stands on Oak's platform and changes as you choose. **Name** is typed straight in (a controller's A opens the naming screen); left empty, you're Red or Green. **Gender**, **Age** (10 to 17), **Skin** and **Hair** change with Left and Right; on Hair your trainer's hat comes off, and its four colours show under it.
 - **Run Setup:** The run's rules beside Oak, a row each. Left and Right change a row; A opens one that has more. The starter set's three Pokémon show under the rows, and the highlighted row's words at the bottom.
-- **Run Card:** The run in short beside your trainer: its pills (the mode, Easy or Hard), your trainer, the seed, the starters, the money, Autosave, and its **Run ID**. **Start** begins your journey; **Save as Preset** keeps it. **Square** copies its share code.
+- **Run Card:** The run in short beside your trainer: its pills (the mode, Easy or Hard), your trainer, the seed, the starters, the money, Autosave, and its **Run ID**. **Start** begins your journey; **Save as Preset** keeps it.
 
 ## Run Setup's Rows
 
@@ -40,18 +40,15 @@ Your own show **YOURS** with their mode's pill under it. **Square** deletes one 
 
 **Save as Preset** (on the Run Card) asks for a name and keeps the run in KIF's preset slots, beside your per-save settings, so it shows under From a Preset in any new game. KIF's own Presets in KIF Settings load its settings as always.
 
-## Share Codes and Run IDs
+## Run IDs
 
-A share code holds the run, not you: the mode, the rows you changed, the Custom starter, the Randomizer's settings code, and the per-save settings you changed. No name, no look, nothing for every save. It starts `KRN1:`.
+A run is the mode, the rows you changed, the Custom starter, the Randomizer's settings code, and the per-save settings you changed. No name, no look, nothing for every save.
 
 - **Run ID:** A short name for the run (like `57DA-A91F`), on the Run Card. The same run always has the same Run ID, so two players can check they're playing the same game.
-- **Copy:** Square on the Run Card.
-- **Share Code** (on Game Mode) opens **Enter a Share Code** with a copied code already pasted in: its Run ID and what it sets. **Triangle** pastes, A on the field types one (a controller's A opens the naming screen). **Use This Run** puts it in place of your setup (asking first if you'd set something up); rows and settings it doesn't name go back to their defaults, so the run is the same.
-- A code from a newer Kanto Reloaded says so instead.
 
 ## Your Save
 
-The run is kept in your save (its mode, rows, Run ID and code), even with Kanto Reloaded off.
+The run is kept in your save (its mode, rows and Run ID), even with Kanto Reloaded off.
 
 ## For Other Mods
 

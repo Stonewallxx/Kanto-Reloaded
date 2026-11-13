@@ -69,7 +69,7 @@ module Reloaded
         s.register(:"saves.backup_cap", :page => :saves, :priority => 10, :type => :enum, :default => 0, :preset => false,
           :values => CAP_NAMES, :name => "Backup Cap", :remap => [5, { 2 => 4, 3 => 5, 4 => 6 }],
           :descriptions => ["Every backup is kept."] + CAPS.compact.map { |n| "The newest #{n} backups of each save are kept." },
-          :description => "How many backups of each save are kept. Older ones go to the Recycle Bin, and named backups are always kept.")
+          :description => "How many backups of each save are kept. Older ones go to the save's Old Backups in the Deleted tab, and named backups are always kept.")
       end
 
       # Kanto Reloaded's Load Screen is on: always, with Kanto Reloaded

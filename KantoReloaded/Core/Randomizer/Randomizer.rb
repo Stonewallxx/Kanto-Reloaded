@@ -274,9 +274,17 @@ module Reloaded
         if ::KIF::Rand.respond_to?(:open_page)
           h.around(FEATURE, rand, :open_page, :id => :randomizer_pages) do |original, title, desc, color, *rest, &builder|
             if defined?(Reloaded::Randomizer::Rows) && Reloaded::Randomizer::Rows.collecting?
-              next [title, desc, builder.call]
+              next (Reloaded::Randomizer::Rows.captured = [title, desc, builder.call])
             end
             original.call(title, desc, color, *rest, &builder)
+          end
+        end
+        # KIF 2.0.0: his Trainers page asks about Custom Sprites Only as it
+        # closes; Kanto Reloaded's rows lock the References Filter instead
+        if ::KIF::Rand.respond_to?(:check_references)
+          h.around(FEATURE, rand, :check_references, :id => :randomizer_references) do |original, *args|
+            next nil if defined?(Reloaded::Randomizer::Rows) && Reloaded::Randomizer::Rows.collecting?
+            original.call(*args)
           end
         end
         h.around(FEATURE, rand, :randomize_now, :id => :randomizer_randomized) do |original, *args|

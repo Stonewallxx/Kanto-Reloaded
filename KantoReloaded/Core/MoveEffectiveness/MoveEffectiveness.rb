@@ -1,16 +1,20 @@
 # encoding: utf-8
 #==============================================================================
-# Kanto Reloaded: Effectiveness (EBDX)
+# Kanto Reloaded: Effectiveness
 #==============================================================================
-# Roadmap topic move-effectiveness (Wave 6; his picks, 2026-10-30): how well
-# each move does, on EBDX's Fight menu.
+# Roadmap topic move-effectiveness (Wave 6; his picks, 2026-10-30 for EBDX's
+# Fight menu, 2026-11-05 for PIF's own): how well each move does, on either
+# Fight menu. One feature, one switch (his pick: "Effectiveness", was
+# Effectiveness (EBDX)); every row and colour counts on both screens.
 #
-#   the cursor     Battle Scene's ring round the picked move in its colour:
-#                  x4 Cyan, x2 Green, x1 the usual Cursor Color, x1/2
-#                  Red, x1/4 Yellow, x0 grey (each changeable; always Dark's
-#                  tones: EBDX's screen is the same in every Theme Mode)
-#   multiplier     a Colour Pill beside the picked move's PP (x1/2 and x1/4
-#                  as a small stacked fraction); none for neutral moves
+#   the cursor     EBDX: Battle Scene's ring round the picked move in its
+#                  colour. PIF: PIF's own picked-move button recoloured
+#                  (PIFMenus.rb). x4 Cyan, x2 Green, x1 the usual cursor,
+#                  x1/2 Red, x1/4 Yellow, x0 grey (each changeable; always
+#                  Dark's tones: neither screen changes with Theme Mode)
+#   multiplier     a Colour Pill on the picked move (EBDX: beside its PP;
+#                  PIF: at its right end; x1/2 and x1/4 as a small stacked
+#                  fraction); none for neutral moves
 #   move dots      a dot in its colour on each move not picked, on the
 #                  right; none for neutral moves
 #   target pills   Double Battles: each target's name above the picked move,
@@ -18,22 +22,26 @@
 #   ally warning   a move that would hit your partner: a red "!" in its
 #                  button and your partner's pill in red (grey when it
 #                  can't be hurt)
-#   target window  each of Battle Scene's rings in its target's colour
+#   target window  EBDX: each of Battle Scene's rings in its target's
+#                  colour. PIF: each picked button in it
 #
 # The colour is the best foe's (a one-target move counts only the foes;
 # your partner only for moves that hit several). Status moves show nothing
 # but Thunder Wave where it fails. The maths and what counts as known:
 # Reloaded::Matchup (BattleTools/Matchup.rb). Worked out once when the Fight
-# menu opens (EBDX makes its buttons then): the pill, the "!" and the dot
-# are drawn into EBDX's own button pictures, so they slide and swap with
-# them; each frame only moves the pills' row and sets the ring's colour
-# when the pick changes. EBDX only (his rule, 2026-10-30): PIF's Fight
-# menu keeps KIF's own Move Effectiveness as it is; on EBDX's, KIF's
-# markers and words are Off while this is On (QuietKIF: KIF::MoveEffect.on?
-# answers false inside EBDX's Fight menu).
+# menu opens. EBDX (FightOverlay.rb): the pill, the "!" and the dot are
+# drawn into EBDX's own button pictures, so they slide and swap with them;
+# each frame only moves the pills' row and sets the ring's colour when the
+# pick changes. PIF (PIFMenus.rb): redrawn when the pick changes.
 #
-# A feature with a switch, On: Off leaves Battle Scene's plain ring, and
-# KIF's own markers and words on EBDX's Fight menu again.
+# It takes over KIF's own Move Effectiveness (C-BATTLE-01, his pick
+# 2026-11-05): while this is On, KIF's draws nothing on either Fight menu
+# and its row in Cody Settings hides (:takes_over), and QuietKIF makes
+# KIF::MoveEffect.on? answer false (KIF's module switch aside). KIF's
+# immunity list (KIF::MoveEffect.known_immunity?) is still read by Matchup.
+#
+# A feature with a switch, On: Off leaves Battle Scene's plain ring, PIF's
+# own buttons, and KIF's own markers and words on both Fight menus again.
 #==============================================================================
 
 module Reloaded
@@ -63,26 +71,30 @@ module Reloaded
     class << self
       def boot
         register_settings
-        Reloaded::Features.register(FEATURE, :name => "Effectiveness (EBDX)", :page => PAGE, :order => 58,
-          :description => "How well each move does on EBDX's Fight menu: The cursor in the move's color, its multiplier beside the PP, " \
+        Reloaded::Features.register(FEATURE, :name => "Effectiveness", :page => PAGE, :order => 58,
+          :takes_over => ["C-BATTLE-01_Effectiveness"],
+          :description => "How well each move does on the Fight menu: The cursor in the move's color, its multiplier by the PP, " \
                           "a dot on the other moves, and in Double Battles each target above the move. Only what the battle has shown counts.")
         Reloaded::Events.on(:setting_changed, :move_effectiveness_colors) do |e|
           key = e.is_a?(Hash) ? e[:key].to_s : ""
-          @colours = nil if key.start_with?("move_effectiveness.")
+          if key.start_with?("move_effectiveness.")
+            @colours = nil
+            Recolour.clear if defined?(Recolour)
+          end
         end
         register_swatch
-        user_change(:mega, proc { |win| win.instance_variable_get(:@megaActive) }, proc { |_win, u| mega_view(u) })
+        user_change(:mega, proc { |win| mega_pressed?(win) }, proc { |_win, u| mega_view(u) })
         install
         return true
       end
 
       def register_settings
         s = Reloaded::Settings
-        s.register_page(PAGE, :group => :general, :name => "Effectiveness (EBDX)", :icon => :features, :priority => 47,
+        s.register_page(PAGE, :group => :general, :name => "Effectiveness", :icon => :features, :priority => 47,
           :feature => FEATURE,
-          :description => "How well each move does, on EBDX's Fight menu. No Effect is always gray.")
+          :description => "How well each move does, on PIF's and EBDX's Fight menus. No Effect is always gray.")
         s.register(MULTIPLIER, :page => PAGE, :priority => 10, :type => :toggle, :default => true, :name => "Multiplier",
-          :description => "The picked move's multiplier (x4, x2, x1/2, x1/4 or x0) in a pill beside its PP. None for the usual damage.")
+          :description => "The picked move's multiplier (x4, x2, x1/2, x1/4 or x0) in a pill by its PP. None for the usual damage.")
         s.register(DOTS, :page => PAGE, :priority => 20, :type => :toggle, :default => true, :name => "Move Dots",
           :description => "A dot in its color on each move you haven't picked. None for the usual damage.")
         s.register(PILLS, :page => PAGE, :priority => 30, :type => :toggle, :default => true, :name => "Target Pills",
@@ -90,7 +102,7 @@ module Reloaded
         s.register(WARNING, :page => PAGE, :priority => 40, :type => :toggle, :default => true, :name => "Ally Warning",
           :description => "A move that would hurt your partner: A red \"!\" on it and your partner's pill in red.")
         s.register(TARGETS, :page => PAGE, :priority => 50, :type => :toggle, :default => true, :name => "Target Window Colors",
-          :description => "When you pick a target, each cursor in that target's color.")
+          :description => "When you pick a target, its cursor (EBDX) or button (PIF's) in that target's color.")
         names = ["Theme"] + Reloaded::Palette::COLORS.map { |c| c[0] }
         COLORS.each_with_index do |(_lv, (key, name, default, what)), i|
           d = default ? (Reloaded::Palette::COLORS.index { |c| c[0] == default } || -1) + 1 : 0
@@ -137,11 +149,19 @@ module Reloaded
         end
       end
 
+      # The battle whose player is aiming a move now (pbChooseTarget), for
+      # PIF's target window, which doesn't know its battle
+      attr_reader :aiming
+
       # The target window's colours: { battler index => Color } (nil: the
-      # usual cursor), for the move being aimed (Q13)
+      # usual cursor), for the move being aimed (Q13). win: EBDX's target
+      # window (it knows its battle)
       def target_colours(win)
+        return target_colours_for(win.instance_variable_get(:@battle))
+      end
+
+      def target_colours_for(battle)
         return nil unless on? && setting?(TARGETS)
-        battle = win.instance_variable_get(:@battle)
         user, move = battle && battle.instance_variable_get(CHOOSING)
         return nil unless user && move
         u = user.dup
@@ -154,7 +174,7 @@ module Reloaded
         end
         return out
       rescue StandardError => e
-        Reloaded::Log.exception("Effectiveness (EBDX): the target window's colors", e, FEATURE)
+        Reloaded::Log.exception("Effectiveness: the target window's colors", e, FEATURE)
         return nil
       end
 
@@ -209,10 +229,17 @@ module Reloaded
             v = apply.call(win, u)
             u = v if v
           rescue StandardError => e
-            Reloaded::Log.warning_once("Effectiveness (EBDX): #{id}'s change to your Pokémon couldn't be worked out (#{e.class}: #{e.message})", FEATURE)
+            Reloaded::Log.warning_once("Effectiveness: #{id}'s change to your Pokémon couldn't be worked out (#{e.class}: #{e.message})", FEATURE)
           end
         end
         return u
+      end
+
+      # Mega Evolution's button pressed: EBDX's Fight menu keeps it in
+      # @megaActive, PIF's shows it pressed in mode 2
+      def mega_pressed?(win)
+        return true if win.instance_variable_get(:@megaActive)
+        return defined?(::FightMenuDisplay) && win.is_a?(::FightMenuDisplay) && win.mode == 2 ? true : false
       end
 
       # Mega Evolution, or the Megas mod's Primal Reversion on the same
@@ -243,47 +270,40 @@ module Reloaded
         return nil
       end
 
-      # While true (inside EBDX's Fight menu, the feature On), KIF's own
-      # Move Effectiveness is Off: its markers and words on EBDX's buttons
-      # (C-BATTLE-01, its FightWindowEBDX part) give way to these
-      attr_accessor :quiet_kif
-
-      def quiet(on)
-        return yield unless on
-        @quiet_kif = true
-        begin
-          return yield
-        ensure
-          @quiet_kif = false
-        end
-      end
-
       def install
         h = Reloaded::Hooks
         h.prepend(FEATURE, ::FightWindowEBDX, FightHooks, :id => :move_effectiveness_fight) if Object.const_defined?(:FightWindowEBDX)
+        h.prepend(FEATURE, ::FightMenuDisplay, PifFightHooks, :id => :move_effectiveness_pif_fight) if Object.const_defined?(:FightMenuDisplay)
+        h.prepend(FEATURE, ::TargetMenuDisplay, PifTargetHooks, :id => :move_effectiveness_pif_targets) if Object.const_defined?(:TargetMenuDisplay)
         if defined?(::KIF::MoveEffect) && ::KIF::MoveEffect.respond_to?(:on?)
           h.prepend(FEATURE, ::KIF::MoveEffect.singleton_class, QuietKIF, :id => :move_effectiveness_quiet_kif)
         end
         return unless defined?(::PokeBattle_Battle) && ::PokeBattle_Battle.method_defined?(:pbChooseTarget)
-        # the move being aimed, for the target window (the scene's
-        # pbChooseTarget gets only its target data)
+        # the move being aimed, for the target windows (the scene's
+        # pbChooseTarget gets only its target data; PIF's window not even
+        # its battle)
         h.around(FEATURE, ::PokeBattle_Battle, :pbChooseTarget, :id => :move_effectiveness_target) do |original, *args|
           battle = original.receiver
           battle.instance_variable_set(CHOOSING, [args[0], args[1]])
+          was = Reloaded::MoveEffectiveness.instance_variable_get(:@aiming)
+          Reloaded::MoveEffectiveness.instance_variable_set(:@aiming, battle)
           begin
             original.call(*args)
           ensure
             battle.remove_instance_variable(CHOOSING) if battle.instance_variable_defined?(CHOOSING)
+            Reloaded::MoveEffectiveness.instance_variable_set(:@aiming, was)
           end
         end
       end
     end
 
-    # KIF's Move Effectiveness, Off while EBDX's Fight menu draws or updates
-    # with this feature On (PIF's Fight menu keeps it, his pick Q14)
+    # KIF's own Move Effectiveness (C-BATTLE-01), Off on both Fight menus
+    # while this feature is On (his pick, 2026-11-05: taken over). Only
+    # C-BATTLE-01 asks it; :takes_over turns its module's hooks off too, this
+    # covers a game where that can't be done
     module QuietKIF
       def on?
-        return false if Reloaded::MoveEffectiveness.quiet_kif
+        return false if Reloaded::MoveEffectiveness.on?
         return super
       end
     end
@@ -295,7 +315,7 @@ module Reloaded
       def generateButtons(*args)
         me = Reloaded::MoveEffectiveness
         @kr_quiet = me.on?
-        ret = me.quiet(@kr_quiet) { super }
+        ret = super
         begin
           if @kr_quiet
             @kr_effect ||= Reloaded::MoveEffectiveness::FightOverlay.new(@viewport)
@@ -308,7 +328,7 @@ module Reloaded
           @kr_scene.colour = nil if @kr_scene.respond_to?(:colour=)    # Battle Scene's plain ring
         rescue StandardError => e
           # EBDX's Fight menu goes on as it is
-          Reloaded::Log.exception("Effectiveness (EBDX): the Fight menu", e, Reloaded::MoveEffectiveness::FEATURE)
+          Reloaded::Log.exception("Effectiveness: EBDX's Fight menu", e, Reloaded::MoveEffectiveness::FEATURE)
           @kr_effect = nil
         end
         return ret
@@ -321,14 +341,9 @@ module Reloaded
           fx = @kr_effect
         end
         fx.pick(@index, @kr_scene) if fx
-        return super unless @kr_quiet
-        Reloaded::MoveEffectiveness.quiet_kif = true
-        begin
-          super
-        ensure
-          Reloaded::MoveEffectiveness.quiet_kif = false
-        end
-        fx.follow(@index) if fx
+        ret = super
+        fx.follow(@index) if fx && @kr_quiet
+        return ret
       end
 
       # A button that changes your Pokémon before the turn was pressed:

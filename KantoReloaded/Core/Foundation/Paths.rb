@@ -142,28 +142,6 @@ module Reloaded
         return nil
       end
 
-      # Sends a file to the Windows Recycle Bin, where it can be got back
-      # (SHFileOperationW with Allow Undo, as Explorer's Delete). True when
-      # it went; when the bin can't be used nothing is deleted.
-      def recycle(path)
-        return false unless File.file?(path) && defined?(::Win32API)
-        @shfileop ||= ::Win32API.new("shell32", "SHFileOperationW", "P", "I")
-        from = (File.expand_path(path).tr("/", "\\") + "\0\0").encode("UTF-16LE").b   # ends in two nulls
-        ptr = [from].pack("p")
-        flags = 0x0004 | 0x0010 | 0x0040 | 0x0400   # silent, no questions, Allow Undo, no error windows
-        # SHFILEOPSTRUCTW: 64-bit (natural alignment) or 32-bit (packed)
-        op = if ptr.bytesize == 8
-               [0].pack("Q<") + [3, 0].pack("L<L<") + ptr + [0].pack("Q<") + [flags, 0, 0].pack("S<S<L<") + [0, 0].pack("Q<Q<")
-             else
-               [0, 3].pack("L<L<") + ptr + [0].pack("L<") + [flags].pack("S<") + [0, 0, 0].pack("L<L<L<")
-             end
-        result = @shfileop.call(op)
-        from.bytesize                               # from stays alive until the call is done
-        return result.zero? && !File.exist?(path)
-      rescue StandardError, NotImplementedError
-        return false
-      end
-
       # Writes the file through a temporary copy, so a crash mid-write never
       # leaves a half-written file behind.
       def write_atomic(path, text)

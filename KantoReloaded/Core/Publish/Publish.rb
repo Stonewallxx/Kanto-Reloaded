@@ -43,7 +43,8 @@ module Reloaded
     ANSWERS_FILE = "Publish Answers.json"
     FOLDER_FILE = "Publish.json"
     # KIF::ModPublish as Kanto Reloaded's screen was made for it (KIF Beta
-    # 1.2.2): what it calls, and what its screen takes the place of
+    # 1.2.2; check, branch_for, launch, run and slug as KIF 2.0.0 has them):
+    # what it calls, and what its screen takes the place of
     MADE_FOR = {
       :available?    => 944231627,
       :folders       => 3395192420,
@@ -52,22 +53,23 @@ module Reloaded
       :raise_version => 4249212042,
       :catalog_items => 2007394588,
       :published     => 2888259924,
-      :check         => 1363570181,
+      :check         => 463012142,
       :pr_text       => 204818215,
-      :branch_for    => 468868511,
+      :branch_for    => 2599497303,
+      :slug          => 149151051,
       :request_dir   => 3080038566,
       :write_request => 1185906281,
-      :launch        => 3350317677,
+      :launch        => 3477104896,
       :ask           => 449803951,
       :enter         => 3531810684,
       :pick_tags     => 4103724449,
       :pick_version  => 1882293149,
       :edit          => 634797223,
       :show_problems => 22440599,
-      :run           => 2066859623
+      :run           => 600412400
     }.freeze
     # What each of KIF's check messages is about (Problems Point at Rows)
-    FIELDS = [[/\A"id"|\Aid "/, :id], [/\A"name"/, :name], [/\A"version"/, :version],
+    FIELDS = [[/\A"id"|\Aid "|\Athe catalog's ".*" folder is the mod/, :id], [/\A"name"/, :name], [/\A"version"/, :version],
               [/\A"author"/, :author], [/\A"description"/, :desc]].freeze
 
     # A mod folder KIF offers: json is nil when its mod.json can't be read;
@@ -403,7 +405,7 @@ module Reloaded
         _errs, warns = kif.check(entry.source, entry.json, catalog)
         title, body = request(entry, answers, warns)
         msg, bod = kif.write_request(title, body)
-        return kif.launch([entry.source, folder_of(entry), kif.branch_for(entry.json), msg, bod, entry.json["id"].to_s])
+        return kif.launch([entry.source, folder_of(entry), kif.branch_for(entry.json), msg, bod, kif.slug(entry.json["id"])])
       end
 
       private

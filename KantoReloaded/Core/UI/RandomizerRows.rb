@@ -12,9 +12,11 @@
 # Trainers under it; the Expanded Pokédex's on saves that have it; a Rolls
 # row, Fixed or Dynamic, under each row the seed fixes, Dynamic.rb). A value
 # that rolls on the spot (his Dynamic ones too) says the seed won't give the
-# same result each time.
+# same result each time. His References Filter (KIF 2.0.0) sits under Custom
+# Sprites Only, locked while that is Off, with his Reference Sets picker under
+# it (his own page asked about it when it closed).
 #
-#   Rows.sections       the screen's sections: Overview, each part, Seed
+#   Rows.sections      the screen's sections: Overview, each part, Seed
 #   Rows.part_state     a part's state for the Overview ("Route", on?)
 #   Rows.summary        a part's settings that aren't at their default
 #   Rows.waiting?       a row, or a part, changed since Randomize Now
@@ -42,7 +44,8 @@ module Reloaded
         :pokemon => [["Wild Pokémon", [:wild_mode, :wild_bst, :wild_legend, :wild_custom, :fuse_all, :kr_expanded]],
                      ["Other Pokémon", [:starters, :kr_starters_dynamic, :statics, :kr_statics_dynamic, :gifts, :kr_gifts_dynamic,
                                         :trades, :kr_trades_dynamic, :npc_requests, :kr_requests_dynamic]]],
-        :trainers => [["Teams", [:trainers, :kr_teams_dynamic, :trainer_bst, :trainer_custom, :team_size, :trainer_fuse, :unfused, :rival_team]],
+        :trainers => [["Teams", [:trainers, :kr_teams_dynamic, :trainer_bst, :trainer_custom, :ref_filter, :__refs, :team_size,
+                                 :trainer_fuse, :unfused, :rival_team]],
                       ["Class Themes", [:class_themes, :theme_shuffle, :extra_themes, :btn_class_theme_list]]],
         :items => [["Items and TMs", [:kr_items_dynamic, :found_items, :found_tms, :given_items, :given_tms, :shop_items, :held_items]],
                    ["Rules", [:keep_categories, :shop_basics, :__ban_items]]],
@@ -81,7 +84,8 @@ module Reloaded
       JOINED = { :kr_learnsets => :moves_follow, :kr_items_dynamic => :item_mode }.freeze
       # Rows one or two steps in (a tree line to the row above); Door Kinds'
       # rows (ent_k_<kind>) one step in under Which Doors
-      INDENT = ROLL_KEYS.map { |k| [k, 1] }.to_h.merge(:kr_per_pokemon => 1, :kr_trainer_rolls => 2).freeze
+      INDENT = ROLL_KEYS.map { |k| [k, 1] }.to_h.merge(:kr_per_pokemon => 1, :kr_trainer_rolls => 2,
+                                                       :ref_filter => 1, :__refs => 2).freeze
       # cody's ban lists, by the word after "Banned" in his rows
       BAN_WORDS = { "pokémon" => :pokemon, "moves" => :moves, "abilities" => :abilities, "items" => :items }.freeze
       BAN_NAMES = { :pokemon => "Banned Pokémon", :moves => "Banned Moves", :abilities => "Banned Abilities",
@@ -114,6 +118,12 @@ module Reloaded
         attr_accessor :kind, :label, :rkey, :full
         def get; return ::KIF::Rand.bans(@kind).length; end
       end
+      # His Reference Sets picker (KIF 2.0.0; key his draft key, :__refs);
+      # get: how many sets are picked (0: all, never picked)
+      class RefRow < ::ButtonOption
+        attr_accessor :label, :rkey, :full
+        def get; return Array(::KIF::Rand.ref_signature).length; end
+      end
 
       class << self
         def rand
@@ -124,17 +134,23 @@ module Reloaded
           return @collecting ? true : false
         end
 
+        attr_writer :captured
+
         # A page's [title, description, options], built by cody's code (his
-        # open_page gives the options back while collecting)
+        # open_page hands them over while collecting; KIF 2.0.0's Trainers
+        # page runs a check after it, so it's not what the page returns)
         def page(name)
           @collecting = true
-          got = rand.send(:"page_#{name}")
+          @captured = nil
+          rand.send(:"page_#{name}")
+          got = @captured
           return got.is_a?(Array) && got.length == 3 ? got : nil
         rescue StandardError => e
           Reloaded::Log.exception("The Randomizer's #{name} page couldn't be read", e, :randomizer)
           return nil
         ensure
           @collecting = false
+          @captured = nil
         end
 
         def pages
@@ -193,9 +209,12 @@ module Reloaded
             key = o.instance_variable_get(:@kif_key)
             return learnsets_row if key == :moves_follow
             return item_mode_row if key == :item_mode
+            set = o.instance_variable_get(:@setProc)
+            set = custom_set(set) if key == :trainer_custom
             return enum(key, title(o.instance_variable_get(:@name)), o.values.map { |v| title(v) },
-                        o.instance_variable_get(:@getProc), o.instance_variable_get(:@setProc), noted(key, o.description))
+                        o.instance_variable_get(:@getProc), set, noted(key, o.description))
           end
+          return ref_row(o) if o.is_a?(rand::DynButton) && o.name.to_s =~ /\AReference sets/i
           if o.is_a?(rand::DynButton) && o.description.to_s.include?("base stat total")   # his three-digit Strength Range
             key = part == :pokemon ? :wild_bst : :trainer_bst
             r = RNum.new("Randomizer Strength Range", 0, 999, proc { rand.get(key) }, proc { |v| rand.set(key, v) },
@@ -212,6 +231,27 @@ module Reloaded
             return button(key_for(label), label, o.description, o.instance_variable_get(:@onPressProc))
           end
           return nil
+        end
+
+        # His Reference Sets button, as a row with its count on the right
+        def ref_row(o)
+          b = RefRow.new("Randomizer Reference Sets", o.instance_variable_get(:@onPressProc) || proc {}, o.description)
+          b.rkey = :__refs
+          b.label = b.full = _INTL("Reference Sets")
+          return b
+        end
+
+        def ref_text(n)
+          return n.to_i > 0 ? _INTL("{1} Chosen", n) : _INTL("All")
+        end
+
+        # Custom Sprites Only Off turns the References Filter Off too (it
+        # filters custom sprites; his page did the same when it closed)
+        def custom_set(set)
+          return proc do |v|
+            set.call(v)
+            rand.set(:ref_filter, 0) if v.to_i == 0 && rand.setting_keys.include?(:ref_filter) && rand.get(:ref_filter) == 1
+          end
         end
 
         def ban_row(kind)
@@ -364,9 +404,24 @@ module Reloaded
           return opts
         end
 
+        # His References Filter works on custom sprites only (as in PIF):
+        # it can't go On while Custom Sprites Only is Off (left On by a
+        # settings code, it can still go Off); its sets need it On
+        def refs_why(key)
+          if key == :ref_filter
+            return "Custom Sprites Only is Off: The filter picks among custom sprites" if cur(:trainer_custom) == 0 && cur(:ref_filter) == 0
+          elsif cur(:ref_filter) == 0
+            return "References Filter is Off: Every reference set is used"
+          end
+          return nil
+        rescue StandardError
+          return nil
+        end
+
         # Why a Kanto Reloaded row can't be changed now (its row above says
         # it doesn't apply), or nil
         def kr_why(key)
+          return refs_why(key) if key == :ref_filter || key == :__refs
           return nil unless key.is_a?(Symbol) && key.to_s.start_with?("kr_")
           z = Reloaded::Randomizer
           r = rand
@@ -514,7 +569,7 @@ module Reloaded
         # a ban list: how many)
         def applied(key)
           state = rand.applied_state || {}
-          return Array(state[key]).length if key.to_s.start_with?("__ban_")
+          return Array(state[key]).length if key.to_s.start_with?("__ban_") || key == :__refs
           if key == :kr_learnsets
             return 2 if state[:kr_learnsets].to_i == 1
             return state[:moves_follow].to_i == 1 ? 1 : 0
@@ -528,6 +583,7 @@ module Reloaded
 
         def shown(opt, v = nil)
           v = (opt.get rescue 0) if v.nil?
+          return ref_text(v) if opt.is_a?(RefRow)
           return opt.values[v.to_i].to_s if opt.respond_to?(:values) && opt.values.is_a?(Array)
           return v.to_s
         end
@@ -575,9 +631,10 @@ module Reloaded
           out = []
           part_rows(rows, part).each do |r|
             o = r.opt
-            next unless o.is_a?(REnum) || o.is_a?(BanRow)
+            next unless o.is_a?(REnum) || o.is_a?(BanRow) || o.is_a?(RefRow)
             v = (o.get rescue 0).to_i
             default = if o.is_a?(BanRow) then o.kind == :items ? rand.default_item_bans.length : 0
+                      elsif o.is_a?(RefRow) then 0
                       elsif KR_ROWS.include?(o.rkey) then Reloaded::Randomizer::KEYS[o.rkey] || 0
                       else rand::DATA_DEFAULTS[o.rkey] || 0
                       end

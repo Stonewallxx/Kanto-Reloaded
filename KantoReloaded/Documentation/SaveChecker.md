@@ -67,7 +67,7 @@ With KIF's DEBUG option on, A on what a mod keeps opens the **Inspector**, a rea
 
 ## Reports
 
-**Save the Report** writes `Logging\Save Checks\<save> <date time>.md` in the mod folder: the verdict, each check and its details, what's missing, and each mod's data. **Report Saved** then offers Open Folder and OK (on a phone, Copy the Path, which copies the report's full path). Bug Reports will attach a save's newest report (`Reloaded::SaveCheck.newest_report(slot)`).
+**Save the Report** writes `Logging\Save Checks\<save> <date time>.md` in the mod folder: the verdict, each check and its details, what's missing, and each mod's data. **Report Saved** then offers Copy the Path (the report's full path on the clipboard) and OK. Bug Reports will attach a save's newest report (`Reloaded::SaveCheck.newest_report(slot)`).
 
 ## Upgrades
 

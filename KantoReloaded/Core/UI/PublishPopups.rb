@@ -295,25 +295,28 @@ module Reloaded
       when :started
         result_popup(GREEN, _INTL("Publish Window Open"),
                      _INTL("The publish window is open. Follow its steps; it may ask to install Git or the GitHub CLI first."),
-                     [_INTL("Catalog contributors publish straight away: Players get the mod at their next catalog check."),
-                      _INTL("Everyone else gets a pull request, which opens in the browser; it is checked and reviewed before the mod goes live.")],
+                     [_INTL("The mod's owners (catalog contributors) publish straight away: Players get the mod at their next catalog check."),
+                      _INTL("Everyone else gets a pull request, which opens in the browser; it is checked and reviewed before the mod goes live."),
+                      _INTL("The window says which one applies and why.")],
                      [_INTL("OK")])
       when :manual
         go = result_popup(AMBER, _INTL("Run It Yourself"),
                           _INTL("Open a terminal and run the command saved in Cache/Publish/command.txt (in the game folder)."),
-                          [], [_INTL("Open Folder"), _INTL("OK")])
-        explore(File.join(::KIF::ModPublish.root, "Cache", "Publish")) if go == 0
+                          [], [_INTL("Copy the Path"), _INTL("OK")])
+        explore(File.join(::KIF::ModPublish.root, "Cache", "Publish", "command.txt")) if go == 0
       else
         go = result_popup(RED, _INTL("The Window Didn't Open"),
                           _INTL("The publish window couldn't be opened (see Logs/KIF_log.txt). The script is Tools/publish_mod in the game folder."),
-                          [], [_INTL("Open Folder"), _INTL("OK")])
+                          [], [_INTL("Copy the Path"), _INTL("OK")])
         explore(File.join(::KIF::ModPublish.root, ::KIF::ModPublish::TOOLS)) if go == 0
       end
       refresh
     end
 
+    # Its path to paste (the game opens no File Explorer: KIF 2.0.0's Mod
+    # Safety)
     def explore(path)
-      system("explorer \"#{path.to_s.tr("/", "\\")}\"")
+      copy_for_phone(File.expand_path(path.to_s), _INTL("The path, ready to paste."))
     rescue StandardError
       pbPlayBuzzerSE
     end

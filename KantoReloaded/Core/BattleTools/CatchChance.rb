@@ -117,16 +117,16 @@ module Reloaded
         @maths = nil
       end
 
-      # [kind, why]: the battle's pbCaptureCalc, past Kanto Reloaded's own hooks
+      # [kind, why]: the battle's pbCaptureCalc, as it was before Kanto
+      # Reloaded's own hooks (Reloaded::Hooks keeps it)
       def detect
         return [nil, "the battle's catch maths isn't there"] unless defined?(::PokeBattle_Battle) &&
                                                                     ::PokeBattle_Battle.method_defined?(:pbCaptureCalc)
-        m = ::PokeBattle_Battle.instance_method(:pbCaptureCalc)
+        m = Reloaded::Hooks.before(::PokeBattle_Battle, :pbCaptureCalc) || ::PokeBattle_Battle.instance_method(:pbCaptureCalc)
         while m
           owner = m.owner
           if Reloaded::Hooks.registry.any? { |e| e[:module].equal?(owner) }
-            m = m.super_method
-            next
+            return [nil, "pbCaptureCalc is under another of Kanto Reloaded's hooks (#{owner})"]
           end
           return gate_check if gate?(m)
           crc = Reloaded::Fixes.source_crc(m)

@@ -182,6 +182,7 @@ module Reloaded
       # Difficulty: Shown As, the Debug Run Tag, Hard's trainer IVs; the
       # question when lowering
       "Core/Difficulty/Difficulty.rb",
+      "Core/Difficulty/Innates.rb",
       "Core/UI/DifficultyAsk.rb",
       # The Randomizer: Kanto Reloaded's parts on cody's engine (KIF's)
       "Core/Randomizer/Randomizer.rb",
@@ -241,7 +242,7 @@ module Reloaded
       "Core/UI/TrainerCardScene.rb",
       "Core/UI/TrainerCardStyle.rb",
       # How well a move does, as the player knows it (Battle Info's Matchup
-      # tab, Effectiveness (EBDX))
+      # tab, Effectiveness)
       "Core/BattleTools/Matchup.rb",
       # The Battle Menu: its entries and pages, what it reads from a battle,
       # the Turn Log, the panel, Battle Info and the Field Strip
@@ -260,10 +261,12 @@ module Reloaded
       "Core/UI/CommandRow.rb",
       "Core/BattleScene/BattleScene.rb",
       "Core/BattleScene/TargetIcons.rb",
-      # Effectiveness (EBDX): the feature and its hooks, what the Fight
-      # menu shows (the multiplier, the dots, the targets above a move)
+      # Effectiveness: the feature and its hooks, what EBDX's Fight menu
+      # shows (the multiplier, the dots, the targets above a move), and
+      # PIF's own Fight menu and target window
       "Core/MoveEffectiveness/MoveEffectiveness.rb",
       "Core/MoveEffectiveness/FightOverlay.rb",
+      "Core/MoveEffectiveness/PIFMenus.rb",
       # Quick Throw: the catch chances, the feature and its throw, the gauge
       # by a wild foe's HP bar, the panel and its popups
       "Core/BattleTools/CatchChance.rb",
@@ -280,6 +283,17 @@ module Reloaded
       "Core/TrainerControl/TeamExpansion.rb",
       "Core/TrainerControl/Adaptation.rb",
       "Core/TrainerControl/LevelScaling.rb",
+      "Core/TrainerControl/LeaderBuilds.rb",
+      "Core/TrainerControl/TrainerBags.rb",
+      "Core/TrainerControl/GymRules.rb",
+      "Core/UI/GymRuleSeal.rb",
+      "Core/TrainerControl/Notoriety.rb",
+      "Core/UI/NotorietyToast.rb",
+      "Core/TrainerControl/AceMoments.rb",
+      "Core/UI/AceMoment.rb",
+      "Core/TrainerControl/RematchRanks.rb",
+      "Core/UI/RankToast.rb",
+      "Core/TrainerControl/Smarter.rb",
       "Core/TrainerControl/PinkSlips.rb",
       "Core/TrainerControl/Pictures.rb",
       "Core/TrainerControl/Toasts.rb",
@@ -295,6 +309,7 @@ module Reloaded
       "Core/Fixes/CardBackgrounds.rb",
       "Core/Fixes/PIFBalls.rb",
       "Core/Fixes/KIFMapZoom.rb",
+      "Core/Fixes/ModSettings.rb",
       # Last: rows for every feature registered above
       "Core/Settings/FeatureSwitches.rb"
     ].freeze

@@ -162,10 +162,12 @@ module Reloaded
 
         private
 
+        # The method under that name as it was before Kanto Reloaded's hooks
+        # (Reloaded::Hooks keeps it), else as it is; nil when a module sits
+        # over it (only the class's own can be the engine's)
         def own_method(sc, name)
-          m = sc.instance_method(name)
-          m = m.super_method while m && m.owner != sc
-          return m
+          m = Reloaded::Hooks.before(sc, name) || sc.instance_method(name)
+          return m && m.owner == sc ? m : nil
         rescue NameError
           return nil
         end

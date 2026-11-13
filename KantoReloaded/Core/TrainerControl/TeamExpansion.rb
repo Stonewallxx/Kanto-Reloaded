@@ -5,9 +5,10 @@
 # His picks (Roadmap Designs topic trainer-control, 2026-10-30):
 #
 #   Team Expansion  optional (Off to start): Add Count (+1 to +5) or Target
-#                   Size (1 to 6) for trainers and your rival
+#                   Size (1 to 6) for trainers
 #   Leaders         Normal, Add Count, Target Size or Full Party for Gym
-#                   Leaders, the Elite Four, Champions and Rocket bosses
+#                   Leaders, the Elite Four, Champions, Team Rocket's bosses
+#                   and your rival (his pick, 2026-11-10)
 #                   (cody's Gym Leader teams, taken over)
 #   What It Adds    Local Theme (the class's type from the wild Pokémon of
 #                   their own map first, then any of it), Random, Random
@@ -50,7 +51,7 @@ module Reloaded
       ADDS_NAMES = ["Local Theme", "Random", "Random Fusion"].freeze
       GYM_NAMES = ["Follow the Leader", "Normal", "+1", "+2", "Full"].freeze
       MAX = 6
-      ADDED = :@kr_tc_added               # on a Pokémon Team Expansion added
+      ADDED = :@kr_tc_added               # on a Pokémon Team Expansion added (true; Rematch Ranks': the rank's name)
       # Type-boosting items, then by role (old KR's lists)
       TYPE_ITEMS = { :NORMAL => :SILKSCARF, :FIRE => :CHARCOAL, :WATER => :MYSTICWATER, :ELECTRIC => :MAGNET,
                      :GRASS => :MIRACLESEED, :ICE => :NEVERMELTICE, :FIGHTING => :BLACKBELT, :POISON => :POISONBARB,
@@ -100,7 +101,7 @@ module Reloaded
             :description => "How many Pokémon trainers and leaders bring, what joins them, and how many you bring to gyms.")
           s.register(EXPAND, :page => PAGE, :priority => 10, :type => :enum, :values => EXPAND_NAMES, :default => 0, :scope => :save,
             :name => "Team Expansion", :lock => rand_lock,
-            :description => "Trainers and your rival bring more Pokémon.",
+            :description => "Trainers bring more Pokémon.",
             :descriptions => ["Trainers bring the teams the game gives them.", "Each trainer brings a set number more (Add Count).",
                               "Each trainer brings at least a set number (Target Size)."])
           s.register(EXPAND_ADD, :page => PAGE, :priority => 11, :type => :enum, :values => ADD_NAMES, :default => 0, :scope => :save,
@@ -116,7 +117,7 @@ module Reloaded
                               "Always a fusion."])
           s.register(LEADERS, :page => PAGE, :priority => 20, :type => :enum, :values => LEADER_NAMES, :default => 0, :scope => :save,
             :name => "Leaders", :lock => leader_lock,
-            :description => "How many Pokémon Gym Leaders, the Elite Four, Champions and Rocket bosses bring. What joins them is always their own type.",
+            :description => "How many Pokémon Gym Leaders, the Elite Four, Champions, Team Rocket's bosses and your rival bring. What joins them is always their own type.",
             :descriptions => ["Their usual teams.", "A set number more (Add Count).", "At least a set number (Target Size).", "Six Pokémon."])
           s.register(LEADERS_ADD, :page => PAGE, :priority => 21, :type => :enum, :values => ADD_NAMES, :default => 0, :scope => :save,
             :name => "Leaders: Add Count", :lock => leader_lock, :visible => proc { Reloaded::Settings.get(LEADERS).to_i == 1 },
@@ -167,7 +168,7 @@ module Reloaded
         # A team of n's size by the rows: Add Count, Target Size, Full
         def size_for(kind, n)
           return n if randomizer_decides?
-          if kind == :leader
+          if kind == :leader || kind == :rival          # (your rival as the leaders: his pick, 2026-11-10)
             case setting(LEADERS)
             when 1 then return [n + setting(LEADERS_ADD) + 1, MAX].min
             when 2 then return [[n, setting(LEADERS_SIZE) + 1].max, MAX].min
@@ -236,25 +237,29 @@ module Reloaded
           kind = TrainerControl.kind(type)
           n = party.length
           want = [size_for(kind, n), side_share, n].max
-          add = [want, MAX].min - n
+          rank = defined?(RematchRanks) ? RematchRanks.rank_of(type, name) : nil
+          ranked = defined?(RematchRanks) ? RematchRanks.extra_pokemon(rank) : 0
+          add = [want + ranked, MAX].min - n
           return if add <= 0
+          ranked = [ranked, add].min                    # Rematch Ranks' come last
           key = TrainerControl.person_key(type, name)
           data = (::GameData::Trainer.try_get(type, name, version) rescue nil)
           rng = Random.new(seed(key, version))
           level = (party.sum { |p| p.level.to_i }.to_f / n).round
           target = party.sum { |p| l.bst(l.dex(p.species)) }.to_f / n
           fused = party.count { |p| p.species.to_s =~ /\AB\d+H\d+\z/ }.to_f / n
-          mode = kind == :leader ? :leader : [:local, :random, :fusion][setting(ADDS)] || :local
+          mode = kind == :leader || kind == :rival ? :leader : [:local, :random, :fusion][setting(ADDS)] || :local
+          # a leader's gym type; your rival's own team's; a trainer's class
           type_of = kind == :leader ? (l.gym_type(type, party) rescue nil) : TrainerControl.theme_type(type, party.map { |p| [p.species, p.level] })
           used = party.map { |p| l.dex(p.species) }
           roots = []
-          add.times do
+          add.times do |i|
             d = pick(mode, type_of, level, target, fused, used, roots, rng)
             break unless d
             used << d
             roots.concat(Array(l.roots_of(d))) if l.respond_to?(:roots_of)
             pk = l.make_pokemon(d, level, trainer, data)
-            pk.instance_variable_set(ADDED, true)
+            pk.instance_variable_set(ADDED, i >= add - ranked ? rank.name : true)
             hold(pk, party, rng)
             party << pk
           end

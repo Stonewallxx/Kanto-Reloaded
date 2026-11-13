@@ -4,9 +4,11 @@
 #==============================================================================
 # A growing bond with each trainer you can battle again (his pick, D with
 # B): a gift that fits their class at 3 wins, a move from their own team at
-# 7 (a tutor), an Egg of their favourite Pokémon at 12, then a gift every 10
-# more wins (22, 32...). Leaders 2 / 4 / 6 (their first win is the gym), then
-# every 10 the same way. Only trainers you can battle again reach them.
+# 7 (a tutor), an Egg of their favourite Pokémon at 12, then a gift at 20,
+# 30, 40 and 50 wins and the bond is complete (his call, 2026-11-10: it was
+# every 10 forever, an endless Rare Candy farm). Leaders 2 / 4 / 6 (their
+# first win is the gym), then the same four. Only trainers you can battle
+# again reach them.
 # Claimed steps stay claimed, whatever happens (old KR's farm bug).
 #
 #   The gift   their class's own (a Fisherman a better Rod, a Hiker a Hard
@@ -35,7 +37,7 @@ module Reloaded
     module Bond
       FIRST = [3, 7, 12].freeze
       LEADER_FIRST = [2, 4, 6].freeze
-      EVERY = 10
+      LATER = [20, 30, 40, 50].freeze     # the gifts after the Egg; then the bond is complete
       KINDS = [:gift, :tutor, :egg].freeze
       WORDS = { :gift => "Gift", :tutor => "Tutor", :egg => "Egg" }.freeze
       # Gifts that fit a class (by the start of its id), then by its type
@@ -62,23 +64,32 @@ module Reloaded
         end
 
         def firsts(rec)
-          return rec && rec["kind"] == "leader" ? LEADER_FIRST : FIRST
+          return rec && Records.kind_of(rec) == "leader" ? LEADER_FIRST : FIRST
         end
 
         def can_reach?(rec)
           return Records.rematchable?(rec)
         end
 
-        # Every step up to the first one not reached: [[kind, wins], ...]
+        # Every step up to the first one not reached (all of them once the
+        # bond is complete): [[kind, wins], ...]
         def steps(rec)
           wins = rec["wins"].to_i
           out = KINDS.zip(firsts(rec))
-          at = out.last[1]
-          while wins >= at
-            at += EVERY
+          LATER.each do |at|
+            break if wins < out.last[1]
             out << [:gift, at]
           end
           return out
+        end
+
+        def schedule(rec)
+          return KINDS.zip(firsts(rec)) + LATER.map { |at| [:gift, at] }
+        end
+
+        # Every step reached: nothing more to give
+        def complete?(rec)
+          return rec["wins"].to_i >= LATER.last
         end
 
         # The three on the plate: the last three up to the next one
@@ -86,9 +97,10 @@ module Reloaded
           return steps(rec).last(3)
         end
 
+        # [kind, wins, wins to go], or nil once the bond is complete
         def next_step(rec)
           kind, at = steps(rec).find { |_k, n| rec["wins"].to_i < n }
-          return [kind, at, at - rec["wins"].to_i]
+          return at ? [kind, at, at - rec["wins"].to_i] : nil
         end
 
         def word(kind)
@@ -102,8 +114,8 @@ module Reloaded
         end
 
         def kind_at(rec, at)
-          step = steps(rec).find { |_k, n| n == at.to_i }
-          return step ? step[0] : (at.to_i > firsts(rec).last ? :gift : nil)
+          step = schedule(rec).find { |_k, n| n == at.to_i }
+          return step ? step[0] : nil
         end
 
         # What the plate shows for a step: its claimed reward, else what it

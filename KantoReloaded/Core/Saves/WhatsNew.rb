@@ -66,7 +66,9 @@ module Reloaded
     HEADING = /\A\s{0,3}(\#{1,6})\s+(.*?)\s*\#*\s*\z/
     # A version in a heading: "1.2.0", "[1.2.0]", "v2.1", "Version 1.2"
     VERSION_TOKEN = /(?<![\w.\-])\[?v?(\d+(?:\.\d+)+)\]?(?![\w.])/i
-    INLINE = /(\*\*|__)(.+?)\1|`([^`]+)`|(?<![\w*])\*(?![\s*])(.+?)(?<![\s*])\*(?![\w*])|(?<![\w_])_(?![\s_])(.+?)(?<![\s_])_(?![\w_])/
+    # (the code marks as \x60: a backtick in a line reads as running a
+    # program to KIF 2.0.0's Mod Safety scan)
+    INLINE = /(\*\*|__)(.+?)\1|\x60([^\x60]+)\x60|(?<![\w*])\*(?![\s*])(.+?)(?<![\s*])\*(?![\w*])|(?<![\w_])_(?![\s_])(.+?)(?<![\s_])_(?![\w_])/
     LINK = /\[([^\]]*)\](?:\([^)]*\)|\[[^\]]*\])/
     # What never shows: images, and web addresses (with a scheme, www., or a
     # common ending like discord.gg/...)

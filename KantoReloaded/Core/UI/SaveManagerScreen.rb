@@ -17,7 +17,9 @@
 #            and Check (X: the Save Checker on it). Left / Right: another
 #            save's
 #   Deleted  the saves you've deleted: Restore (to their slot, or the first
-#            free one) or Delete Forever
+#            free one) or Delete Forever; and each save's Old Backups (the
+#            Backup Cap's, one entry a save: Restore puts them back in its
+#            Backups, named Restored)
 #
 # The save being played can't be deleted or restored over (do that from
 # the title screen). Opened from Kanto Reloaded > Saves > Save Manager, and
@@ -328,7 +330,7 @@ module Reloaded
       e = current
       return pbPlayBuzzerSE unless e
       pbPlayDecisionSE
-      phone = Reloaded::Runtime.phone?
+      phone = !kif_opens_folder?
       labels = [_INTL("Edit Note"), _INTL("Color Tag"), _INTL("Check This Save"), _INTL("Backups"), _INTL("Back Up Now"),
                 _INTL("Delete"), phone ? _INTL("Copy the Path") : _INTL("Open Folder")]
       descs = [_INTL("A note shown here and on the Load Screen."), _INTL("A color to tell your saves apart."),
@@ -446,13 +448,19 @@ module Reloaded
       failed(_INTL("Delete"), e2)
     end
 
-    # On a phone (no File Explorer) the folder's path is copied instead
+    # KIF's own Open Save Folder (KIF::SaveBackups: the game's code opens
+    # File Explorer, Kanto Reloaded's never does: KIF 2.0.0's Mod Safety);
+    # on a phone, or a KIF without it, the folder's path is copied instead
     def open_folder
-      return copy_for_phone(File.expand_path(S.dir), _INTL("Where the game's saves are, ready to paste.")) if Reloaded::Runtime.phone?
-      path = S.dir.tr("/", "\\")
-      system("explorer \"#{path}\"")
+      return ::KIF::SaveBackups.open_folder if kif_opens_folder?
+      copy_for_phone(File.expand_path(S.dir), _INTL("Where the game's saves are, ready to paste."))
     rescue StandardError
       pbPlayBuzzerSE
+    end
+
+    def kif_opens_folder?
+      return false if Reloaded::Runtime.phone?
+      return defined?(::KIF::SaveBackups) && ::KIF::SaveBackups.respond_to?(:open_folder) ? true : false
     end
 
     def playing(slot)
@@ -510,17 +518,20 @@ module Reloaded
       return pbPlayBuzzerSE unless a
       pbPlayDecisionSE
       labels = [_INTL("Restore"), _INTL("Delete Forever"), _INTL("Delete Every One")]
-      descs = [restore_words(a), _INTL("Gone for good, with its backups. This can't be undone."),
+      old = old_backups?(a)
+      descs = [old ? _INTL("Back in {1}'s Backups, named Restored so the Backup Cap keeps them.", a[:slot]) : restore_words(a),
+               old ? _INTL("Gone for good. This can't be undone.") : _INTL("Gone for good, with its backups. This can't be undone."),
                _INTL("Every save in the Deleted tab, gone for good.")]
-      case Reloaded::Dialogs.menu(self, a[:slot], labels, descs)
+      case Reloaded::Dialogs.menu(self, archived_title(a), labels, descs)
       when 0
         slot = S.restore_archive(a)
         @changed = true
         reload
         @sel = [[@sel, @archived.length - 1].min, 0].max
-        Reloaded::Dialogs.notice(self, _INTL("Restored"), _INTL("It's back as {1}.", slot))
+        Reloaded::Dialogs.notice(self, _INTL("Restored"), old ? _INTL("They're back in {1}'s Backups, named Restored.", slot) : _INTL("It's back as {1}.", slot))
       when 1
-        return unless Reloaded::Dialogs.confirm(self, _INTL("Delete Forever?"), _INTL("{1} and its backups are gone for good.", a[:slot]),
+        gone = old ? _INTL("{1}'s old backups are gone for good.", a[:slot]) : _INTL("{1} and its backups are gone for good.", a[:slot])
+        return unless Reloaded::Dialogs.confirm(self, _INTL("Delete Forever?"), gone,
                                                 _INTL("Delete"), _INTL("Keep It"), false)
         S.delete_archive(a)
         reload
@@ -539,8 +550,18 @@ module Reloaded
       failed(_INTL("Deleted Saves"), e)
     end
 
+    # A save's Old Backups (the Backup Cap's), not a deleted save
+    def old_backups?(a)
+      return a && a[:kind] == :old_backups
+    end
+
+    def archived_title(a)
+      return old_backups?(a) ? _INTL("{1}: Old Backups", a[:slot]) : a[:slot]
+    end
+
     # Where it would go back to.
     def restore_words(a)
+      return _INTL("Back in {1}'s Backups.", a[:slot]) if old_backups?(a)
       return _INTL("Back as {1}.", a[:slot]) unless File.file?(S.path(a[:slot]))
       free = S.free_slot
       return _INTL("{1} is taken, so it comes back as {2}.", a[:slot], free) if free
@@ -790,8 +811,13 @@ module Reloaded
       return empty(top, c, _INTL("No deleted saves.")) if @archived.empty?
       each_row(@archived) do |a, y|
         tag_bar(top, a[:tag], LEFT_X0 + 8, y + 4, row_h - 10)
-        P.text(top, LEFT_X0 + 18, y, LEFT_X1 - LEFT_X0 - 28, 22, a[:slot], c[:opt], PF::ROW)
-        P.small(top, LEFT_X0 + 18, y + 22, LEFT_X1 - LEFT_X0 - 30, 16, _INTL("Deleted {1}", when_text(a[:archived_at])), c[:dim])
+        P.text(top, LEFT_X0 + 18, y, LEFT_X1 - LEFT_X0 - 28, 22, archived_title(a), c[:opt], PF::ROW)
+        sub = if old_backups?(a)
+                a[:count] == 1 ? _INTL("1 Backup, {1}", when_text(a[:archived_at])) : _INTL("{1} Backups, {2}", a[:count], when_text(a[:archived_at]))
+              else
+                _INTL("Deleted {1}", when_text(a[:archived_at]))
+              end
+        P.small(top, LEFT_X0 + 18, y + 22, LEFT_X1 - LEFT_X0 - 30, 16, sub, c[:dim])
       end
     end
 
@@ -799,19 +825,23 @@ module Reloaded
       return unless a
       pv = a[:file] ? S.preview(a[:file], :party => false) : {}
       tag_bar(top, a[:tag], RIGHT_X0 + 8, PANEL_Y0 + 8, 18)
-      detail_head(top, c, a[:slot], a[:tag] ? _INTL("Tag: {1}", _INTL(a[:tag])) : nil)
+      right = old_backups?(a) ? _INTL("Old Backups") : (a[:tag] ? _INTL("Tag: {1}", _INTL(a[:tag])) : nil)
+      detail_head(top, c, a[:slot], right)
+      # an Old Backups entry: its newest backup's trainer, place and time
+      last = old_backups?(a) ? ["Trimmed", when_text(a[:archived_at])] : ["Deleted", when_text(a[:archived_at])]
       y = fields(top, c, PANEL_Y0 + 32, [["Trainer", pv[:name] || a[:name] || "?", palette[:blue]], ["Location", pv[:map] || a[:map] || "?", palette[:green]],
-                                          ["Play Time", play_time(pv[:seconds] || a[:seconds]), palette[:gold]], ["Deleted", when_text(a[:archived_at])]])
+                                          ["Play Time", play_time(pv[:seconds] || a[:seconds]), palette[:gold]], last])
       y += 74                                   # the party's row (PARTY_Y)
-      if a[:note].to_s != ""
-        P.text(top, RIGHT_X0 + 10, y, 120, 14, _INTL("NOTES"), c[:head], PF::TINY)
+      note = old_backups?(a) ? _INTL("Older backups of {1}, taken out by the Backup Cap.", a[:slot]) : a[:note].to_s
+      if note != ""
+        P.text(top, RIGHT_X0 + 10, y, 120, 14, old_backups?(a) ? _INTL("OLD BACKUPS") : _INTL("NOTES"), c[:head], PF::TINY)
         base.fill_rect(RIGHT_X0 + 10, y + 15, RIGHT_X1 - RIGHT_X0 - 20, 1, c[:line])
-        P.small_wrap(top, a[:note].to_s, RIGHT_X1 - RIGHT_X0 - 24).first(2).each_with_index do |ln, k|
+        P.small_wrap(top, note, RIGHT_X1 - RIGHT_X0 - 24).first(2).each_with_index do |ln, k|
           P.small(top, RIGHT_X0 + 10, y + 20 + k * 16, RIGHT_X1 - RIGHT_X0 - 20, 16, ln, c[:txt])
         end
       end
       words = restore_words(a)
-      colour = words.start_with?(_INTL("Back as")) ? palette[:green] : (S.free_slot ? palette[:amber] : palette[:red])
+      colour = old_backups?(a) || words.start_with?(_INTL("Back as")) ? palette[:green] : (S.free_slot ? palette[:amber] : palette[:red])
       banner(base, top, c, words, _INTL("A: RESTORE / DELETE FOREVER"), colour)
     end
 

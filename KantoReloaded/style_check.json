@@ -14,6 +14,24 @@
     },
     {
       "rule": "title_case",
+      "file": "Core/UI/GymRuleSeal.rb",
+      "text": "GUI trainer card open",
+      "why": "A sound's file name in Audio/SE (the Leader's Seal plays it), not words players read"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/UI/AceMoment.rb",
+      "text": "Vs flash",
+      "why": "A sound's file name in Audio/SE (an Ace Moment's cut-in plays it), not words players read"
+    },
+    {
+      "rule": "names",
+      "file": "Core/TrainerControl/Smarter.rb",
+      "text": "KantoReloaded",
+      "why": "The mod's id in mod.json (KIF's Locks name their owner by it), not its name"
+    },
+    {
+      "rule": "title_case",
       "file": "Core/IVBoundaries/IVBoundaries.rb",
       "text": "Perfect-ish",
       "why": "-ish is a suffix, not a word: Title Case leaves it lowercase (HR's preset name, his approved chips)"

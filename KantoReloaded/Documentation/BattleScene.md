@@ -19,7 +19,7 @@ A ring in your **Cursor Color** (Kanto Reloaded > Interface; your Theme's colour
 
 **Battle Cursor** (Kanto Reloaded > Interface > Battle Scene): Reloaded, or EBDX's Own (its red corners).
 
-With [Effectiveness (EBDX)](MoveEffectiveness.md) On, the Fight menu's ring is in the picked move's color, and the target window's in each target's.
+With [Effectiveness](MoveEffectiveness.md) On, the Fight menu's ring is in the picked move's color, and the target window's in each target's.
 
 ## Picking a Target
 

@@ -10,5 +10,14 @@
   "incompatible": [],
   "locks": {"savebackups": 0},
   "modules": {"auto_battle": "off"},
-  "scripts": ["Bootstrap.rb"]
+  "scripts": ["Bootstrap.rb"],
+  "api_version": 1,
+  "permissions": ["save_files", "game_files", "clipboard", "marshal", "eval"],
+  "permission_notes": {
+    "save_files": "Looks after your saves: notes, backups, the Deleted tab, safe saving and the Save Checker's fixes.",
+    "game_files": "Keeps Randomizer presets and Publish a Mod's copies in the game folder.",
+    "clipboard": "Copies paths, links, seeds and settings codes, and pastes into its text fields.",
+    "marshal": "Reads your saves and backups to show and check them.",
+    "eval": "Brings back other mods' settings in KIF Settings when they load after Kanto Reloaded."
+  }
 }

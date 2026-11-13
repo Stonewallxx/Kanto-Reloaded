@@ -98,8 +98,10 @@ module Reloaded
           link = [_INTL("Open Discord"), DISCORD_URL]
         end
         line, colour = closing ? [_INTL("The game closes when you're done."), Reloaded::Notice::GOLD] : [_INTL("Thank you: It helps get the bug fixed."), Reloaded::Notice::DIM]
-        phone = Reloaded::Runtime.phone?      # no File Explorer or browser: Copy Instead (his pick)
-        buttons = [phone ? _INTL("Copy the Path") : _INTL("Open the Folder")]
+        # the report's path to paste (the game opens no File Explorer: KIF
+        # 2.0.0's Mod Safety); on a phone, no browser either: Copy the Link
+        phone = Reloaded::Runtime.phone?
+        buttons = [_INTL("Copy the Path")]
         buttons << (phone ? _INTL("Copy the Link") : link[0]) if link
         buttons << (closing ? _INTL("Close the Game") : _INTL("Done"))
         choice = 0
@@ -108,11 +110,12 @@ module Reloaded
                                          :sub => "#{place}: #{File.basename(result[:path])}", :sub2 => sub2, :body => body,
                                          :line => line, :line_colour => colour, :buttons => buttons, :choice => choice)
           break if choice == buttons.length - 1
-          if phone
-            choice == 0 ? copy_text(result[:path], _INTL("Where your report is, ready to paste.")) :
-                          copy_text(link[1], _INTL("The link, ready to paste in your browser."))
+          if choice == 0
+            copy_text(result[:path], _INTL("Where your report is, ready to paste."))
+          elsif phone
+            copy_text(link[1], _INTL("The link, ready to paste in your browser."))
           else
-            choice == 0 ? open_folder(result[:path]) : open_url(link[1])
+            open_url(link[1])
           end
         end
       end
@@ -120,8 +123,8 @@ module Reloaded
       #------------------------------------------------------------------------
       # Opening things
       #------------------------------------------------------------------------
-      # On a phone: the text on the clipboard and a short Copied notice; when
-      # the clipboard can't be used, the notice shows the text itself
+      # The text on the clipboard and a short Copied notice; when the
+      # clipboard can't be used, the notice shows the text itself
       def copy_text(text, words)
         if Reloaded::ShareCodes.copy(File.file?(text.to_s) ? File.expand_path(text.to_s) : text.to_s)
           Reloaded::Notice.show(:title => _INTL("Copied"), :colour => Reloaded::Notice::GREEN, :body => words,
@@ -132,18 +135,13 @@ module Reloaded
         end
       end
 
-      # File Explorer, on the file.
-      def open_folder(path)
-        return @launcher.call(:folder, path) if @launcher
-        system("explorer /select,\"#{path.to_s.tr("/", "\\")}\"")
-      rescue StandardError
-        nil
-      end
-
+      # The browser: KIF's own link opener (KIF::Safe, which asks the
+      # player first), else PIF's
       def open_url(url)
         return @launcher.call(:url, url) if @launcher
+        return ::KIF::Safe.open_url(url) if defined?(::KIF::Safe) && ::KIF::Safe.respond_to?(:open_url)
         return openUrlInBrowser(url) if defined?(openUrlInBrowser)
-        system("start \"\" \"#{url}\"")
+        return nil
       rescue StandardError
         nil
       end

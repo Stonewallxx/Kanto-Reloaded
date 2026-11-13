@@ -259,15 +259,22 @@ module Reloaded
       return 38
     end
 
-    # A badge in a palette tone
-    # Trainer Control's Adaptation changed this (with Kanto Reloaded Debug
-    # installed only: his pick; players never see it): the item's why, the
-    # moves taught
+    # Trainer Control's Adaptation changed this: the item's why, the moves
+    # taught. Shown to every player once the battle reveals it, as a purple
+    # ADAPTED pill (his pick, 2026-11-09, Design 2 of four; it was KR Debug's
+    # only, in brackets)
+    ADAPTED = [168, 96, 240].freeze
+
     def adapted(bt, part)
       ad = defined?(Reloaded::TrainerControl::Adaptation) ? Reloaded::TrainerControl::Adaptation : nil
-      return nil unless ad && ad.debug_marks? && bt.pokemon
+      return nil unless ad && bt.pokemon
       m = bt.pokemon.instance_variable_get(ad::MARK)
-      return m ? m[part] : nil
+      return nil unless m
+      # the item's reason only while it still holds Adaptation's item (a
+      # Mega Stone or an alpha's item may have taken its place)
+      held = bt.respond_to?(:item_id) ? bt.item_id : (bt.pokemon.item_id rescue nil)   # (in battle the battler holds it)
+      return nil if part == "item" && m["item_id"] && held.to_s != m["item_id"]
+      return m[part]
     end
 
     # Trainer Control's Level Scaling raised this foe: how many levels, a
@@ -454,9 +461,10 @@ module Reloaded
         pill(top, c, rx + aw + 6, y0 + 102, _INTL("NOT SEEN YET"), :dim)
       elsif bt.item && item == bt.itemName
         item_icon(top, bt.item_id, rx, y0 + 100, 18)
-        why = adapted(bt, "item")
-        item = "#{item} (#{why})" if why
-        P.text(top, rx + 22, y0 + 98, rw - 22, 22, PF.fit(PF::TEXT, item, rw - 22), c[:txt])
+        tag = adapted(bt, "item") ? _INTL("ADAPTED") : nil
+        tw = tag ? P.width(PF::TINY, tag) + 18 : 0
+        iw = P.text(top, rx + 22, y0 + 98, rw - 22 - tw, 22, PF.fit(PF::TEXT, item, rw - 22 - tw), c[:txt])
+        pill(top, c, rx + 22 + iw + 6, y0 + 102, tag, ADAPTED) if tag
       else
         P.text(top, rx, y0 + 98, rw, 22, item, c[:dim])
       end
@@ -482,8 +490,10 @@ module Reloaded
         d = (GameData::Move.get(m) rescue nil)
         next unless d
         small_type(top, d.type, rx, my + 14 + k * 20)
-        words = Array(adapted(bt, "moves")).include?(d.id.to_s) ? _INTL("{1} (Adapted)", d.name) : d.name
-        P.text(top, rx + 22, my + 12 + k * 20, rw - 22, 20, PF.fit(PF::TEXT, words, rw - 22), type_ink(c, d.type))
+        tag = Array(adapted(bt, "moves")).include?(d.id.to_s) ? _INTL("ADAPTED") : nil
+        tw = tag ? P.width(PF::TINY, tag) + 18 : 0
+        mw = P.text(top, rx + 22, my + 12 + k * 20, rw - 22 - tw, 20, PF.fit(PF::TEXT, d.name, rw - 22 - tw), type_ink(c, d.type))
+        pill(top, c, rx + 22 + mw + 6, my + 16 + k * 20, tag, ADAPTED) if tag
       end
     end
 

@@ -1,15 +1,14 @@
 # encoding: utf-8
 #==============================================================================
-# Fix: KIF 1.2.13's Map Zoom setting (990_KIF/ZZ_Cody/C-UI-01_MapZoom/
-# MapZoom.rb), found in his test (2026-10-30), with Adaptive and Test (1.5x),
-# his asks
+# KIF's Map Zoom setting (990_KIF/ZZ_Cody/C-UI-01_MapZoom/MapZoom.rb) with
+# Adaptive and Test (1.5x), his asks (2026-10-30)
 #==============================================================================
-#   kif_map_zoom_choices  KIF 1.2.13 dropped the 1.5x level: KIF::MapZoom
-#                         has two (LEVELS: Normal, and Far at 1x pixels) and
-#                         reads an old Far or Farthest as the new Far, but its
-#                         setting still offered Normal, Far and Farthest with
-#                         the old words, so Far and Farthest both zoomed to
-#                         1x. The setting now offers Normal, Far, Adaptive and
+#   kif_map_zoom_choices  KIF::MapZoom has two levels (LEVELS: Normal, and Far
+#                         at 1x pixels) and reads an old Far or Farthest as
+#                         Far. KIF 1.2.13's setting still offered Farthest
+#                         with the old words (Kanto Reloaded's fix, found in
+#                         his test); KIF 2.0.0 offers Normal and Far itself.
+#                         The setting now offers Normal, Far, Adaptive and
 #                         Test (1.5x), and shows the level KIF uses (an old
 #                         Farthest: Far).
 #   Adaptive              Far outdoors and Normal on every map PIF marks as
@@ -26,7 +25,7 @@
 
 module Reloaded
   module Fixes
-    MAP_ZOOM_CRC = 1649440837          # MapZoom.rb:171-178, KIF::Options.add(:graphics) { Map Zoom } as KIF 1.2.13 has it
+    MAP_ZOOM_CRC = 3412528040          # MapZoom.rb:171-177, KIF::Options.add(:graphics) { Map Zoom } as KIF 2.0.0 has it
 
     module KIFMapZoom
       STORED = [0, 1, 3, 4].freeze     # kif_mapzoom for Normal, Far, Adaptive, Test (1.5x) (KIF::MapZoom.level reads 3 and 4 as Far)

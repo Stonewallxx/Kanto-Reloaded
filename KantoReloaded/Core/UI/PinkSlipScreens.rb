@@ -190,7 +190,7 @@ module Reloaded
         pbPlayCursorSE
         refresh
       elsif Input.trigger?(Input::USE) || (pt.left? && pt.hit(@hits || []))
-        return pbPlayBuzzerSE if PS.stake_reason(@party[@sel])
+        return pbPlayBuzzerSE if PS.stake_reason(@party[@sel]) || PS.can_win(@team, @party[@sel].level) == 0
         pbPlayDecisionSE
         return [:done, @sel]
       elsif Input.trigger?(Input::ACTION)
@@ -218,8 +218,17 @@ module Reloaded
       s.visible = true
     end
 
+    # Win: what this stake can claim, theirs at its level or lower (his
+    # pick, 2026-11-10, Design 1 of three); Lose: what it costs
     def win_lose(b, c, x, y, w, pk)
-      lines = [[[_INTL("Win: "), c[:green], true], [_INTL("Claim any one of {1}'s {2}.", @name, _INTL(NUMBERS[@team.length] || @team.length.to_s)), c[:txt]]]]
+      cap = pk.level.to_i
+      can = PS.can_win(@team, cap)
+      num = proc { |n| _INTL(NUMBERS[n] || n.to_s) }
+      win = if can == @team.length then _INTL("Claim any one of {1}'s {2}.", @name, num.call(@team.length))
+            elsif can == 0 then _INTL("Nothing of {1}'s is at Lv. {2} or lower.", @name, cap)
+            else _INTL("Claim one of {1}'s at Lv. {2} or lower ({3} of {4}).", @name, cap, num.call(can), num.call(@team.length))
+            end
+      lines = [[[_INTL("Win: "), c[:green], true], [win, c[:txt]]]]
       item = pk.item_id rescue nil
       lose = item ? _INTL("{1} keeps {2}. Its {3} comes back to you.", @name, pk.name, item_name(item)) : _INTL("{1} keeps {2}.", @name, pk.name)
       lines << [[_INTL("Lose: "), c[:red], true], [lose, c[:txt]]]
@@ -255,10 +264,16 @@ module Reloaded
       tile(b, c, hx0, y + 44, hx1, y + 140, type_col(lead ? types_of(lead[0]).first : :NORMAL), 0.32, 10)
       P.text(b, hx0 + 10, y + 50, hx1 - hx0 - 20, 12, @title.upcase, c[:head], PF::TINY)
       step = (hx1 - hx0 - 16) / [@team.length, 4].max
+      cap = pk.level.to_i
       @team.each_with_index do |(sp, lv), i|
         cx = hx0 + 8 + step * i + step / 2
-        mon(b, sp, cx, y + 92, [42, step - 4].min)
-        level_text(b, c, lv, cx - 25, y + 118, 50, 2)
+        ok = lv.to_i <= cap                       # this stake can win it
+        mon(b, sp, cx, y + 92, [42, step - 4].min, ok ? 255 : 70)
+        if ok
+          level_text(b, c, lv, cx - 25, y + 118, 50, 2)
+        else
+          P.text(b, cx - 25, y + 118, 50, 12, _INTL("Lv. {1}", lv), c[:dim], PF::TINY, 2)
+        end
       end
       # your party, a slot each
       slot = (w - 20) / 6
@@ -319,12 +334,21 @@ module Reloaded
 
     attr_reader :sel
 
-    def initialize(title, name, team)
+    # cap: your stake's level; theirs above it can't be claimed (his pick,
+    # 2026-11-10, Design 1: they fade and say ABOVE LV. 19); nil: any
+    def initialize(title, name, team, cap = nil)
       frame_init
       @title = title
       @name = name
       @team = Array(team).first(6)
-      @sel = [@team.each_index.max_by { |i| @team[i].level.to_i } || 0, 0].max
+      @cap = cap
+      ok = @team.each_index.select { |i| allowed?(i) }
+      ok = @team.each_index.to_a if ok.empty?
+      @sel = ok.max_by { |i| @team[i].level.to_i } || 0
+    end
+
+    def allowed?(i)
+      return @cap.nil? || @team[i].level.to_i <= @cap.to_i
     end
 
     def run
@@ -355,10 +379,17 @@ module Reloaded
         refresh
       end
       if Input.repeat?(Input::DOWN) || Input.repeat?(Input::UP)
-        @sel = (@sel + (Input.repeat?(Input::DOWN) ? 1 : -1)) % @team.length
+        dir = Input.repeat?(Input::DOWN) ? 1 : -1
+        n = @sel
+        @team.length.times do                     # (past the ones above your stake)
+          n = (n + dir) % @team.length
+          break if allowed?(n)
+        end
+        @sel = n if allowed?(n)
         pbPlayCursorSE
         refresh
       elsif Input.trigger?(Input::USE) || (pt.left? && pt.hit(@hits || []))
+        return pbPlayBuzzerSE unless allowed?(@sel)
         pbPlayDecisionSE
         return [:done, @sel]
       elsif Input.trigger?(Input::ACTION)
@@ -420,13 +451,19 @@ module Reloaded
       @hits = []
       @team.each_with_index do |pk, i|
         ry = y + 44 + i * 48
+        ok = allowed?(i)
         DL.send(:cursor_row, b, c, x + 6, ry, lx1, ry + 45) if i == @sel
         types = (pk.types rescue types_of(pk.species))
-        mon(b, pk.species, x + 30, ry + 22, 38)
-        P.text(b, x + 56, ry + 4, lx1 - x - 60, 18, PF.fit(PF::TEXT, pk.name.to_s, lx1 - x - 62), type_ink(c, types.first), PF::TEXT)
-        level_text(b, c, pk.level, x + 57, ry + 26)
-        types.each_with_index { |t, k| small_type(b, t, x + 98 + k * 18, ry + 24) }
-        @hits << [i, x + 6, ry, lx1, ry + 45]
+        mon(b, pk.species, x + 30, ry + 22, 38, ok ? 255 : 70)
+        P.text(b, x + 56, ry + 4, lx1 - x - 60, 18, PF.fit(PF::TEXT, pk.name.to_s, lx1 - x - 62), ok ? type_ink(c, types.first) : c[:dim], PF::TEXT)
+        if ok
+          level_text(b, c, pk.level, x + 57, ry + 26)
+          types.each_with_index { |t, k| small_type(b, t, x + 98 + k * 18, ry + 24) }
+          @hits << [i, x + 6, ry, lx1, ry + 45]
+        else
+          P.text(b, x + 57, ry + 26, 50, 12, _INTL("Lv. {1}", pk.level), c[:dim], PF::TINY)
+          pill(b, c, x + 92, ry + 25, _INTL("ABOVE LV. {1}", @cap), :grey)
+        end
       end
       details(b, c, @team[@sel], lx1 + 8, y + 42, x + w - 8, y + h - 8) if @team[@sel]
       popup_hints(b, c, [[:ud, _INTL("Choose")], [button(:C), _INTL("Claim")], [button(:A), _INTL("Summary")]])

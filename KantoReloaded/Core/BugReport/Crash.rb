@@ -33,11 +33,9 @@ module Reloaded
           @previous = read(SESSION)
           @where = nil
           write_session(true)
-          at_exit { Reloaded::BugReport::Crash.clean_exit }
-          # at_exit only runs on Kernel#exit; closing the window raises
-          # SystemExit out of the next engine call instead. KIF's session log
-          # finishes on every normal way out (the window, quitting, a soft
-          # reset, an update), so the session ends with it.
+          # KIF's session log finishes on every normal way out (the window,
+          # quitting, a soft reset, an update), so the session ends with it
+          # (nothing of Ruby's own exit is hooked: KIF 2.0.0's Mod Safety)
           if defined?(::KIF::SessionLog) && ::KIF::SessionLog.respond_to?(:finish)
             Reloaded::Hooks.around(nil, ::KIF::SessionLog.singleton_class, :finish, :id => :bug_report_clean_exit) do |original, *args|
               begin

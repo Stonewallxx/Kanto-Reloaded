@@ -14,7 +14,7 @@
 #              version of them together. Your rival is one person, "rival":
 #              PIF's RIVAL_NAMES classes (RIVAL1, RIVAL2, CHAMPION, named by
 #              variable 12). Kinds: leaders (Gym Leaders, the Elite Four,
-#              other Champions, Rocket bosses), the rival, trainers.
+#              other Champions, Team Rocket's bosses), the rival, trainers.
 #   Which      Every trainer from the game's data (pbLoadTrainer tags it),
 #              battles you may lose too, and trainers an event builds with a
 #              class (customTrainerBattle). Not other mods' runtime trainers
@@ -34,7 +34,9 @@ module Reloaded
     SECTION = :trainer_control
     TAG = :@kr_tc                         # on a trainer that counts: { "type", "name", "version", "source" }
     RIVAL = "rival"
-    LEADER = /\A(LEADER_|ELITEFOUR|CHAMPION|ROCKETBOSS)/   # (CHAMPION itself is the rival's: checked first)
+    # (CHAMPION itself is the rival's: checked first. Team Rocket's executives
+    # are bosses too: his pick, 2026-11-10)
+    LEADER = /\A(LEADER_|ELITEFOUR|CHAMPION|ROCKETBOSS|ROCKETEXEC)/
     REMATCH_SWITCH = 200                  # PIF's, on during a rematch (Trainers Rebattle.rb)
     PAGE = :trainer_control
 
@@ -58,6 +60,11 @@ module Reloaded
         Adaptation.install if defined?(Adaptation)
         Bond.install if defined?(Bond)
         PinkSlips.install if defined?(PinkSlips)
+        Smarter.install if defined?(Smarter)
+        GymRules.install if defined?(GymRules)
+        Notoriety.install if defined?(Notoriety)
+        AceMoments.install if defined?(AceMoments)       # after Gym Rules: a leading ace's moment comes after the seal
+        RematchRanks.install if defined?(RematchRanks)
         register_menu_entries
         return true
       end
@@ -73,6 +80,10 @@ module Reloaded
         s.register(:"trainer_control.records", :page => PAGE, :priority => 10, :type => :button, :scope => :save, :preset => false,
           :name => "Battle Records", :on_press => proc { Reloaded::TrainerControl.open_records },
           :description => "Every trainer you've battled: Your record with them, their last team, your bond and the MVPs.")
+        if defined?(Toasts)
+          s.register(Toasts::ROW, :page => PAGE, :priority => 15, :type => :toggle, :default => true,
+            :name => "Record Toast", :description => "When a trainer you've battled before spots you or you talk to them: Your record with them. Off: No toast.")
+        end
       end
 
       def register_menu_entries
@@ -104,14 +115,20 @@ module Reloaded
 
       #------------------------------------------------------------------------
       # A trainer's team as it's loaded (after PIF's to_trainer and every KIF
-      # wrapper): Team Expansion adds to it, Adaptation changes it, Level
-      # Scaling raises it last
+      # wrapper): Team Expansion adds to it (Rematch Ranks' Pokémon too),
+      # Adaptation changes it, Level Scaling raises it, Notoriety's tiers and
+      # Rematch Ranks add to it, Leader Builds build the leaders', Trainer
+      # Bags fill their bags last
       #------------------------------------------------------------------------
       def build_team(trainer, type, name, version)
         return unless defined?(LevelScaling) && LevelScaling.scaled? && Records.data
         TeamExpansion.apply(trainer, type, name, version) if defined?(TeamExpansion)
         Adaptation.apply(trainer, type, name, version) if defined?(Adaptation)
         LevelScaling.apply(trainer, type, name, version)
+        Notoriety.apply(trainer, type, name, version) if defined?(Notoriety)
+        RematchRanks.apply(trainer, type, name, version) if defined?(RematchRanks)
+        LeaderBuilds.apply(trainer, type, name, version) if defined?(LeaderBuilds)
+        TrainerBags.apply(trainer, type, name, version) if defined?(TrainerBags)
       end
 
       #------------------------------------------------------------------------
@@ -201,6 +218,22 @@ module Reloaded
         end
       end
 
+      # Those trainers get Adaptation's changes too (his pick, 2026-11-09),
+      # on copies of their Pokémon: some events hand in a team they keep
+      # (Hoenn's rival, its rematch trainers), and changes mustn't build up
+      # on it battle after battle
+      def adapt_event_built(args)
+        return unless defined?(Adaptation) && defined?(LevelScaling) && LevelScaling.scaled? && Records.data
+        args.each do |tr|
+          t = tr.respond_to?(:party) ? tr.instance_variable_get(TAG) : nil
+          next unless t.is_a?(Hash) && t["source"] == "event" && tr.party.is_a?(Array) && !tr.party.empty?
+          tr.party = tr.party.map { |pk| pk ? Marshal.load(Marshal.dump(pk)) : pk }
+          Adaptation.apply(tr, tr.trainer_type, t["name"], 0)
+        end
+      rescue StandardError => e
+        Reloaded::Log.exception("Trainer Control couldn't adapt an event's trainer", e, :trainer_control)
+      end
+
       #------------------------------------------------------------------------
       # Which battles count
       #------------------------------------------------------------------------
@@ -220,6 +253,7 @@ module Reloaded
               when 1 then true
               when 2 then false
               end
+        won = nil if won == false && free_loss?(battle)
         people = []
         begin
           people = Records.battle_ended(battle, won) if !won.nil? && counted_battle?(battle)
@@ -227,6 +261,13 @@ module Reloaded
           Reloaded::Log.exception("Trainer Control couldn't record a battle", e, :trainer_control)
         end
         Reloaded::Events.emit(:trainer_battle_ended, :battle => battle, :won => won, :people => people)
+      end
+
+      # A battle the story lets you lose (PIF's canLose: your first rival
+      # battle...): a loss there doesn't count (his pick, 2026-11-10) - no
+      # loss on the record, no Notoriety drop, no broken streak; a win does
+      def free_loss?(battle)
+        return (battle.canLose rescue false) ? true : false
       end
 
       #------------------------------------------------------------------------
@@ -242,12 +283,16 @@ module Reloaded
           h.around(nil, ::Object, :pbLoadTrainer, :id => :trainer_control_load) do |original, *args|
             trainer = original.call(*args)
             Reloaded::TrainerControl.tag(trainer, args[1], args[2] || 0, "data")
+            Reloaded::TrainerControl::LeaderBuilds.tag(trainer) if defined?(Reloaded::TrainerControl::LeaderBuilds)
             Reloaded::TrainerControl.build_team(trainer, args[0], args[1], args[2] || 0)
             trainer
           end
         end
-        if defined_method?(::Object, :customTrainerBattle)
-          h.around(nil, ::Object, :customTrainerBattle, :id => :trainer_control_event_built) do |original, *args|
+        # Trainers an event builds: customTrainerBattle's, and Hoenn's trainer
+        # rematches (rematchable_trainer_battle builds its own)
+        [[:customTrainerBattle, :trainer_control_event_built], [:rematchable_trainer_battle, :trainer_control_event_rematch]].each do |name, id|
+          next unless defined_method?(::Object, name)
+          h.around(nil, ::Object, name, :id => id) do |original, *args|
             Reloaded::TrainerControl.event_built += 1
             begin
               original.call(*args)
@@ -258,7 +303,10 @@ module Reloaded
         end
         if defined_method?(::Object, :pbTrainerBattleCore)
           h.around(nil, ::Object, :pbTrainerBattleCore, :id => :trainer_control_battle) do |original, *args|
-            Reloaded::TrainerControl.tag_event_built(args) if Reloaded::TrainerControl.event_built > 0
+            if Reloaded::TrainerControl.event_built > 0
+              Reloaded::TrainerControl.tag_event_built(args)
+              Reloaded::TrainerControl.adapt_event_built(args)
+            end
             te = defined?(Reloaded::TrainerControl::TeamExpansion) ? Reloaded::TrainerControl::TeamExpansion : nil
             was = te ? te.trainers_in_battle : nil
             te.trainers_in_battle = args.length if te
@@ -270,7 +318,8 @@ module Reloaded
               te.trainers_in_battle = was if te
             end
             pink.after_battle if pink
-            Reloaded::TrainerControl::Toasts.after_battle if defined?(Reloaded::TrainerControl::Toasts)
+            Reloaded::TrainerControl::Notoriety.after_battle if defined?(Reloaded::TrainerControl::Notoriety)
+            Reloaded::TrainerControl::RematchRanks.after_battle if defined?(Reloaded::TrainerControl::RematchRanks)
             Reloaded::TrainerControl::Bond.after_battle
             ret
           end

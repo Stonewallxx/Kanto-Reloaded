@@ -41,7 +41,7 @@ The page (from the Fusion Screen or *Double Abilities* > *Banned Pairs*) lists e
 - Both abilities work, in EBDX's battles and PIF's alike, wherever the first would: Switch-in, every hit, immunities, the end of the round. A second switch-in effect runs once each time the Pokémon comes in.
 - **Abilities that change an ability** change the one that's working: Trace or Receiver as the second change the second; Worry Seed, Simple Beam, Entrainment, Skill Swap, Role Play and Mummy change the first, and the second stays. A change that would make a banned pair switches the second off for the battle. Transform and Imposter copy both. Gastro Acid stops both.
 - **Stance Change, Disguise and Shields Down** work from either side.
-- **Wonder Guard**: A fusion with Wonder Guard and another ability has 1 HP, and its Wonder Guard blocks a few hits a battle (**Wonder Guard Blocks**, 1 to 3, 3), then wears off. Wonder Guard alone works as always.
+- **Wonder Guard**: A fusion with Wonder Guard and another ability has 1 HP, and its Wonder Guard works as always: It blocks every damaging move that isn't super effective, all battle.
 
 ## The Pop-Up
 
@@ -66,7 +66,6 @@ A possessed Pokémon has the Ghost's ability as its second while it's possessed.
 |---|---|
 | **Double Abilities** | The switch (On). Off: a fusion has one ability again, the game's own pop-ups and screens come back. |
 | **Banned Pairs** | Opens the Banned Pairs page. |
-| **Wonder Guard Blocks** | 1 to 3 (3), this save's: How many hits a paired Wonder Guard blocks in a battle. |
 
 ## For Mods
 

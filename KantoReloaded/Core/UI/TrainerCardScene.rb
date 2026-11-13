@@ -20,6 +20,9 @@
 #               facts, Run Tags, the 16-badge case), the trainer and the
 #               Showcase (a border in each Pokémon's types) on the art
 #   Records     the card's back (trainer battles), Recent Battles, Win Rate
+#   Notoriety   Trainer Control's tier among the facts on Front and Records
+#               (Normal and Hard): its name in its colour, three diamonds
+#               beside it (the tiers reached lit)
 #   Stats       the card's back with eight stats, the Next Milestone
 #   Style       the Dressing Room (UI/TrainerCardStyle.rb)
 #   Unlocks     every unlock, what it needs (UI/TrainerCardStyle.rb)
@@ -724,7 +727,33 @@ module Reloaded
       out << [_INTL("Pokédex"), "#{@dex_owned}/#{TC.dex_size}", dex_pair(c)]
       out << [_INTL("Time"), TC.play_words, pif(c, "Blue")]
       out << [_INTL("Started"), TC.started_words, season_pair(c)]
+      noto = notoriety(c)
+      out << [_INTL("Notoriety")] + noto if noto
       return out
+    end
+
+    # Trainer Control's Notoriety on Normal and Hard (his pick, Fact Rows):
+    # [the tier's name in its colour, the tier's place (-1 under Known:
+    # Unknown)]; nil on Easy, where there's none
+    def notoriety(c)
+      return nil unless defined?(Reloaded::TrainerControl::Notoriety) && Reloaded::TrainerControl::Notoriety.on?
+      t = Reloaded::TrainerControl::Notoriety.tier
+      return t ? [t.name, pif(c, t.skin), t.index] : [_INTL("Unknown"), pif(c, "Dark"), -1]
+    end
+
+    # Three diamonds, their right edge at right (left of the tier's name):
+    # the tiers reached in its colour, the rest grey; closer together when
+    # the label leaves them less room than that (Infamous on Records), room
+    # where they may start
+    def notoriety_pips(top, c, pair, right, cy, reached, room)
+      step = (right - 7 - room) / 2
+      if step < 10
+        right += 3
+        step = [(right - 7 - room) / 2, 7].max
+      end
+      step = [step, 10].min
+      off = c[:light] ? Color.new(196, 202, 214) : Color.new(70, 78, 94)
+      3.times { |i| PP.diamond(top, right - 4 - (2 - i) * step, cy, 3, i <= reached ? pair[0] : off) }
     end
 
     # The Pokédex's colour by how much of it is owned: red under a third,
@@ -767,12 +796,14 @@ module Reloaded
       stx(top, x0, y0 + 72, x1 - x0, 26, $Trainer.name, pif(c, "Dark"), PF::TITLE, 2)
       title_id(top, c, x0, x1 - x0, y0 + 98, UL.name(:titles, title_now).upcase, " · ID #{$Trainer.id}")
       list = facts(c)
-      list.each_with_index do |(l, v, pair), i|
-        y = y0 + 113 + i * 19
-        stx(top, x0 + 12, y, 90, 19, l.upcase, pif(c, "Dark"), PF::TINY)
-        stx(top, x0 + 12, y, x1 - x0 - 26, 19, v, pair, PF::TEXT, 1)
+      pitch = list.length > 5 ? 17 : 19      # six facts (Platinum and Notoriety) a little closer
+      list.each_with_index do |(l, v, pair, reached), i|
+        y = y0 + 113 + i * pitch
+        lw = stx(top, x0 + 12, y, 90, pitch, l.upcase, pif(c, "Dark"), PF::TINY)
+        vw = stx(top, x0 + 12, y, x1 - x0 - 26, pitch, v, pair, PF::TEXT, 1)
+        notoriety_pips(top, c, pair, x1 - 14 - vw - 8, y + pitch / 2, reached, x0 + 12 + lw + 6) if reached
       end
-      ly = y0 + 113 + list.length * 19 + 2
+      ly = y0 + 113 + list.length * pitch + 2
       divider(base, c, x0 + 12, x1 - 12, ly)
       ty = run_tags(top, c, x0 + 12, x1 - 12, ly + 5)
       badge_case(base, top, c, x0 + 12, ty + 2, 21, 8, 16, 20)
@@ -802,11 +833,14 @@ module Reloaded
               [_INTL("Battles"), battles, pif(c, "Dark")], [_INTL("Best Streak"), CT.get(:best_streak), pif(c, "Dark")],
               [_INTL("Current Streak"), CT.get(:streak), pif(c, "Dark")],
               [_INTL("Gym Rematches"), CT.stat(:gym_rematches), pif(c, "Dark")]]
-      pitch = 24
-      rows.each_with_index do |(l, v, pair), i|
+      noto = notoriety(c)
+      rows.insert(5, [_INTL("Notoriety")] + noto) if noto
+      pitch = rows.length > 6 ? 21 : 24      # seven rows in the same room
+      rows.each_with_index do |(l, v, pair, reached), i|
         y = y0 + 54 + i * pitch
-        stx(top, x0 + 12, y, 130, pitch, l.upcase, pif(c, "Dark"), PF::TINY)
-        stx(top, x0 + 12, y, x1 - x0 - 26, pitch, num(v), pair, PF::ROW, 1)
+        lw = stx(top, x0 + 12, y, 130, pitch, l.upcase, pif(c, "Dark"), PF::TINY)
+        vw = stx(top, x0 + 12, y, x1 - x0 - 26, pitch, v.is_a?(String) ? v : num(v), pair, PF::ROW, 1)
+        notoriety_pips(top, c, pair, x1 - 14 - vw - 8, y + pitch / 2, reached, x0 + 12 + lw + 6) if reached
       end
       ly = y0 + 54 + rows.length * pitch + 4
       divider(base, c, x0 + 12, x1 - 12, ly)

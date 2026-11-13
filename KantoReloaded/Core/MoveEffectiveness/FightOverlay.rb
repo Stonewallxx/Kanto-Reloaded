@@ -1,6 +1,6 @@
 # encoding: utf-8
 #==============================================================================
-# Kanto Reloaded: Effectiveness (EBDX) on EBDX's Fight menu
+# Kanto Reloaded: Effectiveness on EBDX's Fight menu
 #==============================================================================
 # What one Fight menu shows (his picks, 2026-10-30; sheets move-eff-round3,
 # -dots2, -colours): made in FightWindowEBDX#generateButtons, after EBDX
@@ -18,27 +18,140 @@
 #
 # A button picture that isn't EBDX's own size (a metric's other graphics)
 # gets nothing drawn in it; the ring and pills still show.
+#
+# Paint: the pieces both Fight menus draw (EBDX's here, PIF's in
+# PIFMenus.rb): the Colour Pill, the "!", the targets' pills.
 #==============================================================================
 
 module Reloaded
   module MoveEffectiveness
-    class FightOverlay
+    module Paint
       P = Reloaded::Pixel
       PF = ::KIF::PixelFont
       PP = Reloaded::PartyPaint
+      PILL_H = 19
+      PILL_ROW_H = 19
+      PILL_GAP = 4
+      EDGE = Color.new(20, 22, 28)
+      WHITE = Color.new(255, 255, 255)
+      BLACK = Color.new(0, 0, 0)
+
+      private
+
+      # The Colour Pill: the colour, the words in a deeper or paler tone of
+      # it (Battle Scene's picked command words, CommandRow#picked_ink)
+      def pill(b, x, y, val, col)
+        P.ui.rbox(b, x, y, x + pill_width(val), y + PILL_H, 5, col)
+        words(b, x + 4, y, val, on_tone(col))
+      end
+
+      def pill_width(val)
+        return words_width(val) + 8
+      end
+
+      # x4, x2, x0 in the text font; x1/2 and x1/4 as an "x" and a small
+      # stacked fraction (the words don't fit the 33 px)
+      def words(b, x, y, val, ink)
+        den = fraction(val)
+        unless den
+          P.text(b, x, y - 1, words_width(val) + 2, PILL_H + 2, Reloaded::Matchup.text(val), ink, PF::TEXT)
+          return
+        end
+        xw = P.width(PF::TEXT, "x")
+        P.text(b, x, y - 1, xw + 1, PILL_H + 2, "x", ink, PF::TEXT)
+        fx = x + xw + 1
+        P.text(b, fx, y, 7, 9, "1", ink, PF::TINY, 2)
+        b.fill_rect(fx, y + 9, 7, 1, ink)
+        P.text(b, fx, y + 9, 7, 10, den, ink, PF::TINY, 2)
+      end
+
+      def words_width(val)
+        return fraction(val) ? P.width(PF::TEXT, "x") + 8 : P.width(PF::TEXT, Reloaded::Matchup.text(val))
+      end
+
+      # "2" for x1/2, "4" for x1/4 (nil: not a fraction)
+      def fraction(val)
+        m = val.to_f / Reloaded::Matchup::NORMAL
+        return m > 0 && m < 1 ? (1 / m).round.to_s : nil
+      end
+
+      def on_tone(col)
+        light = 0.3 * col.red + 0.59 * col.green + 0.11 * col.blue > 150
+        return light ? Reloaded::Palette.mix(col, BLACK, 0.62) : Reloaded::Palette.mix(col, WHITE, 0.78)
+      end
+
+      # The warning: a red disc with a white "!"
+      def warn_mark(b, cx, cy)
+        PP.disc(b, cx, cy, 6, WARN)
+        b.fill_rect(cx, cy - 3, 1, 4, WHITE)
+        b.fill_rect(cx, cy + 2, 1, 1, WHITE)
+      end
+
+      # A dot in a move's colour, with a dark edge
+      def dot(b, cx, cy, col)
+        PP.disc(b, cx, cy, 5, EDGE)
+        PP.disc(b, cx, cy, 4, col)
+      end
+
+      #------------------------------------------------------------------------
+      # The pills above the picked move (Double Battles)
+      #------------------------------------------------------------------------
+      # Each target's name, outlined in its colour; your partner's red with
+      # the "!" when it would be hurt, gray when it can't be. nil when the
+      # move tells nothing (a status move that works on every target)
+      def pill_row(s)
+        per = s[:per]
+        return nil if per.empty? || per.all? { |_b, v, _a| v.nil? }
+        c = Reloaded::Palette.current
+        me = Reloaded::MoveEffectiveness
+        list = per.map do |b, v, ally|
+          warn = ally && @warning && v && !::Effectiveness.ineffective?(v)
+          edge = if v.nil? then Reloaded::BattleCursor.colour
+                 elsif ally then me.ally_colour(v)
+                 else me.level_colour(v)
+                 end
+          [name_of(b), edge || Reloaded::BattleCursor.colour, warn]
+        end
+        widths = list.map { |name, _e, warn| pill_w(name, warn) }
+        bm = Bitmap.new(widths.sum + PILL_GAP * (list.length - 1), PILL_ROW_H)
+        x = 0
+        list.each_with_index do |(name, edge, warn), k|
+          target_pill(bm, c, x, name, edge, warn)
+          x += widths[k] + PILL_GAP
+        end
+        return bm
+      end
+
+      # The name the foe shows (an Illusion's disguise's)
+      def name_of(b)
+        d = Reloaded::BattleMenu::Notes.disguise(b)
+        return (d ? d.name : b.name).to_s.upcase
+      end
+
+      def pill_w(name, warn)
+        return 7 + (warn ? 14 : 0) + P.width(PF::TINY, name) + 7
+      end
+
+      def target_pill(b, c, x, name, edge, warn)
+        w = pill_w(name, warn)
+        fill = warn ? Reloaded::Palette.mix(c[:panel2], WARN, 0.28) : c[:panel2]
+        P.ui.rbox(b, x, 0, x + w, PILL_ROW_H - 1, 6, warn ? WARN : edge)
+        P.ui.rbox(b, x + 2, 2, x + w - 2, PILL_ROW_H - 3, 4, fill)
+        warn_mark(b, x + 11, 9) if warn
+        lead = warn ? 14 : 0
+        P.text(b, x + 7 + lead, 1, w - 14 - lead + 2, PILL_ROW_H - 2, name, c[:strong], PF::TINY)
+      end
+    end
+
+    class FightOverlay
+      include Paint
       HALF = 198                       # a button half's width (EBDX: Bitmap.new(198 * 2, 74))
       BUTTON_H = 74
       PILL_X = 105                     # the category icon's right edge (65 + 38) + 2
       PP_RIGHT = 191                   # EBDX's PP: right-aligned in 0...191
       PILL_Y = 47
-      PILL_H = 19
       MARK = [177, 19]                 # the "!", inside the picked half's frame (KIF's No effect X, x 170-184, y 12-26)
       DOT = [HALF + 177, 29]           # the dot, under it on the other half
-      EDGE = Color.new(20, 22, 28)
-      WHITE = Color.new(255, 255, 255)
-      BLACK = Color.new(0, 0, 0)
-      PILL_ROW_H = 19
-      PILL_GAP = 4
       PILL_RISE = 25                   # the pills' row above the picked button's top, clear of the ring's glow
 
       def initialize(viewport)
@@ -68,7 +181,7 @@ module Reloaded
         work_out
         return true
       rescue StandardError => e
-        Reloaded::Log.exception("Effectiveness (EBDX): the Fight menu couldn't be worked out", e, FEATURE)
+        Reloaded::Log.exception("Effectiveness: EBDX's Fight menu couldn't be worked out", e, FEATURE)
         clear
         return false
       end
@@ -117,7 +230,7 @@ module Reloaded
       def broken(e)
         @broken = true
         hide
-        Reloaded::Log.exception("Effectiveness (EBDX): the Fight menu's targets", e, FEATURE)
+        Reloaded::Log.exception("Effectiveness: EBDX's Fight menu's targets", e, FEATURE)
       end
 
       def hide
@@ -182,10 +295,7 @@ module Reloaded
           pill(b, PILL_X + [(room - w) / 2, 0].max, PILL_Y, val, col)
         end
         warn_mark(b, *MARK) if @warning && s[:warn]
-        if col && me.setting?(DOTS) && !move.statusMove?
-          PP.disc(b, DOT[0], DOT[1], 5, EDGE)
-          PP.disc(b, DOT[0], DOT[1], 4, col)
-        end
+        dot(b, DOT[0], DOT[1], col) if col && me.setting?(DOTS) && !move.statusMove?
       end
 
       # EBDX's PP words in its small font
@@ -194,104 +304,6 @@ module Reloaded
         w = b.text_size("#{move.pp}/#{move.total_pp}").width
         pbSetSystemFont(b)
         return w
-      end
-
-      # The Colour Pill: the colour, the words in a deeper or paler tone of
-      # it (Battle Scene's picked command words, CommandRow#picked_ink)
-      def pill(b, x, y, val, col)
-        P.ui.rbox(b, x, y, x + pill_width(val), y + PILL_H, 5, col)
-        words(b, x + 4, y, val, on_tone(col))
-      end
-
-      def pill_width(val)
-        return words_width(val) + 8
-      end
-
-      # x4, x2, x0 in the text font; x1/2 and x1/4 as an "x" and a small
-      # stacked fraction (the words don't fit the 33 px)
-      def words(b, x, y, val, ink)
-        den = fraction(val)
-        unless den
-          P.text(b, x, y - 1, words_width(val) + 2, PILL_H + 2, Reloaded::Matchup.text(val), ink, PF::TEXT)
-          return
-        end
-        xw = P.width(PF::TEXT, "x")
-        P.text(b, x, y - 1, xw + 1, PILL_H + 2, "x", ink, PF::TEXT)
-        fx = x + xw + 1
-        P.text(b, fx, y, 7, 9, "1", ink, PF::TINY, 2)
-        b.fill_rect(fx, y + 9, 7, 1, ink)
-        P.text(b, fx, y + 9, 7, 10, den, ink, PF::TINY, 2)
-      end
-
-      def words_width(val)
-        return fraction(val) ? P.width(PF::TEXT, "x") + 8 : P.width(PF::TEXT, Reloaded::Matchup.text(val))
-      end
-
-      # "2" for x1/2, "4" for x1/4 (nil: not a fraction)
-      def fraction(val)
-        m = val.to_f / Reloaded::Matchup::NORMAL
-        return m > 0 && m < 1 ? (1 / m).round.to_s : nil
-      end
-
-      def on_tone(col)
-        light = 0.3 * col.red + 0.59 * col.green + 0.11 * col.blue > 150
-        return light ? Reloaded::Palette.mix(col, BLACK, 0.62) : Reloaded::Palette.mix(col, WHITE, 0.78)
-      end
-
-      # The warning: a red disc with a white "!"
-      def warn_mark(b, cx, cy)
-        PP.disc(b, cx, cy, 6, WARN)
-        b.fill_rect(cx, cy - 3, 1, 4, WHITE)
-        b.fill_rect(cx, cy + 2, 1, 1, WHITE)
-      end
-
-      #------------------------------------------------------------------------
-      # The pills above the picked move (Double Battles)
-      #------------------------------------------------------------------------
-      # Each target's name, outlined in its colour; your partner's red with
-      # the "!" when it would be hurt, gray when it can't be. nil when the
-      # move tells nothing (a status move that works on every target)
-      def pill_row(s)
-        per = s[:per]
-        return nil if per.empty? || per.all? { |_b, v, _a| v.nil? }
-        c = Reloaded::Palette.current
-        me = Reloaded::MoveEffectiveness
-        list = per.map do |b, v, ally|
-          warn = ally && @warning && v && !::Effectiveness.ineffective?(v)
-          edge = if v.nil? then Reloaded::BattleCursor.colour
-                 elsif ally then me.ally_colour(v)
-                 else me.level_colour(v)
-                 end
-          [name_of(b), edge || Reloaded::BattleCursor.colour, warn]
-        end
-        widths = list.map { |name, _e, warn| pill_w(name, warn) }
-        bm = Bitmap.new(widths.sum + PILL_GAP * (list.length - 1), PILL_ROW_H)
-        x = 0
-        list.each_with_index do |(name, edge, warn), k|
-          target_pill(bm, c, x, name, edge, warn)
-          x += widths[k] + PILL_GAP
-        end
-        return bm
-      end
-
-      # The name the foe shows (an Illusion's disguise's)
-      def name_of(b)
-        d = Reloaded::BattleMenu::Notes.disguise(b)
-        return (d ? d.name : b.name).to_s.upcase
-      end
-
-      def pill_w(name, warn)
-        return 7 + (warn ? 14 : 0) + P.width(PF::TINY, name) + 7
-      end
-
-      def target_pill(b, c, x, name, edge, warn)
-        w = pill_w(name, warn)
-        fill = warn ? Reloaded::Palette.mix(c[:panel2], WARN, 0.28) : c[:panel2]
-        P.ui.rbox(b, x, 0, x + w, PILL_ROW_H - 1, 6, warn ? WARN : edge)
-        P.ui.rbox(b, x + 2, 2, x + w - 2, PILL_ROW_H - 3, 4, fill)
-        warn_mark(b, x + 11, 9) if warn
-        lead = warn ? 14 : 0
-        P.text(b, x + 7 + lead, 1, w - 14 - lead + 2, PILL_ROW_H - 2, name, c[:strong], PF::TINY)
       end
     end
   end

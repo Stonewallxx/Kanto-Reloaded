@@ -14,6 +14,10 @@ Everything a level changes is PIF's own code, which reads switches 665 (Easy) an
 
 PIF's own text says Hard trainers "have access to healing items". Nothing in the code does that, so Kanto Reloaded never says it.
 
+## KIF: Elite Redux's Innates
+
+With KIF: Elite Redux installed, Normal and Hard have no innates (its 3 extra abilities), on your Pokémon and trainers' alike. Its Innates row stays On, so Elite Redux's other abilities and the Megas mod's Megas stay. On Normal and Hard the row is greyed out and locked On in KIF Settings (Set by Kanto Reloaded, with why); on Easy it's yours to set. With no save loaded, nothing is locked. The code is in `Core/Difficulty/Innates.rb`.
+
 ## Shown As
 
 Wherever the difficulty shows (the Load Screen, the Hall of Fame), it's **the lowest this save has used**: the lower of PIF's own `$Trainer.lowest_difficulty` and the level the switches say now. A switch an event flips is caught too.

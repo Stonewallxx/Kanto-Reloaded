@@ -8,25 +8,28 @@
 #   The curve       PIF's level cap for your badges (getCurrentLevelCap:
 #                   the next Gym Leader's level, Hard's x1.1 in it), less 4
 #                   for regular trainers. A trainer under it rises part of
-#                   the way (How Far They Rise: Half by default).
+#                   the way: Half on Easy, Three Quarters on Normal and Hard
+#                   (his pick, 2026-11-01: no row; Hard is tougher other ways).
 #   Rematches       start at the curve and climb a level each rematch,
 #                   up to your party's level, then keep pace with it; never
 #                   below the curve (PIF's own rematch levels replaced; its
 #                   rematch evolutions stay). Half EXP; prize money (Rematch
 #                   Money) half, a quarter, a tenth, then none, per trainer
 #                   per in-game day.
-#   Leaders, rival  Gym Leaders, the Elite Four, Champions, Rocket bosses
+#   Leaders, rival  Gym Leaders, the Elite Four, Champions, Team Rocket's bosses
 #                   and your rival come at your party's level (the higher of
-#                   its average and your highest - 2; Hard: 10% above),
-#                   never below their own.
+#                   its average and your highest - 2; Hard: 10% above,
+#                   your rival too),
+#                   never below their own. On Easy as the game wrote them
+#                   (his pick, 2026-11-10).
 #   A team rises    its ace to the target, the rest keeping their gaps.
 #   Built for it    a raised Pokémon takes the stage its level allows,
 #                   its level-up moves (hand-written sets stay), the IVs
 #                   and EVs PIF gives that level; Hard's IV floor after.
 #   Shown           Battle Info's foe tab: a green +12 beside the level.
 #
-# Each kind has its own row per save (Trainer Control - Level Scaling).
-# Nothing is scaled with PIF's battle-level override on, for partners, the
+# Always on (his call, 2026-10-31); one row per save: Rematch Money
+# (Trainer Control - Level Scaling). Nothing is scaled with PIF's battle-level override on, for partners, the
 # battle facilities, KIF's Self-Battle or the Endgame Challenge's maps.
 #==============================================================================
 
@@ -34,14 +37,8 @@ module Reloaded
   module TrainerControl
     module LevelScaling
       PAGE = :trainer_control_levels
-      TRAINERS = :"trainer_control.scale_trainers"
-      SHARE = :"trainer_control.scale_share"
-      REMATCHES = :"trainer_control.scale_rematches"
-      LEADERS = :"trainer_control.scale_leaders"
-      RIVALS = :"trainer_control.scale_rivals"
       MONEY = :"trainer_control.rematch_money"
-      SHARES = [0.25, 0.5, 0.75, 1.0].freeze
-      SHARE_NAMES = ["A Quarter", "Half", "Three Quarters", "All the Way"].freeze
+      RISE = [0.5, 0.75, 0.75].freeze   # how much of the gap a first battle closes: Easy, Normal, Hard
       UNDER_CURVE = 4                   # regular trainers: 4 under the badge level
       SPREAD = 2                        # your party's level: the higher of its average and your highest - 2
       HARD_LEADERS = 1.1
@@ -86,20 +83,9 @@ module Reloaded
         def register_settings
           s = Reloaded::Settings
           s.register_page(PAGE, :group => :general, :name => "Trainer Control - Level Scaling", :icon => :features, :priority => 49.6,
-            :description => "Trainers that keep up with you: How they rise on a first battle and in rematches.")
-          s.register(TRAINERS, :page => PAGE, :priority => 10, :type => :toggle, :default => true, :scope => :save,
-            :name => "Trainers", :description => "A trainer under the badge curve (4 under the next Gym Leader's level) rises toward it on your first battle, How Far They Rise of the way. Never down.")
-          s.register(SHARE, :page => PAGE, :priority => 11, :type => :enum, :values => SHARE_NAMES, :default => 1, :scope => :save,
-            :name => "How Far They Rise", :description => "How much of the gap to the badge curve a trainer closes on your first battle.",
-            :descriptions => ["A quarter of the gap.", "Half the gap.", "Three quarters of the gap.", "All the way to the curve."])
-          s.register(REMATCHES, :page => PAGE, :priority => 20, :type => :toggle, :default => true, :scope => :save,
-            :name => "Rematches", :description => "A rematch starts at the badge curve and climbs a level each time, up to your party's level, then keeps pace with it. Rematches give half the EXP.")
+            :description => "Trainers keep up with you, always: On a first battle, a trainer under the badge curve rises three quarters of the way to it (half on Easy).")
           s.register(MONEY, :page => PAGE, :priority => 21, :type => :toggle, :default => true, :scope => :save,
             :name => "Rematch Money", :description => "Rematches pay prize money: Half the first time each day with a trainer, then a quarter, then a tenth, then nothing until the next day.")
-          s.register(LEADERS, :page => PAGE, :priority => 30, :type => :toggle, :default => true, :scope => :save,
-            :name => "Leaders", :description => "Gym Leaders, the Elite Four, Champions and Rocket bosses come at your party's level (the higher of its average and your highest less 2), never below their own. On Hard, 10% above.")
-          s.register(RIVALS, :page => PAGE, :priority => 31, :type => :toggle, :default => true, :scope => :save,
-            :name => "Rival", :description => "Your rival comes at your party's level, as the leaders do.")
         end
 
         def on?(key)
@@ -112,6 +98,16 @@ module Reloaded
 
         def hard?
           return defined?(::SWITCH_GAME_DIFFICULTY_HARD) && ($game_switches[::SWITCH_GAME_DIFFICULTY_HARD] rescue false) ? true : false
+        end
+
+        def easy?
+          return defined?(Reloaded::Difficulty) && Reloaded::Difficulty.respond_to?(:level) && Reloaded::Difficulty.level.to_i == 0 ? true : false
+        end
+
+        # How much of the gap to the curve a first battle closes (RISE)
+        def rise
+          level = defined?(Reloaded::Difficulty) && Reloaded::Difficulty.respond_to?(:level) ? Reloaded::Difficulty.level : (hard? ? 2 : 1)
+          return RISE[level.to_i.clamp(0, RISE.length - 1)]
         end
 
         #----------------------------------------------------------------------
@@ -137,25 +133,23 @@ module Reloaded
         def target(kind, key, ace, own = nil)
           return nil if ace.nil?
           if kind == :leader || kind == :rival
-            return nil unless on?(kind == :leader ? LEADERS : RIVALS)
+            return nil if easy?            # Easy: as the game wrote them (his pick, 2026-11-10)
             pl = party_level
             return nil unless pl
-            pl = (pl * HARD_LEADERS).round if hard? && kind == :leader
+            pl = (pl * HARD_LEADERS).round if hard?          # (leaders and your rival alike: his call, 2026-11-10)
             return pl > ace ? pl : nil
           end
           floor = curve - UNDER_CURVE
           return nil if floor <= 0
           if rematch?
-            return nil unless on?(REMATCHES)
             rec = Records.get(key)
             k = rec ? rec["rematches"].to_i + rec["before"].to_i + 1 : 1   # this rematch's number
             pl = party_level || floor
             to = [floor, [floor + k - 1, pl].min].max
             return own ? [to, own].max : to                       # (never below their own data)
           end
-          return nil unless on?(TRAINERS) && ace < floor
-          share = SHARES[Reloaded::Settings.get(SHARE).to_i] || 0.5
-          up = ((floor - ace) * share).round
+          return nil unless ace < floor
+          up = ((floor - ace) * rise).round
           return up > 0 ? ace + up : nil
         end
 
@@ -189,12 +183,12 @@ module Reloaded
           return if to.nil? || to == ace
           max = defined?(::Settings::MAXIMUM_LEVEL) ? ::Settings::MAXIMUM_LEVEL : 100
           rng = Random.new(key.sum * 31 + to)
-          team.each_with_index do |pk, i|
+          team.each do |pk|
             from = pk.level.to_i
             lv = [[from + to - ace, 1].max, max].min
             next if lv == from
             pk.instance_variable_set(FROM, pk.instance_variable_get(FROM) || from)
-            build(pk, lv, data.is_a?(Array) ? data[i] : nil, rng)
+            build(pk, lv, data_of(pk, data), rng)
           end
           Reloaded::Difficulty.floor_ivs(trainer, data) if defined?(Reloaded::Difficulty) && Reloaded::Difficulty.respond_to?(:floor_ivs)
         rescue StandardError => e
@@ -204,13 +198,25 @@ module Reloaded
         # A Pokémon built for its new level: the stage it allows (up only),
         # its level-up moves unless its set was written for it, the IVs and
         # EVs PIF gives that level unless the data sets them
+        # Its own entry in the trainer data: by the place it was loaded at
+        # (Adaptation's lead swap moves it; Team Expansion's and the counter
+        # Pokémon have none)
+        def data_of(pk, data)
+          return nil unless data.is_a?(Array)
+          i = pk.instance_variable_get(LeaderBuilds::DATA)
+          return i.nil? ? nil : data[i.to_i]
+        end
+
         def build(pk, lv, d, rng)
           old_species = pk.species
           pk.level = lv
           sp = stage_for(pk.species, lv, rng)
           pk.species = sp if sp && sp != old_species
           written = d && [d[:moves], d[:moves_hard], d[:moves_easy]].any? { |m| m.is_a?(Array) && !m.empty? } && pk.species == old_species
-          pk.reset_moves unless written
+          unless written
+            pk.reset_moves
+            Adaptation.reteach(pk) if defined?(Adaptation)   # (what they taught it stays)
+          end
           stats = defined?(::GameData::Stat) ? ::GameData::Stat : nil
           if stats
             iv_max = defined?(::Pokemon::IV_STAT_LIMIT) ? ::Pokemon::IV_STAT_LIMIT : 31

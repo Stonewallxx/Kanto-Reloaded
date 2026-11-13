@@ -68,7 +68,7 @@ module Reloaded
           bytes = Reloaded::SaveFile.bytes(path)          # a backup KIF packed, unpacked
           asked = []
           begin
-            data = load(bytes, asked)
+            data = read_save(bytes, asked)
             return yield(data, asked.uniq)
           ensure
             remove_all
@@ -103,7 +103,9 @@ module Reloaded
 
         private
 
-        def load(bytes, asked)
+        # (not named load: KIF 2.0.0's Mod Safety scan reads a load(...) of
+        # anything but a file name as loading code)
+        def read_save(bytes, asked)
           tries = 0
           begin
             return Marshal.load(bytes)

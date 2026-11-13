@@ -24,8 +24,7 @@
 #   Legacy       Kanto Reloaded Legacy's picks are read once into ours; its own
 #                fields stay
 #   Wonder Guard a fusion with Wonder Guard on either side has 1 HP; in battle
-#                a paired Wonder Guard blocks Wonder Guard Blocks hits, then
-#                wears off (Battle.rb)
+#                it works as always, beside another ability too
 #   KIF-ER       with KIF: Elite Redux's Innates On, its choice abilities are
 #                the pair (EliteRedux.rb)
 #   Possessed    a Ghostly Possession host has the Ghost's side as its second
@@ -43,7 +42,6 @@ module Reloaded
   module DoubleAbilities
     FEATURE = :double_abilities
     PAGE = :double_abilities
-    BLOCKS = [1, 3].freeze            # Wonder Guard Blocks' range (his pick: 1 to 3)
     HEAD_IDX = [1, 3, 5].freeze       # a fused list: the head's first, second, hidden
     BODY_IDX = [0, 2, 4].freeze
 
@@ -73,11 +71,6 @@ module Reloaded
         return :"double_abilities.#{id}"
       end
 
-      def blocks
-        return Reloaded::Settings.get(key(:wonder_guard_blocks)).to_i.clamp(*BLOCKS)
-      rescue StandardError
-        return BLOCKS[1]
-      end
 
       #------------------------------------------------------------------------
       # Which Pokémon have two
@@ -323,7 +316,7 @@ module Reloaded
       end
 
       #------------------------------------------------------------------------
-      # Settings (his picks: the switch, Banned Pairs, Wonder Guard Blocks)
+      # Settings (his picks: the switch, Banned Pairs)
       #------------------------------------------------------------------------
       def register_settings
         s = Reloaded::Settings
@@ -333,9 +326,6 @@ module Reloaded
           :name => "Banned Pairs",
           :on_press => proc { Reloaded::BannedPairsScreen.open if defined?(Reloaded::BannedPairsScreen) },
           :description => "The pairs of abilities a fusion can't have together, and why. With KIF: Elite Redux's Innates On, its own rules apply.")
-        s.register(key(:wonder_guard_blocks), :page => PAGE, :priority => 20, :type => :slider, :min => BLOCKS[0], :max => BLOCKS[1],
-          :default => BLOCKS[1], :scope => :save, :name => "Wonder Guard Blocks",
-          :description => "A fusion with Wonder Guard and a second ability has 1 HP, and its Wonder Guard blocks this many hits a battle, then wears off.")
       end
     end
   end

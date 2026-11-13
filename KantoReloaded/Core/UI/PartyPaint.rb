@@ -205,6 +205,14 @@ module Reloaded
       end
     end
 
+    # A diamond r from its middle to each point
+    def diamond(b, cx, cy, r, col)
+      (-r..r).each do |dy|
+        w = r - dy.abs
+        b.fill_rect(cx - w, cy + dy, 2 * w + 1, 1, col)
+      end
+    end
+
     def pixels(b, rows, x, y, col)
       rows.each_with_index { |ln, r| ln.each_char.with_index { |ch, k| b.fill_rect(x + k, y + r, 1, 1, col) if ch == "#" } }
     end

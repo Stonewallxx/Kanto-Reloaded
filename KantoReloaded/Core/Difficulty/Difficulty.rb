@@ -60,6 +60,7 @@ module Reloaded
         Reloaded::SaveStore.register(SECTION)
         register_settings
         install
+        Innates.install if defined?(Innates)
         # a new game: PIF's Trainer.new says Hard until its prompt sets the level
         Reloaded::Events.on(:save_loaded, :difficulty, 40) { |c| loaded! unless c.is_a?(Hash) && c[:new_game] }
         Reloaded::Events.on(:saving, :difficulty, 40) { loaded! }
@@ -221,9 +222,14 @@ module Reloaded
       #------------------------------------------------------------------------
       def floor_ivs(trainer, data = nil)
         return unless ready? && level == 2 && trainer.respond_to?(:party)
-        Array(trainer.party).each_with_index do |pk, i|
+        party = Array(trainer.party)
+        tagged = party.any? { |p| p && p.instance_variable_defined?(:@kr_tc_data) }
+        party.each_with_index do |pk, i|
           next unless pk && pk.respond_to?(:iv) && pk.iv.is_a?(Hash)
-          next if data_ivs?(pk, data, i)
+          # its own entry in the data: by its loaded place when Trainer
+          # Control tagged it (a lead swap moves it; an added one has none)
+          at = tagged ? pk.instance_variable_get(:@kr_tc_data) : i
+          next if !at.nil? && data_ivs?(pk, data, at.to_i)
           low = pk.iv.keys.select { |s| pk.iv[s].to_i < IV_FLOOR }
           next if low.empty?
           low.each { |s| pk.iv[s] = IV_FLOOR }

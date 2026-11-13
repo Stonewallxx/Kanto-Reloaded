@@ -185,7 +185,18 @@ module Reloaded
         Reloaded::Events.on(:save_loaded, :settings, 10) { |context| load_save(context) }
         Reloaded::Events.on(:saving, :settings, 10) { store_mirrors }
         Reloaded::Events.on(:saved, :settings, 10) { flush }
-        at_exit { flush rescue nil }
+        # what's waiting is written as the game closes: KIF's session log
+        # finishes on every normal way out (the window, quitting, a soft
+        # reset, an update)
+        if defined?(::KIF::SessionLog) && ::KIF::SessionLog.respond_to?(:finish)
+          Reloaded::Hooks.around(nil, ::KIF::SessionLog.singleton_class, :finish, :id => :settings_flush_on_close) do |original, *args|
+            begin
+              original.call(*args)
+            ensure
+              (flush rescue nil)
+            end
+          end
+        end
         return true
       end
 
@@ -682,9 +693,9 @@ module Reloaded
       end
 
       #------------------------------------------------------------------------
-      # Export / import (presets and share codes)
+      # Export / import (presets)
       #------------------------------------------------------------------------
-      # Values for a preset or share code. Settings registered with
+      # Values for a preset. Settings registered with
       # :preset => false and hidden settings are left out.
       def export_values(scope = nil)
         result = {}

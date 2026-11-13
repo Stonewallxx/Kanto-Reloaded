@@ -5,9 +5,10 @@
 # columns) and the Feel settings, in <mod folder>\Settings\ControlLayouts.json, for all
 # saves (like the controls themselves). Up to MAX of them.
 #
-#   - Load puts a layout's controls and Feel on
-#   - share codes ("KRC1:...") carry one to another game; pasting one checks
-#     every input and value, and skips actions that game doesn't have
+#   - Load puts a layout's controls and Feel on (every input and value
+#     checked as the file is read; actions this game hasn't got are skipped)
+#   (share codes were cut 2026-11-05: KIF 2.0.0's Mod Safety grades their
+#   Base64 red)
 #
 # The built-in layouts (Game's Layout; Pokémon-Style once its features have
 # their own actions) aren't stored: the Controls screen offers them itself.
@@ -20,7 +21,6 @@ module Reloaded
       SCHEMA = 1
       MAX = 12
       NAME_MAX = 16
-      CODE_PREFIX = "KRC1:"
 
       # Pokémon-Style (built in): the controller as in the main Pokémon
       # games, picked 2026-10-17. Every other controller input stays on the
@@ -103,23 +103,6 @@ module Reloaded
           return true
         end
 
-        def share_code(i)
-          return nil unless list[i]
-          return Reloaded::ShareCodes.encode(CODE_PREFIX, list[i])
-        end
-
-        # The layout in a share code, checked, or nil.
-        def read_code(text)
-          return clean(Reloaded::ShareCodes.decode(CODE_PREFIX, text))
-        end
-
-        # Adds a layout read from a share code.
-        def add_layout(layout)
-          return false if full? || !layout
-          list << layout.merge("name" => unique_name(layout["name"]))
-          return save
-        end
-
         def path
           return File.join(Reloaded::Paths.settings_dir, FILE)
         end
@@ -150,7 +133,7 @@ module Reloaded
           end
         end
 
-        # A layout from a file or a share code with every value checked:
+        # A layout from the file with every value checked:
         # inputs that aren't inputs (or are the engine's own keys) and Feel
         # values of the wrong kind are dropped. nil when nothing is left.
         def clean(data)

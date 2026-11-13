@@ -23,11 +23,12 @@
 # prompt was. A skip that never comes is logged. Every player gets the
 # starter sets (PIF only asked when a save existed).
 #
-# Share codes (his picks: the run, not you; compressed, with a Run ID):
-# "KRN1:" and Base64 of the deflated JSON of what differs from a fresh run:
-# the mode, the rows, the Custom starter, the Randomizer's settings code, and
-# the per-save settings that differ from their defaults. No trainer, no
-# global settings. The Run ID is the JSON's CRC32 (57DA-A91F).
+# A run as data (his picks: the run, not you): what differs from a fresh run,
+# as JSON: the mode, the rows, the Custom starter, the Randomizer's settings
+# code, and the per-save settings that differ from their defaults. No
+# trainer, no global settings. The Run ID is the JSON's CRC32 (57DA-A91F).
+# (Share codes, Base64 of it, were cut 2026-11-05: KIF 2.0.0's Mod Safety
+# grades Base64 red.)
 #
 # Presets: four built in (Classic, Challenge, Casual, Randomizer Run; each
 # with only the rows and settings that exist), and the player's own in KIF's
@@ -49,9 +50,7 @@ module Reloaded
   module NewGameSetup
     TOGGLE = :"systems.new_game"
     SECTION = :new_game
-    CODE_PREFIX = "KRN1:"
-    CODE_VERSION = 1
-    CODE_MAX = 6000                 # characters a pasted code may have
+    CODE_VERSION = 1                # a run's data ("v"), as presets keep it
     MODES = ["classic", "remix", "randomized", "legendary"].freeze
     MODE_NAMES = ["Classic", "Remix", "Randomized", "Legendary"].freeze
     MODE_RGB = [[80, 150, 250], [80, 200, 120], [240, 160, 40], [170, 110, 250]].freeze
@@ -126,7 +125,7 @@ module Reloaded
       # a palette key or [r, g, b]), :apply (proc(value, plan), at Start),
       # :card (proc(value, plan): [label, words] on the Run Card), :tag
       # (proc(value, plan): [label, [r, g, b]] a pill on it), :code (false:
-      # not in share codes and presets), :changed_words (proc(value): what
+      # not in a run's data and presets), :changed_words (proc(value): what
       # Replace Your Setup? says).
       def register_row(id, options = {})
         id = id.to_sym
@@ -446,10 +445,10 @@ module Reloaded
       end
 
       #------------------------------------------------------------------------
-      # A run as data: share codes and presets
+      # A run as data: its Run ID and presets
       #------------------------------------------------------------------------
       # What differs from a fresh run (rows in their order; settings sorted),
-      # so the same run always makes the same code
+      # so the same run always has the same Run ID
       def payload
         p = { "v" => CODE_VERSION, "mode" => mode }
         rows_out = {}
@@ -472,11 +471,6 @@ module Reloaded
         return Reloaded::JSON.generate(p)
       end
 
-      def code(p = payload)
-        packed = defined?(::Zlib) ? ::Zlib::Deflate.deflate(json_of(p), ::Zlib::BEST_COMPRESSION) : json_of(p)
-        return CODE_PREFIX + [packed].pack("m0")
-      end
-
       # 57DA-A91F: the run's JSON's CRC32
       def run_id(p = payload)
         text = json_of(p)
@@ -485,32 +479,7 @@ module Reloaded
         return "#{hex[0, 4]}-#{hex[4, 4]}"
       end
 
-      # A pasted code: [payload, nil] or [nil, why]
-      def read_code(text)
-        text = text.to_s.strip
-        return [nil, :empty] if text.empty?
-        return [nil, :too_long] if text.length > CODE_MAX
-        return [nil, :not_code] unless text.start_with?(CODE_PREFIX)
-        raw = text[CODE_PREFIX.length..-1].unpack1("m0")
-        json = defined?(::Zlib) ? ::Zlib::Inflate.inflate(raw) : raw
-        p = Reloaded::JSON.parse(json.force_encoding(Encoding::UTF_8))
-        return [nil, :not_code] unless p.is_a?(Hash) && MODES.include?(p["mode"])
-        return [nil, :newer] if p["v"].to_i > CODE_VERSION
-        return [p, nil]
-      rescue StandardError
-        return [nil, :not_code]
-      end
-
-      def code_problem(why)
-        case why
-        when :too_long then return _INTL("That's too long to be a share code.")
-        when :newer then return _INTL("This code was made by a newer Kanto Reloaded. Update to use it.")
-        when :empty then return _INTL("Paste or type a share code first.")
-        end
-        return _INTL("That isn't a New Game share code. They start with {1}", CODE_PREFIX)
-      end
-
-      # A run (a code's payload, a preset) put in place of the setup. Rows
+      # A run (a preset's) put in place of the setup. Rows
       # it doesn't name, and settings it doesn't name, go back to their
       # defaults, so the run is the same as the one it came from.
       def apply_run(p, settings = true)
@@ -772,7 +741,7 @@ module Reloaded
       def run_record
         pl = payload
         return { "mode" => pl["mode"], "rows" => @plan["rows"].dup, "custom" => @plan["custom"], "preset" => @plan["preset"],
-                 "run_id" => run_id(pl), "code" => code(pl), "seed" => randomized? && randomizer? ? ::KIF::Rand.format_seed : nil,
+                 "run_id" => run_id(pl), "seed" => randomized? && randomizer? ? ::KIF::Rand.format_seed : nil,
                  "at" => Time.now }
       end
 

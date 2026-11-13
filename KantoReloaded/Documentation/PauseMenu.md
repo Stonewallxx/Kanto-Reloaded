@@ -43,7 +43,7 @@ All shows only what you can use now, as the game's own list does. A tile in Your
 - saving in the Safari Zone or the Bug Contest
 - KIF's PC, Heal and Kuray Shop while Kuray QoL is off, and Tutor.net while it's off
 
-Quit (Safari Zone) and Quit Contest are only there while you're in one, so they can't go in Your Row or be the Favorite.
+Quit (Safari Zone), the PC in Hoenn's Safari Zone and Quit Contest are only there while you're in one, so they can't go in Your Row or be the Favorite.
 
 ## Status Lines
 

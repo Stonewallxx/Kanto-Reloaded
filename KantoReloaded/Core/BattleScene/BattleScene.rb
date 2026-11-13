@@ -332,7 +332,7 @@ module Reloaded
         want = @on ? (@spread ? [@valid.length, 1].max : 1) : 0
         @rings.pop.dispose while @rings.length > want
         @rings << Reloaded::BattleCursor::Ring.new(@viewport, 99_999, :edge) while @rings.length < want
-        # each target's colour (Effectiveness (EBDX)): { battler index => Color }
+        # each target's colour (Effectiveness): { battler index => Color }
         @colours = @on && defined?(Reloaded::MoveEffectiveness) ? Reloaded::MoveEffectiveness.target_colours(@win) : nil
         @last = nil
         @rings.each_with_index { |ring, k| ring.colour = @spread && @colours ? @colours[@valid[k]] : nil }

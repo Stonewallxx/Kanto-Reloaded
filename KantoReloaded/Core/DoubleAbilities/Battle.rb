@@ -32,8 +32,6 @@
 #                both. Gastro Acid stops both
 #   By name      Stance Change, Disguise and Shields Down work as the second
 #                too (his pick, Q14): the game checks them by name
-#   Wonder Guard a paired one blocks Wonder Guard Blocks hits a battle, then
-#                wears off (his pick, Q8)
 #   Switch-in    the second's switch-in runs once per time in (Skill Swap,
 #                Trace and Mega Evolution run the first's again)
 #   Battle Info  cody's record of revealed abilities isn't told the first was
@@ -190,27 +188,6 @@ module Reloaded
           return pu ? pu.holding(battler, &block) : block.call
         end
 
-        #----------------------------------------------------------------------
-        # Wonder Guard with a partner: blocks this many hits a battle (his
-        # pick, Q8; the number is Wonder Guard Blocks)
-        #----------------------------------------------------------------------
-        def wonder_guard_spent?(battler)
-          return blocks_used(battler) >= Reloaded::DoubleAbilities.blocks
-        end
-
-        def blocks_used(battler)
-          t = battler.battle.instance_variable_get(:@kr_wg_blocks)
-          return t ? t[battler.pokemon].to_i : 0
-        end
-
-        def wonder_guard_blocked(battler)
-          battle = battler.battle
-          t = battle.instance_variable_get(:@kr_wg_blocks) || battle.instance_variable_set(:@kr_wg_blocks, {}.compare_by_identity)
-          t[battler.pokemon] = t[battler.pokemon].to_i + 1
-          return unless t[battler.pokemon] == Reloaded::DoubleAbilities.blocks
-          battle.pbDisplay(_INTL("{1}'s Wonder Guard wore off!", battler.pbThis))
-        end
-
         def clear_inline(battle)
           battle.battlers.each { |b| b.instance_variable_set(:@kr_inline, nil) if b }
         end
@@ -229,16 +206,9 @@ module Reloaded
           return super(ability, *args) unless Reloaded::DoubleAbilities.on?
           a2 = bt.second(owner, ability)
           return super(ability, *args) unless a2
-          wg = name == :MoveImmunityTargetAbility
           entry = name == :AbilityOnSwitchIn
           bt.holding(owner) do
-            main = bt.id_of(ability)
-            ret = if wg && main == :WONDERGUARD && bt.wonder_guard_spent?(owner)
-                    false
-                  else
-                    bt.with_slot(owner, 1) { super(ability, *args) }
-                  end
-            bt.wonder_guard_blocked(owner) if wg && ret && main == :WONDERGUARD
+            ret = bt.with_slot(owner, 1) { super(ability, *args) }
             if entry && owner.instance_variable_get(:@kr_entry_done)
               ret
             else
@@ -250,10 +220,8 @@ module Reloaded
                 bt.with_slot(owner, 2) { super(a2, *more) }
               when :any
                 next ret if ret
-                next false if wg && a2 == :WONDERGUARD && bt.wonder_guard_spent?(owner)
                 shown = owner.instance_variable_get(:@kr_splash_n).to_i
                 r2 = bt.with_slot(owner, 2) { super(a2, *args) }
-                bt.wonder_guard_blocked(owner) if wg && r2 && a2 == :WONDERGUARD
                 # an immunity its caller announces after this returns (PIF's
                 # status immunities): name the second there (old KR's splash
                 # serial: only when the handler showed none itself)

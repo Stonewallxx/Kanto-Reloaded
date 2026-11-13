@@ -89,7 +89,7 @@ module Reloaded
     @registry = []
     @skipped = []
     @needs = []
-    @before = {}       # [klass, method] => the class's own method before Kanto Reloaded hooked it
+    @before = {}       # [klass, method] => the method as it was before Kanto Reloaded's first hook on it
     NEED_KINDS = [:field, :kif_option, :kif_setting].freeze   # $PokemonSystem field, KIF::Options key, KIF setting name
 
     # The callable an around hook's block gets for the original method.
@@ -264,6 +264,14 @@ module Reloaded
         return list
       end
 
+      # The method as it was before Kanto Reloaded's first hook on it (the
+      # game's, or a mod's under it), or nil when Kanto Reloaded hasn't
+      # hooked it. What's under Kanto Reloaded's hooks is reached this way,
+      # never by walking past them.
+      def before(klass, name)
+        return @before[[klass, name.to_sym]]
+      end
+
       # Another mod's alias that copied one of Kanto Reloaded's hooks goes
       # back to the method as it was before Kanto Reloaded (see the top).
       # Returns what was put right: ["Graphics.update via __alias", ...].
@@ -280,6 +288,12 @@ module Reloaded
             next if copy.source_location == original.source_location      # already the method as it was
             file = copy.source_location && copy.source_location[0].to_s.tr("\\", "/")
             next unless file && file.start_with?(mine)
+            # a mod's module was prepended over the class's own method before
+            # Kanto Reloaded hooked it: the class's own can't be reached
+            if original.owner != klass
+              failed << "#{klass}##{name} via #{m} (#{original.owner} sits over the class's own)"
+              next
+            end
             begin
               visibility = visibility_of(klass, m)
               klass.send(:define_method, m, original)
@@ -338,7 +352,7 @@ module Reloaded
           Reloaded::Log.debug("#{entry[:id]}: another Kanto Reloaded hook already wraps #{entry[:target]}##{method_name}", :hooks)
         end
         key = [klass, method_name]
-        @before[key] = own_method(klass, method_name) unless @before.key?(key)
+        @before[key] = as_it_is(klass, method_name) unless @before.key?(key)
         @registry << entry
         return entry
       end
@@ -372,16 +386,15 @@ module Reloaded
         return :public
       end
 
-      # The class's own method of that name, past every module prepended to
-      # it (nil when it has none of its own)
-      def own_method(klass, name)
+      # The method as callers get it now (asked just before Kanto Reloaded's
+      # first hook on it, so it's the method as it was), nil when there's none
+      def as_it_is(klass, name)
         return nil unless klass.method_defined?(name) || klass.private_method_defined?(name)
-        m = klass.instance_method(name)
-        m = m.super_method while m && m.owner != klass
-        return m
+        return klass.instance_method(name)
       rescue StandardError
         return nil
       end
+
 
       def ours?(mod)
         return @registry.any? { |e| e[:module].equal?(mod) }

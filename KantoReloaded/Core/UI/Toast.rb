@@ -20,11 +20,21 @@
 # :blue or :pink (the Theme Mode's tone of it). :hold keeps it until the
 # next toast (or dispose): the startup checks' "Checking for Updates..."
 # while the game waits on them. :sub is a second, smaller line in gold, and
-# :coin a gold coin with a number in it in the icon's place (Trainer
-# Control's streak toast, his pick):
+# :coin a gold coin with a number in it in the icon's place:
 #
-#   Reloaded::Toast.show("Word of your streak spreads...", :coin => "10",
-#                        :sub => "Leaders are ready for you.")
+#   Reloaded::Toast.show("Ten wins in a row!", :coin => "10",
+#                        :sub => "A new Best Streak.")
+#
+# :se or :me plays a sound as it shows (a sound effect, or a jingle). A
+# feature that draws its whole card itself (Trainer Control's tier and rank
+# toasts) hands the bitmap over, on the same timing; :later swaps in another
+# a moment in (the new tier lighting up), or each of a list in turn:
+#
+#   Reloaded::Toast.card(bitmap, :later => [0.4, lit], :se => "Exclaim")
+#   Reloaded::Toast.card(bitmap, :later => [[0.4, pop], [0.5, lit]], :me => "BW_lvup")
+#
+# queue shows a toast once the one up now has gone (at once when there's
+# none): two after the same battle, one after the other.
 #==============================================================================
 
 return unless defined?(Reloaded::Pixel) && defined?(::KIF::PixelFont)
@@ -54,7 +64,7 @@ module Reloaded
         return Process.clock_gettime(Process::CLOCK_MONOTONIC)
       end
 
-      def show(text, icon: nil, pill: nil, paint: nil, hold: false, sub: nil, coin: nil)
+      def show(text, icon: nil, pill: nil, paint: nil, hold: false, sub: nil, coin: nil, se: nil, me: nil)
         dispose
         c = Reloaded::Palette.map_menu   # Theme Mode, as the map menus
         text = text.to_s
@@ -90,11 +100,45 @@ module Reloaded
           P.pill(o, w - 10, ty + 1, pill[0].to_s, fill, tone, true)
         end
         @shown_at = hold ? nil : now
+        play(se, me)
         return true
       rescue StandardError => e
         Reloaded::Log.exception("A toast couldn't be shown", e, :interface)
         dispose
         return false
+      end
+
+      # A card the caller drew (the toast owns the bitmaps from here)
+      def card(bitmap, later: nil, se: nil, me: nil)
+        dispose
+        @viewport = Viewport.new(0, 0, Graphics.width, Graphics.height)
+        @viewport.z = 100_300
+        @sprite = Sprite.new(@viewport)
+        @sprite.bitmap = bitmap
+        @sprite.x = (Graphics.width - bitmap.width) / 2
+        @sprite.y = 10
+        @later = later.nil? || later[0].is_a?(Array) ? (later && later.dup) : [later]
+        @shown_at = now
+        play(se, me)
+        return true
+      rescue StandardError => e
+        Reloaded::Log.exception("A toast couldn't be shown", e, :interface)
+        dispose
+        return false
+      end
+
+      # Shown once the toast up now has gone (now, when there's none)
+      def queue(&show)
+        return show.call unless @sprite && !@sprite.disposed? && @shown_at
+        (@queue ||= []) << show
+        return true
+      end
+
+      def play(se, me)
+        pbSEPlay(se) if se && defined?(pbSEPlay)
+        pbMEPlay(me) if me && defined?(pbMEPlay)
+      rescue StandardError
+        nil
       end
 
       # A pill's [fill, words] in a tone: Dark's own fill, Light's pale mix
@@ -113,7 +157,16 @@ module Reloaded
       def update
         return unless @sprite && @shown_at
         left = SECONDS - (now - @shown_at)
-        return dispose if left <= 0
+        if left <= 0
+          dispose
+          nxt = @queue && @queue.shift
+          nxt.call if nxt
+          return
+        end
+        while @later && !@later.empty? && SECONDS - left >= @later[0][0] && !@sprite.disposed?
+          @sprite.bitmap.dispose if @sprite.bitmap && !@sprite.bitmap.disposed?
+          @sprite.bitmap = @later.shift[1]
+        end
         @sprite.opacity = [(255 * left / FADE).to_i, 255].min unless @sprite.disposed?
       end
 
@@ -121,7 +174,8 @@ module Reloaded
         @sprite.bitmap.dispose if @sprite && !@sprite.disposed? && @sprite.bitmap
         @sprite.dispose if @sprite && !@sprite.disposed?
         @viewport.dispose if @viewport && !@viewport.disposed?
-        @sprite = @viewport = @shown_at = nil
+        Array(@later).each { |_t, bm| bm.dispose if bm.is_a?(Bitmap) && !bm.disposed? }
+        @sprite = @viewport = @shown_at = @later = nil
       end
 
       private
@@ -134,7 +188,7 @@ module Reloaded
         probe.dispose if probe
       end
 
-      # The gold coin, a number in it (Trainer Control's streak)
+      # The gold coin, a number in it
       def draw_coin(o, c, cx, cy, r, text)
         pp = Reloaded::PartyPaint
         gold = c[:light] ? Color.new(214, 160, 30) : Color.new(240, 200, 80)
@@ -144,6 +198,7 @@ module Reloaded
         pp.disc(o, cx, cy, r - 3, gold)
         P.text(o, cx - r, cy - 7, 2 * r, 14, text, Color.new(70, 46, 8), PF::TINY, 2)
       end
+      public :draw_coin                  # (Kanto Reloaded Debug's Result Notices draw it too)
 
       # An item's Bag icon at 24 pixels, or a picture fitted in 24 by 24
       def draw_icon(o, icon, cx, cy)

@@ -22,6 +22,8 @@
 #                last battle (when, their team as Big Icons, where); the
 #                MVPs (yours and theirs: the most knockouts on the other
 #                side)
+#   their rank   Rematch Ranks' word in its colour (his pick, Rank Word):
+#                over the name on the plate, before the class in the list
 #
 # Buttons: Up / Down choose, Left / Right the filter, L Search, R Sort, Back
 # closes (or clears the search). The mouse too: a row, chip or header box
@@ -41,6 +43,7 @@ module Reloaded
     BOND = Reloaded::TrainerControl::Bond
     PICS = Reloaded::TrainerControl::Pictures
     ROW_H = 36
+    HEAD_H = 16                       # the Pink Slips filter's group bands
     LX0 = 6
     LY0 = 58
     LX1 = 238
@@ -66,6 +69,7 @@ module Reloaded
       @filter = RC::FILTERS.index(filter) || 0
       @sel = 0
       @scroll = 0
+      @scroll_px = 0
       @query = nil
       @rows = nil
       @faces = {}
@@ -188,6 +192,7 @@ module Reloaded
       @filter = i
       @sel = 0
       @scroll = 0
+      @scroll_px = 0
       pbPlayCursorSE
       changed!
     end
@@ -425,8 +430,8 @@ module Reloaded
       return _INTL("No battles yet. Every trainer you battle gets a record here.") if RC.people.empty?
       case RC::FILTERS[@filter]
       when :rivalries then return _INTL("No rivalries yet. Trainers you can battle again show here.")
-      when :leaders then return _INTL("No leaders battled yet. Gym Leaders, the Elite Four, Champions and Rocket bosses show here.")
-      when :pink_slips then return _INTL("No Pink Slips wagered yet.")
+      when :leaders then return _INTL("No leaders battled yet. Gym Leaders, the Elite Four, Champions and Team Rocket's bosses show here.")
+      when :pink_slips then return _INTL("Nobody to wager yet. Trainers you can battle again show here, then every trainer you've wagered against.")
       end
       return ""
     end
@@ -441,24 +446,13 @@ module Reloaded
         end
         return
       end
+      return draw_grouped(base, top, c, list) if RC::FILTERS[@filter] == :pink_slips
       visible = (BOTTOM - LY0 - 6) / ROW_H
       @scroll = @sel if @sel < @scroll
       @scroll = @sel - visible + 1 if @sel >= @scroll + visible
       @scroll = [[@scroll, list.length - visible].min, 0].max
       list[@scroll, visible].each_with_index do |rec, k|
-        i = @scroll + k
-        y = LY0 + 4 + k * ROW_H
-        @cursor_rect = [LX0 + 4, y, LX1 - LX0 - 14, ROW_H - 1] if i == @sel && !@entry
-        face_pic(top, rec["type"], LX0 + 9, y + 4, 28)
-        P.text(top, LX0 + 44, y + 1, 130, 20, PF.fit(PF::TEXT, shown_name(rec), 130), c[:txt], PF::TEXT)
-        place = @query ? RC.match_place(rec, @query) : nil
-        if place
-          P.text(top, LX0 + 45, y + 21, 130, 12, PF.fit(PF::TINY, place.upcase, 130), c[:gold], PF::TINY)
-        else
-          P.text(top, LX0 + 45, y + 21, 130, 12, PF.fit(PF::TINY, RC.class_name(rec["type"]).upcase, 130), c[:head], PF::TINY)
-        end
-        P.text(top, LX1 - 70, y + 7, 54, 22, wl(rec), wl_color(c, rec), PF::ROW, 1)
-        @row_hits << [i, LX0 + 4, y, LX1 - 10, y + ROW_H - 1]
+        list_row(top, c, rec, @scroll + k, LY0 + 4 + k * ROW_H)
       end
       return if list.length <= visible
       track = visible * ROW_H - 4
@@ -466,6 +460,85 @@ module Reloaded
       pos = (track - bar) * @scroll / [list.length - visible, 1].max
       base.fill_rect(LX1 - 7, LY0 + 6, 2, track, c[:line])
       base.fill_rect(LX1 - 7, LY0 + 6 + pos, 2, bar, c[:dim])
+    end
+
+    def list_row(top, c, rec, i, y)
+      @cursor_rect = [LX0 + 4, y, LX1 - LX0 - 14, ROW_H - 1] if i == @sel && !@entry
+      face_pic(top, rec["type"], LX0 + 9, y + 4, 28)
+      P.text(top, LX0 + 44, y + 1, 130, 20, PF.fit(PF::TEXT, shown_name(rec), 130), c[:txt], PF::TEXT)
+      place = @query ? RC.match_place(rec, @query) : nil
+      pink = RC::FILTERS[@filter] == :pink_slips ? rec["pink"] : nil
+      if place
+        P.text(top, LX0 + 45, y + 21, 130, 12, PF.fit(PF::TINY, place.upcase, 130), c[:gold], PF::TINY)
+      elsif pink.is_a?(Hash)
+        P.text(top, LX0 + 45, y + 21, 130, 12, PF.fit(PF::TINY, pink_words(pink), 130), pink["won"] ? c[:green] : c[:red], PF::TINY)
+      else
+        x = LX0 + 45
+        r = rank_of(rec)
+        x += P.text(top, x, y + 21, 130, 12, _INTL(r.name).upcase, PP.ink(c, r.rgb), PF::TINY) + 4 if r
+        P.text(top, x, y + 21, LX0 + 175 - x, 12, PF.fit(PF::TINY, RC.class_name(rec["type"]).upcase, LX0 + 175 - x), c[:head], PF::TINY)
+      end
+      P.text(top, LX1 - 70, y + 7, 54, 22, wl(rec), wl_color(c, rec), PF::ROW, 1)
+      @row_hits << [i, LX0 + 4, y, LX1 - 10, y + ROW_H - 1]
+    end
+
+    # "WON THEIR GRAVELER" / "LOST YOUR SPEAROW"
+    def pink_words(pink)
+      sp = pink["species"].to_s
+      name = (::GameData::Species.get(sp.to_sym).name rescue sp).upcase
+      return pink["won"] ? _INTL("WON THEIR {1}", name) : _INTL("LOST YOUR {1}", name)
+    end
+
+    # The Pink Slips filter (his pick, Slim Headers): CAN WAGER, then
+    # WAGERED, each under a band; scrolled by pixels, so the first trainer
+    # of a group brings its band into view
+    def draw_grouped(base, top, c, list)
+      items = []
+      off = 0
+      prev = nil
+      list.each_with_index do |rec, i|
+        g = RC.pink_group(rec)
+        if g != prev
+          off += 4 if prev
+          items << [:head, g, off]
+          off += HEAD_H + 2
+          prev = g
+        end
+        items << [:rec, rec, off, i]
+        off += ROW_H
+      end
+      area = BOTTOM - LY0 - 6
+      k = items.index { |it| it[0] == :rec && it[3] == @sel }
+      if k
+        y_top = items[k - 1][0] == :head ? items[k - 1][2] : items[k][2]
+        @scroll_px = y_top if y_top < @scroll_px
+        @scroll_px = items[k][2] + ROW_H - area if items[k][2] + ROW_H > @scroll_px + area
+      end
+      @scroll_px = [[@scroll_px, off - area].min, 0].max
+      items.each do |it|
+        y0 = it[2] - @scroll_px
+        next if y0 < 0 || y0 + (it[0] == :head ? HEAD_H : ROW_H) > area
+        it[0] == :head ? group_band(base, top, c, LY0 + 4 + y0, it[1]) : list_row(top, c, it[1], it[3], LY0 + 4 + y0)
+      end
+      return if off <= area
+      track = area - 4
+      bar = [track * area / off, 10].max
+      pos = (track - bar) * @scroll_px / [off - area, 1].max
+      base.fill_rect(LX1 - 7, LY0 + 6, 2, track, c[:line])
+      base.fill_rect(LX1 - 7, LY0 + 6 + pos, 2, bar, c[:dim])
+    end
+
+    def group_band(base, top, c, y, group)
+      x0, x1 = LX0 + 6, LX1 - 10
+      if group == :can
+        fill, ink = Reloaded::Toast.pill_colours(c, :pink)
+        label = _INTL("CAN WAGER")
+      else
+        fill, ink = mix(c[:panel2], c[:dark], 0.45), c[:dim]
+        label = _INTL("WAGERED")
+      end
+      base.fill_rect(x0, y, x1 - x0, HEAD_H, fill)
+      P.text(top, x0 + 6, y + 2, x1 - x0 - 12, 12, label, ink, PF::TINY)
     end
 
     #--------------------------------------------------------------------------
@@ -515,8 +588,14 @@ module Reloaded
       room = x1 - tx - 10
       # (his change: the place they're at stays, without the FIRST MET words)
       where = RC.place((rec["first"] || rec["last"] || {})["map"])
-      P.text(top, tx, y0 + (where.empty? ? 20 : 11), room, 22, PF.fit(PF::ROW, RC.title(rec), room), c[:strong], PF::ROW)
-      P.small(top, tx, y0 + 35, room, 16, where, c[:txt]) unless where.empty?
+      if (r = rank_of(rec))
+        P.text(top, tx + 1, y0 + 5, room, 12, _INTL(r.name).upcase, PP.ink(c, r.rgb), PF::TINY)
+        P.text(top, tx, y0 + 16, room, 22, PF.fit(PF::ROW, RC.title(rec), room), c[:strong], PF::ROW)
+        P.small(top, tx, y0 + 39, room, 16, where, c[:txt]) unless where.empty?
+      else
+        P.text(top, tx, y0 + (where.empty? ? 20 : 11), room, 22, PF.fit(PF::ROW, RC.title(rec), room), c[:strong], PF::ROW)
+        P.small(top, tx, y0 + 35, room, 16, where, c[:txt]) unless where.empty?
+      end
       y = line_y + 6
       y += ledger(top, c, sx, y, w + 8, rec)
       if (note = before_line(rec))
@@ -529,6 +608,12 @@ module Reloaded
       y = reward_tiles(base, top, c, sx, y + 3, w, rec) if BOND.can_reach?(rec)
       y += last_battle(top, c, sx, y + 2, w, rec) + 3 if rec["last"] && !Array(rec["team"]).empty?
       mvp_rows(top, c, sx, y, w, rec)
+    end
+
+    # Their Rematch Rank, or nil
+    def rank_of(rec)
+      return nil unless defined?(Reloaded::TrainerControl::RematchRanks)
+      return Reloaded::TrainerControl::RematchRanks.rank(rec)
     end
 
     # A stat's name in small capitals over its number: three columns, two
@@ -563,8 +648,7 @@ module Reloaded
     def pink_story(top, c, x, y, rec)
       pink = rec["pink"]
       sp = pink["species"].to_s
-      name = (::GameData::Species.get(sp.to_sym).name rescue sp).upcase
-      label = pink["won"] ? _INTL("WON THEIR {1}", name) : _INTL("LOST YOUR {1}", name)
+      label = pink_words(pink)
       col = pink["won"] ? c[:green] : c[:red]
       fill, ink = PP.badge(c, [col.red.to_i, col.green.to_i, col.blue.to_i])
       pw = P.pill(top, x, y + 2, label, fill, ink, false)
@@ -590,8 +674,11 @@ module Reloaded
     # The y under them.
     def reward_tiles(base, top, c, x, y, w, rec)
       kind_n, at_n, left = BOND.next_step(rec)
-      right = left == 1 ? _INTL("{1} in 1 Win", BOND.word(kind_n)) : _INTL("{1} in {2} Wins", BOND.word(kind_n), left)
-      rw = P.small(top, x, y - 2, w, 16, right, c[:blue], 1)
+      right = if kind_n.nil? then _INTL("Complete")             # (every step given: his call, 2026-11-10)
+              elsif left == 1 then _INTL("{1} in 1 Win", BOND.word(kind_n))
+              else _INTL("{1} in {2} Wins", BOND.word(kind_n), left)
+              end
+      rw = P.small(top, x, y - 2, w, 16, right, kind_n.nil? ? c[:gold] : c[:blue], 1)
       P.heading(top, x, x + w - rw - 8, y, _INTL("Bond Steps"), c[:dim], c[:line])
       ty = y + 16
       tw = (w - 8) / 3

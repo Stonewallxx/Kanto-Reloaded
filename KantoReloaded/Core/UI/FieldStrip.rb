@@ -100,7 +100,7 @@ module Reloaded
         @sprite.visible = false
       end
 
-      # The Reader's field, endless weather and terrain marked :inf
+      # The Reader's field, endless weather, terrain and gyms' rooms marked :inf
       def strip_items(battle)
         return Reloaded::BattleMenu::Reader.field_items(battle).map do |words, n, side, type|
           [words, n.nil? && side == :field && type ? :inf : n, side, type]

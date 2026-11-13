@@ -2,6 +2,8 @@
 
 The Timing Profiler times what you do while you play: battles, map loads, menus, saving and loading. Each one becomes a **session**. Mod Timings shows each mod's share: its startup, its time per frame and its slowest hooks.
 
+Mod Timings' timing comes with Kanto Reloaded's developer tools: finding every mod's hooks and timing them (TracePoints) is something KIF 2.0.0's Mod Safety grades red in a mod players install, so without those tools Mod Timings stays off and the rest of the profiler works as below.
+
 It's a tool for making Kanto Reloaded and mods. Players never see it: it shows only while KIF's DEBUG option is on (KIF Settings > System > Advanced > DEBUG). It grew out of old Kanto Reloaded's Battle Timing Profiler (Roadmap topic 33). The code is in `Core/Profiler`, and the screens are in `Core/UI/ProfilerScreen.rb`.
 
 ## Switching It On

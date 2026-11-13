@@ -20,7 +20,7 @@
 # A ring's picture is made once per size, shape and colour and kept for the
 # battle (a handful of sizes ever appear); following a button costs a few
 # assignments a frame and makes nothing. A ring can take a colour of its
-# own (Effectiveness (EBDX): the picked move's, each target's).
+# own (Effectiveness: the picked move's, each target's).
 #==============================================================================
 
 module Reloaded

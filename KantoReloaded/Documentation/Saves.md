@@ -20,9 +20,9 @@ If a save fails its check, the game says the save failed and the old save is sti
 |---|---|---|
 | Active | Your save files: Color tag, note, health badge | Trainer, location, saved, play time, party, Notes (Y edits), a status banner |
 | Backups | The selected save's backups, newest first; named ones in gold, autosaves marked | The backup's details and health; A restores it, Y names it. Left / Right: another save's backups |
-| Deleted | The saves you've deleted | Their details; A restores one (to its slot, or the first free one) or deletes it forever |
+| Deleted | The saves you've deleted, and each save's Old Backups (the Backup Cap's) | Their details; A restores one (a save to its slot, or the first free one; Old Backups to its save's Backups) or deletes it forever |
 
-On Active, A opens Edit Note, Color Tag, Check This Save (the [Save Checker](SaveChecker.md)), Backups, Back Up Now (a backup named so it's always kept), Delete (to the Deleted tab, with its backups) and Open Folder (on a phone, Copy the Path, which copies the saves folder's full path). A click on the health banner opens the Save Checker too, and on the Backups tab X checks the selected backup.
+On Active, A opens Edit Note, Color Tag, Check This Save (the [Save Checker](SaveChecker.md)), Backups, Back Up Now (a backup named so it's always kept), Delete (to the Deleted tab, with its backups) and Open Folder (KIF's own, which opens the saves folder; on a phone, Copy the Path, which copies its full path). A click on the health banner opens the Save Checker too, and on the Backups tab X checks the selected backup.
 
 On Active, X makes a **Test Copy**: a copy of the save to play with Kanto Reloaded off (see [Difficulty.md](Difficulty.md), Test Copy). Test copies are listed last, under a TEST COPIES heading. The details' head shows the save's name and its Run Tags (mode, difficulty, DEBUG); the color tag is the bar beside the name.
 
@@ -44,13 +44,15 @@ KIF Beta makes the backups: a copy of the save before each save, in `backups\<sa
 
 **Packed backups:** Since KIF 1.2, KIF packs its new backups (gzip, about a tenth of the size) under the same names; older ones stay plain until its save menu's Compress Old Backups. The Save Manager, the Load Screen and the Save Checker read either kind (`Core/Saves/SaveFile.rb`). A restored backup is written unpacked, so a save the game plays from is always plain, and Kanto Reloaded's own backups (Back Up Now, Before Restore) are packed the same way when KIF packs.
 
-**Backup Cap** (Kanto Reloaded > Saves) decides how many are kept: Unlimited (the default), or the newest 10, 15, 20, 25, 50 or 100 plain backups of each save. Older plain backups go to the Windows Recycle Bin, where a player can still get one back; when the bin can't be used, they're kept. Named backups are always kept, and KIF keeps its newest 10 autosave backups. It takes over KIF Beta's own Save Backups setting, which Kanto Reloaded locks to Infinite.
+**Backup Cap** (Kanto Reloaded > Saves) decides how many are kept: Unlimited (the default), or the newest 10, 15, 20, 25, 50 or 100 plain backups of each save. Older plain backups go to the save's one **Old Backups** entry in the Deleted tab ("File A: Old Backups": how many, when, the newest one's details), where they can still be got back: **Restore** puts them back in the save's Backups, named Restored so the cap keeps them, and **Delete Forever** empties it. One that can't be moved is kept. Named backups are always kept, and KIF keeps its newest 10 autosave backups. It takes over KIF Beta's own Save Backups setting, which Kanto Reloaded locks to Infinite.
 
 Nothing in the Save Manager deletes or writes over a file it didn't make. Restoring from the Deleted tab checks every file's new place first and stops before anything moves when one is taken; a restore or delete that fails partway puts the files back and leaves the folder rather than removing it; Delete Forever only removes a folder inside DELETED SAVES, after its question; two backups in one second take the next free second; and after a crash, a whole save left over (or the save from before it) is kept as a named backup, Unfinished Save or Before Crash.
 
 ### Deleted Saves
 
 Deleting moves the save, its backups and Kanto Reloaded's copy of its data to `DELETED SAVES\<save>-<time>\` in the save folder, with a `manifest.json` (old Kanto Reloaded's, plus the note, the tag and a few details). Saves deleted with old Kanto Reloaded's Save Manager show there too. Restoring a save whose slot is taken brings it back as the first free File slot, its backups renamed with it.
+
+The Backup Cap's old backups go to `DELETED SAVES\<save> Old Backups\backups\`, one folder a save, with a `manifest.json` (kind `old_backups`). It shows as one entry however many it holds, so the tab stays short.
 
 ### Notes and Color Tags
 

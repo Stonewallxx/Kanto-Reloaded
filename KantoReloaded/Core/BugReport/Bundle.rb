@@ -20,8 +20,9 @@
 #   screenshot.png    the screen it's about (or the last screenshot)
 #   save/<slot>.rxdata   only with Include the Save
 #
-# The Windows user name is taken out of every text file (its home folder
-# becomes %USERPROFILE%, a folder named after it USERNAME).
+# The user name is taken out of every text file (the home folder, worked
+# out from where the saves are, becomes ~, a folder named after it
+# USERNAME).
 #==============================================================================
 
 module Reloaded
@@ -149,20 +150,35 @@ module Reloaded
           return { :path => path, :size => File.size(path), :words => SaveCheck.join_words(words) }
         end
 
-        # The user name out of a text: the home folder becomes
-        # %USERPROFILE%, a folder named after the user USERNAME.
+        # The user name out of a text: the home folder becomes ~, a folder
+        # named after the user USERNAME.
         def scrub(text)
           t = text.to_s.dup.force_encoding("UTF-8")
           t = t.scrub("?") unless t.valid_encoding?
-          home = ENV["USERPROFILE"] || ENV["HOME"]
+          home = home_dir
           if home && home.length > 3
-            [home, home.tr("\\", "/")].uniq.each { |h| t = t.gsub(/#{Regexp.escape(h)}/i, "%USERPROFILE%") }
-          end
-          user = ENV["USERNAME"] || ENV["USER"]
-          if user && user.length >= 2
-            t = t.gsub(/([\\\/])#{Regexp.escape(user)}(?=[\\\/])/i) { "#{$1}USERNAME" }
+            [home, home.tr("/", "\\")].uniq.each { |h| t = t.gsub(/#{Regexp.escape(h)}/i, "~") }
+            user = File.basename(home)
+            if user.length >= 2
+              t = t.gsub(/([\\\/])#{Regexp.escape(user)}(?=[\\\/])/i) { "#{$1}USERNAME" }
+            end
           end
           return t
+        end
+
+        # The home folder, worked out from where the saves are (nothing of
+        # the computer's settings is read: KIF 2.0.0's Mod Safety), or nil
+        def home_dir
+          dir = (::KIF.save_dir rescue nil) if defined?(::KIF) && ::KIF.respond_to?(:save_dir)
+          dir ||= (File.dirname(::SaveData::FILE_PATH) rescue nil) if defined?(::SaveData::FILE_PATH)
+          return home_of(dir)
+        end
+
+        # C:\Users\<name>\..., /home/<name>/..., /Users/<name>/... : the
+        # first part, with / (nil for anything else)
+        def home_of(dir)
+          m = dir.to_s.tr("\\", "/").match(%r{\A((?:[A-Za-z]:)?/(?:Users|home)/[^/]+)}i)
+          return m ? m[1] : nil
         end
 
         # Where it goes: Mods\KantoReloaded\Logging\Bug Reports.

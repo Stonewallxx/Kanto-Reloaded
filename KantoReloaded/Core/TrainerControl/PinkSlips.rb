@@ -94,7 +94,7 @@ module Reloaded
 
         # The toast's PINK SLIP pill: you hold one and they'd take it
         def offered?(rec)
-          return on? && holds? && rec["kind"] == "trainer" && !rec["pink"].is_a?(Hash)
+          return on? && holds? && Records.kind_of(rec) == "trainer" && !rec["pink"].is_a?(Hash)
         end
 
         #----------------------------------------------------------------------
@@ -141,6 +141,7 @@ module Reloaded
         def before_battle(args)
           @wager = nil
           return unless on? && holds? && Records.data && LevelScaling.scaled? && wagerable?(args)
+          return if ($PokemonTemp.battleRules["canLose"] rescue false)   # (a loss there can't count: no wager)
           return unless room? && !stakes.empty?
           type, name, version = args[0]
           key = TrainerControl.person_key(type, name)
@@ -148,19 +149,32 @@ module Reloaded
           words = _INTL("Use a Pink Slip? Win: Claim one of {1}'s. Lose: {1} keeps yours.", name)
           choice = pbMessage(words, [_INTL("Wager"), _INTL("Just Battle")], 2)
           return unless choice == 0
-          stake = defined?(Reloaded::PinkSlipStake) ? Reloaded::PinkSlipStake.new(title, name, their_team(type, name, version)).run : stakes.first
+          team = their_team(type, name, version)
+          stake = defined?(Reloaded::PinkSlipStake) ? Reloaded::PinkSlipStake.new(title, name, team).run : stakes.find { |i| can_win(team, party[i].level) > 0 }
           return unless stake
           pk = party[stake]
+          return if can_win(team, pk.level) == 0                   # (a stake that can win nothing isn't one)
           $PokemonBag.pbDeleteItem(ITEM)
-          @wager = { "key" => key, "name" => name, "title" => title, "pid" => pk.personalID, "type" => type.to_s }
+          @wager = { "key" => key, "name" => name, "title" => title, "pid" => pk.personalID, "type" => type.to_s, "cap" => pk.level.to_i }
           Reloaded::Log.info("Trainer Control: a Pink Slip wager with #{title}: #{pk.name} staked", :trainer_control)
         rescue StandardError => e
           Reloaded::Log.exception("Trainer Control's Pink Slip question failed", e, :trainer_control)
           @wager = nil
         end
 
-        # Their team as you'll see it: as they last fought you, else their data's
+        # A win claims one of theirs at your stake's level or lower (his pick,
+        # 2026-11-10): how many of [[species, level], ...] that is
+        def can_win(team, cap)
+          return Array(team).count { |_sp, lv| lv.to_i <= cap.to_i }
+        end
+
+        # Their team as the battle will have it (loaded as the battle loads
+        # it: Level Scaling, Adaptation and the rest, the same every time), else
+        # as they last fought you, else their data's
         def their_team(type, name, version)
+          t = (pbLoadTrainer(type, name, version) rescue nil)
+          loaded = t ? Array(t.party).compact : []
+          return loaded.map { |pk| [pk.species.to_s, pk.level.to_i] } unless loaded.empty?
           rec = Records.get(TrainerControl.person_key(type, name))
           return Array(rec["team"]).map { |sp, lv| [sp.to_s, lv.to_i] } if rec && !Array(rec["team"]).empty?
           data = (::GameData::Trainer.try_get(type, name, version) rescue nil)
@@ -200,10 +214,20 @@ module Reloaded
         # Win: any one of theirs, as it fought you, its item left with them
         def claim(w)
           team = w["team"]
-          i = defined?(Reloaded::PinkSlipClaim) ? Reloaded::PinkSlipClaim.new(w["title"], w["name"], team).run : 0
-          prize = team[i.to_i] || team.first
+          cap = w["cap"]
+          allowed = team.select { |p| cap.nil? || p.level.to_i <= cap.to_i }
+          if allowed.empty?                                     # (an alpha grew past it: their lowest)
+            low = team.min_by { |p| p.level.to_i }
+            allowed = low ? [low] : []
+            cap = low ? low.level.to_i : cap
+          end
+          i = defined?(Reloaded::PinkSlipClaim) ? Reloaded::PinkSlipClaim.new(w["title"], w["name"], team, cap).run : nil
+          prize = i && team[i.to_i] && allowed.any? { |p| p.equal?(team[i.to_i]) } ? team[i.to_i] : allowed.max_by { |p| p.level.to_i }
           return unless prize
           prize.item = nil
+          # yours now: none of Trainer Control's marks on it (Battle Info would
+          # show their ADAPTED pills and Level Scaling's +N on your side)
+          prize.instance_variables.each { |v| prize.remove_instance_variable(v) if v.to_s.start_with?("@kr_tc_") }
           prize.heal if prize.respond_to?(:heal)
           prize.obtain_method = 2 if prize.respond_to?(:obtain_method=)          # like a trade: they stay its trainer
           prize.obtain_map = $game_map.map_id if prize.respond_to?(:obtain_map=) && $game_map

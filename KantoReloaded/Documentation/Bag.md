@@ -19,7 +19,7 @@ Other mods' item actions still show (they come from the game's list).
 - **The header:** Search on the left (L, or click it: type straight into it; a controller's A opens the naming screen) and Sort on the right (R: the next view). Back clears a search.
 - **The pockets:** the eight pockets' icons, the open one lit, a green dot on a pocket with something NEW, its name. Left and Right skip pockets with nothing in them.
 - **The list:** each name in its pocket's colour (Spectrum, Vivid; a TM in its move's type), Favorites starred and first, NEW, how many, the item's picture (a TM: its number and type). A Search shows every pocket's matches under their pockets' headings: a word starting with what's typed ("ice" finds Never-Melt Ice and Ice Beam; "tm24" finds TM24).
-- **The details**, lit in the item's colour: its name, what it's good for (USE, IN BATTLE, HOLD, KEY ITEM, QUICK SLOT n), its description and picture. A TM or HM, or an Evolution Stone: who in the party can use it (Learned, Able, Not Able; a stone: Can Evolve, Can't; Egg).
+- **The details**, lit in the item's colour: its name, what it's good for (USE, IN BATTLE, HOLD, KEY ITEM, QUICK SLOT n), its description and picture. A TM or HM, or an Evolution Stone: who in the party can use it (Known, Able, Not Able; a stone: Can Evolve, Can't; Egg).
 - **Who Needs It:** a healing item's details show the party the same way: each Pokémon's icon, its HP and what the item would do (Can Heal, Full HP, Fainted, Can Revive, Not Fainted, Can Cure, Can't Cure, Healthy, Can Restore, Full PP). Potions and drinks, Full Restore, Revives, status heals (and the Berries that do the same), Ethers and Elixirs.
 - **Held Items:** an item someone in your party is holding gets a HELD pill on its row and in its details, and the details say who (Held by: Pikachu).
 - **Views** (R): Bag Order, A-Z, Quantity, Type, Number, Recent, kept for each pocket. Only the screen's order: the real pocket doesn't change.
@@ -71,7 +71,7 @@ Every change is the save's list straight away, and a Custom List pocket sorts ag
 
 ## Export and Import
 
-**Export Lists** writes every pocket's list, Favorites and Auto-Sort to `Exports\Bag Lists.txt` in the Kanto Reloaded folder. One item ID per line; `*` before one marks a Favorite; `-- Name --` is a heading; anything after `#` or `//` is a note. When it's done, a popup says where it went and what's in it, with Open Folder (a phone copies the path). **Import Lists** reads it back, asking first with what the file holds and when it was exported (Keep Mine chosen first), or old Kanto Reloaded's `AutosortBag_lists.txt` in Kanto Reloaded Legacy's Exports folder. What isn't an item, or isn't that pocket's, is left out.
+**Export Lists** writes every pocket's list, Favorites and Auto-Sort to `Exports\Bag Lists.txt` in the Kanto Reloaded folder. One item ID per line; `*` before one marks a Favorite; `-- Name --` is a heading; anything after `#` or `//` is a note. When it's done, a popup says where it went and what's in it, with Copy the Path (the game opens no File Explorer). **Import Lists** reads it back, asking first with what the file holds and when it was exported (Keep Mine chosen first), or old Kanto Reloaded's `AutosortBag_lists.txt` in Kanto Reloaded Legacy's Exports folder. What isn't an item, or isn't that pocket's, is left out.
 
 ## PIF's Bag, Fixed
 

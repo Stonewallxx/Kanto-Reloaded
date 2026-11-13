@@ -6,18 +6,19 @@
 # strip along the top (L1 / R1 move between them; a click on one jumps):
 #
 #   Game Mode   Oak on the left; the four mode cards (Legendary locked until
-#               New Game+), From a Preset and Share Code, the mode's words
+#               New Game+), From a Preset, the mode's words
 #   Trainer     your trainer on Oak's platform; the application form: Name
 #               (typed straight in; a controller's A opens the naming
 #               screen), Gender, Age, Skin, Hair (its four colours)
 #   Run Setup   Oak again; the rows (Left / Right change them, A opens),
 #               the starter set's three Pokémon under them, the row's words
 #   Run Card    your trainer; the run's pills and lines, its Run ID, Start
-#               and Save as Preset; Square copies the share code
+#               and Save as Preset (share codes cut 2026-11-05: KIF 2.0.0's
+#               Mod Safety grades their Base64 red)
 #
 # Its popups, drawn over the step they open from (his picks): From a Preset
-# (your own show YOURS with their mode's pill right under it), Enter a Share
-# Code, Replace Your Setup?, Save as Preset, Back to the Title? (B on Game
+# (your own show YOURS with their mode's pill right under it), Replace Your
+# Setup?, Save as Preset, Back to the Title? (B on Game
 # Mode; Stay first), Custom Starter. A on Difficulty opens Choose a
 # Difficulty (his pick, Rows Beside Oak) with the Strip kept on top; A on
 # Randomizer opens its New Game screen, with Done and Back.
@@ -246,8 +247,6 @@ module Reloaded
         side(Input.repeat?(Input::RIGHT) ? 1 : -1)
       elsif Input.trigger?(Input::USE)
         press
-      elsif Input.trigger?(Input::ACTION)
-        copy_code if @step == 3
       elsif Input.trigger?(Input::BACK)
         back
       end
@@ -279,7 +278,7 @@ module Reloaded
     # How many places the step's cursor has
     def count
       case @step
-      when 0 then return 6                         # four modes, From a Preset, Share Code
+      when 0 then return 5                         # four modes, From a Preset
       when 1 then return FORM.length
       when 2 then return NG.rows.length
       end
@@ -316,8 +315,7 @@ module Reloaded
     def side(dir)
       case @step
       when 0
-        return unless @sel[0] >= 4
-        @sel[0] = @sel[0] == 4 ? 5 : 4
+        return                     # one button under the modes: nothing beside it
       when 1
         return if @sel[1] == 0
         field = FORM[@sel[1]].downcase
@@ -358,7 +356,6 @@ module Reloaded
       when 0
         i = @sel[0]
         return from_preset if i == 4
-        return share_code if i == 5
         return pbPlayBuzzerSE if NG.mode_locked?(NG::MODES[i])
         NG.mode = NG::MODES[i]
         pbPlayDecisionSE
@@ -405,18 +402,6 @@ module Reloaded
       refresh
     end
 
-    def copy_code
-      pbPlayDecisionSE
-      code = NG.code
-      if Reloaded::Runtime.phone?
-        copy_for_phone(code, _INTL("The share code, ready to paste."))
-      elsif Reloaded::ShareCodes.copy(code)
-        DL.notice(self, _INTL("Copy Code"), _INTL("Run {1} is copied. Paste it at New Game in any game to start the same run.", NG.run_id))
-      else
-        DL.notice(self, _INTL("Copy Code"), _INTL("The share code couldn't be copied."))
-      end
-      refresh
-    end
 
     #--------------------------------------------------------------------------
     # Choose a Difficulty (Rows Beside Oak, the Strip kept on top)
@@ -560,19 +545,16 @@ module Reloaded
         padlock(top, cx1 - 18, cy0 + 12, c[:dim]) if locked
       end
       by = y0 + 10 + 4 * 40 + 2
-      bw = (x1 - x0 - 30) / 2
-      [_INTL("From a Preset"), _INTL("Share Code")].each_with_index do |label, k|
-        bx = x0 + 10 + k * (bw + 10)
-        on = @sel[0] == 4 + k
-        DL.send(:button, base, c, bx, by, bx + bw, by + 26, on)
-        P.text(top, bx, by, bw, 26, label, on ? c[:strong] : c[:txt], nil, 2)
-        @row_hits << [4 + k, bx, by, bx + bw, by + 26]
-      end
+      bw = x1 - x0 - 20
+      bx = x0 + 10
+      on = @sel[0] == 4
+      DL.send(:button, base, c, bx, by, bx + bw, by + 26, on)
+      P.text(top, bx, by, bw, 26, _INTL("From a Preset"), on ? c[:strong] : c[:txt], nil, 2)
+      @row_hits << [4, bx, by, bx + bw, by + 26]
       ty = by + 34
       base.fill_rect(x0 + 12, ty, x1 - x0 - 24, 1, c[:line])
       text = case @sel[0]
              when 4 then _INTL("A ready-made run, or one you saved: It fills your Run Setup.")
-             when 5 then _INTL("A friend's run: Paste their share code to play the same game.")
              else
                i = @sel[0]
                NG.mode_locked?(NG::MODES[i]) ? _INTL(LOCKED_TEXT) : _INTL(MODE_TEXT[i])
@@ -906,8 +888,7 @@ module Reloaded
         list << [button(:C), _INTL("Open"), :press] if open && !NG.lock_reason(r[:id])
         return list + [back_pair, next_pair]
       end
-      return [[:lr, _INTL("Choose")], [button(:C), @sel[3] == 0 ? _INTL("Start") : _INTL("Save"), :press],
-              [button(:A), _INTL("Copy Code"), :copy_code], back_pair]
+      return [[:lr, _INTL("Choose")], [button(:C), @sel[3] == 0 ? _INTL("Start") : _INTL("Save"), :press], back_pair]
     end
 
     def next_step
