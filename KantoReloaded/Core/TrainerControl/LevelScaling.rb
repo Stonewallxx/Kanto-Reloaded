@@ -11,7 +11,9 @@
 #                   the way: Half on Easy, Three Quarters on Normal and Hard
 #                   (his pick, 2026-11-01: no row; Hard is tougher other ways).
 #   Rematches       start at the curve and climb a level each rematch,
-#                   up to your party's level, then keep pace with it; never
+#                   up to your party's level (a Rematch Rank's levels past
+#                   it: Seasoned 1 .. Master 4, his pick 2026-11-14), then
+#                   keep pace with it; never
 #                   below the curve (PIF's own rematch levels replaced; its
 #                   rematch evolutions stay). Half EXP; prize money (Rematch
 #                   Money) half, a quarter, a tenth, then none, per trainer
@@ -93,7 +95,7 @@ module Reloaded
         end
 
         def rematch?
-          return ($game_switches[TrainerControl::REMATCH_SWITCH] rescue false) ? true : false
+          return TrainerControl.rematch_battle?
         end
 
         def hard?
@@ -145,6 +147,9 @@ module Reloaded
             rec = Records.get(key)
             k = rec ? rec["rematches"].to_i + rec["before"].to_i + 1 : 1   # this rematch's number
             pl = party_level || floor
+            # a Rematch Rank climbs past you (his pick, 2026-11-14: Seasoned
+            # +1 .. Master +4 over your party's level)
+            pl += RematchRanks.extra_levels(RematchRanks.rank(rec)) if defined?(RematchRanks)
             to = [floor, [floor + k - 1, pl].min].max
             return own ? [to, own].max : to                       # (never below their own data)
           end

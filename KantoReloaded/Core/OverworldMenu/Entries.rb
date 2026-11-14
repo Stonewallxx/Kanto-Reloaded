@@ -84,10 +84,14 @@ module Reloaded
             :description => "The game's save screen. The menu closes first.",
             :handler => proc { |_menu| proc { pbSaveScreen if defined?(pbSaveScreen) } })
           # added by the player (none of these start on a page)
+          # Wild Link's screen while it's On (his pick, 2026-11-14: Area
+          # Encounters becomes Wild Link; the entry keeps its place)
+          wl = proc { defined?(Reloaded::WildLink) && Reloaded::WildLink.on? }
           om.register(:area_encounters, :name => "Area Encounters", :kind => :action, :priority => 50, :home => false,
             :condition => proc { !area_tabs.empty? },
-            :description => "The wild Pokémon here, by how you meet them, with their levels and how often they appear: A ball on the ones you've caught, ??? for the ones you haven't seen.",
-            :handler => proc { |menu| menu.area_encounters; nil })
+            :label => proc { wl.call ? "Wild Link" : "Area Encounters" },
+            :description => "The wild Pokémon here, by how you meet them, with their levels and how often they appear: A ball on the ones you've caught, ??? for the ones you haven't seen. With Wild Link On, search for the ones you've seen.",
+            :handler => proc { |menu| wl.call ? (Reloaded::WildLink.open_screen(menu) ? :close : nil) : (menu.area_encounters; nil) })
           om.register(:last_item, :name => "Last Used Item", :kind => :action, :priority => 55, :home => false,
             :condition => proc { (i = Reloaded::OverworldMenu.last_item) && Reloaded::OverworldMenu.has_item?(i) },
             :label => proc { i = Reloaded::OverworldMenu.last_item; i ? item_name(i) : "" },

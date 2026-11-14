@@ -38,7 +38,7 @@ Trainers that keep up with you, always on. One setting on the Level Scaling page
 
 - **The Badge Curve:** The game's level cap for your badges (the next Gym Leader's level; Hard's 10% is in it), less 4 for regular trainers.
 - **Trainers:** On your first battle, a trainer whose strongest Pokémon is under the curve rises three quarters of the way to it (half on Easy). Never down.
-- **Rematches:** A rematch starts at the curve and climbs a level each time, up to your party's level, then keeps pace with it; never below the curve or the trainer's own levels. This replaces the game's own rematch levels; its rematch evolutions stay. Rematches give half the EXP.
+- **Rematches:** A rematch starts at the curve and climbs a level each time, up to your party's level (past it by a trainer's Rematch Rank: 1 to 4 levels), then keeps pace with it; never below the curve or the trainer's own levels. This replaces the game's own rematch levels; its rematch evolutions stay. Rematches give half the EXP.
 - **Rematch Money:** The game pays nothing for rematches. With this On, the first rematch each day with a trainer pays half the usual prize, then a quarter, then a tenth, then nothing until the next day.
 - **Leaders:** Gym Leaders, the Elite Four, Champions and Team Rocket's bosses come at your party's level, never below their own. On Hard, 10% above it. On Easy, as the game wrote them.
 - **Rival:** Your rival comes at your party's level, as the leaders do: 10% above it on Hard, as the game wrote them on Easy.
@@ -127,6 +127,7 @@ The more you beat a trainer, the higher they rank, on Normal and Hard (Easy is a
 - **Veteran (7 Wins):** Their ace comes fully built (Leader Builds).
 - **Elite (12 Wins):** One more Pokémon again, and their type's Gym Rule.
 - **Master (22 Wins):** Every Pokémon fully built, and one more item in their bag.
+- **Levels Past You:** Each rank lets their rematches keep climbing past your party's level, a level a rematch, up to 1 over at Seasoned, 2 at Veteran, 3 at Elite and 4 at Master.
 - **Shown:** The rank's word in its colour on Battle Records (over the name on their record, before the class in the list) and in the record toast ("Veteran Hiker Marcos").
 - **Ranking Up:** Back on the map after the win that reaches a rank, a card: their face on a plate in the rank's colour with its insignia (Seasoned one chevron, Veteran two, Elite three, Master a star), PROMOTED and their class over their name, your record with them, four stars with the new one popping in, NOW A VETERAN. Its jingle is BW_lvup. Another toast already up goes first.
 - **Their Pokémon:** Added the way Team Expansion adds them (its What Joins Them row), even with Team Expansion Off; never past six.
@@ -210,6 +211,13 @@ A trainer you can battle again rewards your growing bond: a gift that fits their
 - **Your Record:** When a trainer you've battled before spots you, or you talk to them, a toast shows their face and name, your record with them, then STREAK 3 (from 3 wins in a row) and their next bond step (TUTOR AT 7). Nothing on a first meeting. It's gone before the battle starts. The Record Toast row on the Trainer Control page (On to start) turns it off.
 - **Notoriety:** Reaching a tier or dropping from one ([Notoriety](#notoriety)).
 - **Rank Up:** A trainer reaching a Rematch Rank ([Rematch Ranks](#rematch-ranks)).
+
+## With Hoenn Essentials
+
+- **Its Rematches:** Hoenn Essentials' Rematch button is a rematch to Trainer Control. Hoenn Essentials decides who's on the team: the trainer's team as written, then the Pokémon it catches, fuses and evolves. Trainer Control decides the levels, on its rematch curve, with Adaptation, Team Expansion and Rematch Ranks on top, half the EXP and Rematch Money.
+- **Its Growth:** After a rematch, Hoenn Essentials' own growth (up to your best level + 3) is replaced by Trainer Control's level for the next one. The team still learns its moves and evolves on the way up, and its chat says so. View Team shows the levels you'll fight.
+- **Contacts From Before:** Once a save loads, they lose the marks of Trainer Control's old changes and the Pokémon Team Expansion added, and come to Trainer Control's level (down too, when they'd grown past it).
+- **Lounge Trainers:** Its battle hook dropped a battle's name and class, so the lounge trainers on Kin Island, in the Triple Battle Lounge, on Mt. Ember and on Mt. Silver Summit showed as "lounge_member". They keep theirs now.
 
 ## For Mod Makers
 

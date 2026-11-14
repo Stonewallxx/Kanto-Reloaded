@@ -45,6 +45,8 @@ Something you can't use now shows dimmed with a lock, and says why when chosen: 
 
 Wild Link's list in a popup (Design 1, so the quick look and the DexNav match). A tab for each way the wild Pokémon here are met (Grass, Cave, Surfing, Fishing, Rock Smash, and the Bug Contest during the contest), with Seen and Caught for it. Each row has the Pokémon (a silhouette until you've seen it, and ??? for its name), a ball once caught, its levels and how often it appears. The picture is cut down to the Pokémon itself and fitted to 34 px, so it fills its row whatever the size of its frame (Bigger Rows, his pick 2026-10-21). Fishing puts each rod under its own heading. The tables are the game's own, for the time of day now, as the game picks them.
 
+With **Wild Link** On (Kanto Reloaded's Wild Link section) the entry reads Wild Link and opens Wild Link's screen instead: the same list beside a panel with each Pokémon's Search Level, chain and bonuses, where you search for the ones you've seen.
+
 Left and Right (or a click) change the tab; Up and Down (or the wheel) scroll a long one; B, A or a right click close it. It opens on Surfing while you surf, and it's only as tall as the longest tab needs (up to six rows; a rod's heading takes less room than a row).
 
 With KIF Beta's **Big Pokémon Icons** on, its rows show each one's battle sprite, and so does the Day Care popup (its Egg too), each in the small icon's room.

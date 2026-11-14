@@ -34,6 +34,13 @@
 # fall through, its settings hide) and KIF's Mods list says Kanto Reloaded
 # replaces it. Off, or failed, gives KIF's back at once.
 #
+# One that takes over only while something holds (Wild Link: its per-save
+# switch) gives a test with it, asked again on Features.resync (on a save
+# loading, or the switch changing):
+#
+#   Reloaded::Features.register(:wild_link, :name => "Wild Link",
+#     :takes_over_while => { "F-ITEM-04_PokeRadarPlus" => proc { Reloaded::WildLink.on? } })
+#
 # A takeover KIF mustn't be told of (it would switch the whole folder off,
 # when only part of it is replaced: KIF's Randomizer screens, whose engine
 # keeps running) is declared with :replaces instead: Kanto Reloaded's own
@@ -65,6 +72,7 @@ module Reloaded
           :page        => options[:page],       # its settings page, if any
           :order       => options[:order] || 100,
           :takes_over  => Array(options[:takes_over]).map(&:to_s),  # KIF features it takes over
+          :takes_over_while => (options[:takes_over_while] || {}).map { |k, test| [k.to_s, test] },  # ...while a test holds
           :replaces    => Array(options[:replaces]).map(&:to_s)     # what it takes over that KIF isn't told of
         }
         refresh(id)
@@ -139,6 +147,11 @@ module Reloaded
 
       # Kanto Reloaded's mod id in KIF (its folder), which KIF's Mods list
       # shows what it took over under.
+      # The takeovers asked again (a test of :takes_over_while changed)
+      def resync
+        sync_kif_features
+      end
+
       def kif_owner
         return File.basename(Reloaded::ROOT)
       end
@@ -155,7 +168,9 @@ module Reloaded
       def sync_kif_features
         return unless defined?(::KIF::Features) && ::KIF::Features.respond_to?(:replace) &&
                       ::KIF::Features.respond_to?(:release)
-        wanted = @features.values.select { |f| @active[f[:id]] }.flat_map { |f| f[:takes_over] }.uniq
+        wanted = @features.values.select { |f| @active[f[:id]] }.flat_map do |f|
+          f[:takes_over] + Array(f[:takes_over_while]).select { |_k, test| (test.call rescue false) }.map(&:first)
+        end.uniq
         return if wanted == @taken_over
         ::KIF::Features.release(kif_owner) unless @taken_over.empty?
         wanted.each do |key|

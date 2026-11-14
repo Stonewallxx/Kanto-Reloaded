@@ -524,6 +524,12 @@
       "rule": "title_case",
       "file": "Core/Weather/FieldMoves.rb",
       "text": "Tailwind for one side"
+    },
+    {
+      "rule": "names",
+      "file": "Core/WildLink/Fields.rb",
+      "text": "Reloaded::WildLink::Fields.smash_rock(@event_id)",
+      "why": "The rock event's script (code the game runs), not text a player reads"
     }
   ]
 }

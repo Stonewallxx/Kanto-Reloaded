@@ -80,7 +80,7 @@ module Reloaded
           return [] unless data
           now = Time.now
           map = $game_map ? $game_map.map_id.to_i : 0
-          rematch = ($game_switches[TrainerControl::REMATCH_SWITCH] rescue false) ? true : false
+          rematch = TrainerControl.rematch_battle?
           again = rematch || TrainerControl.rematch_event?
           kos = battle.instance_variable_get(:@kr_tc_kos) || {}
           keys = []

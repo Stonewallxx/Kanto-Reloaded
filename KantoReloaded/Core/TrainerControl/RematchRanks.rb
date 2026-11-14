@@ -18,6 +18,10 @@
 #                       gym's, one: Gym Rules)
 #   Master    22 wins   every Pokémon fully built; one more item in their bag
 #
+# Ranks Lift Levels (his pick, 2026-11-14): a rank also lets their rematches
+# climb past your party's level, a level a rematch: Seasoned up to 1 over,
+# Veteran 2, Elite 3, Master 4 (Level Scaling's rematch target).
+#
 # Shown (his picks): the rank's word in its colour on Battle Records (over
 # the name on the plate, before the class in the list) and in the record
 # toast ("Veteran Hiker Marcos"); the Promotion Card toast when they rank up,
@@ -67,6 +71,13 @@ module Reloaded
         # What each rank brings (Team Expansion, Gym Rules and Trainer Bags
         # ask)
         #----------------------------------------------------------------------
+        # Levels a rematch can climb past your party's level (his pick,
+        # 2026-11-14: Ranks Lift Levels): Seasoned 1, Veteran 2, Elite 3,
+        # Master 4 (Level Scaling's rematch target)
+        def extra_levels(r)
+          return r ? r.index + 1 : 0
+        end
+
         # Seasoned one more Pokémon, Elite another
         def extra_pokemon(r)
           return 0 unless r

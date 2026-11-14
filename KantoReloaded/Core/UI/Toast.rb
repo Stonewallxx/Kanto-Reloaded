@@ -66,6 +66,32 @@ module Reloaded
         return true
       end
 
+      # Something at the top of the screen a toast keeps clear of (Wild
+      # Link's Chain HUD, top left): a block giving its [x, y, w, h] while
+      # it's up, or nil. A toast that would cover it moves to its right, or
+      # under it when there's no room
+      def keep_clear(id, &rect)
+        (@clear ||= {})[id] = rect
+      end
+
+      def place(w, h)
+        x = (Graphics.width - w) / 2
+        y = 10
+        (@clear || {}).each_value do |rect|
+          r = (rect.call rescue nil)
+          next unless r
+          rx, ry, rw, rh = r
+          next unless x < rx + rw && x + w > rx && y < ry + rh && y + h > ry
+          right = rx + rw + 8
+          if right + w <= Graphics.width - 8
+            x = right
+          else
+            y = ry + rh + 6
+          end
+        end
+        return [x, y]
+      end
+
       # Seconds on a clock that only goes forward (real time)
       def now
         return Process.clock_gettime(Process::CLOCK_MONOTONIC)
@@ -89,8 +115,7 @@ module Reloaded
         @viewport.z = 100_300
         @sprite = Sprite.new(@viewport)
         @sprite.bitmap = Bitmap.new(w, h)
-        @sprite.x = (Graphics.width - w) / 2
-        @sprite.y = 10
+        @sprite.x, @sprite.y = place(w, h)
         o = @sprite.bitmap
         P.ui.rbox(o, 0, 0, w - 1, h - 1, 7, c[:panel], c[:line])
         if coin
@@ -125,8 +150,7 @@ module Reloaded
         @viewport.z = 100_300
         @sprite = Sprite.new(@viewport)
         @sprite.bitmap = bitmap
-        @sprite.x = (Graphics.width - bitmap.width) / 2
-        @sprite.y = 10
+        @sprite.x, @sprite.y = place(bitmap.width, bitmap.height)
         @later = later.nil? || later[0].is_a?(Array) ? (later && later.dup) : [later]
         @shown_at = now
         play(se, me)

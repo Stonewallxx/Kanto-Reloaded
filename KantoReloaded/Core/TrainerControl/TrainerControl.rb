@@ -65,6 +65,7 @@ module Reloaded
         Notoriety.install if defined?(Notoriety)
         AceMoments.install if defined?(AceMoments)       # after Gym Rules: a leading ace's moment comes after the seal
         RematchRanks.install if defined?(RematchRanks)
+        HoennEssentials.install if defined?(HoennEssentials)   # once every mod has loaded
         register_menu_entries
         return true
       end
@@ -134,6 +135,14 @@ module Reloaded
       #------------------------------------------------------------------------
       # What a trainer's event and class say
       #------------------------------------------------------------------------
+      # A rematch is on: PIF's (its rematch switch), or Hoenn Essentials'
+      # Rematch button (his pick, 2026-11-14: its rematches count as
+      # rematches everywhere: the levels, Records, half EXP, Rematch Money)
+      def rematch_battle?
+        return true if ($game_switches[REMATCH_SWITCH] rescue false)
+        return defined?(HoennEssentials) && HoennEssentials.rematch_now? ? true : false
+      end
+
       # The running event offers rematches: one of its pages turns PIF's
       # rematch switch on (187 pages on 54 maps do)
       def rematch_event?
@@ -284,7 +293,10 @@ module Reloaded
             trainer = original.call(*args)
             Reloaded::TrainerControl.tag(trainer, args[1], args[2] || 0, "data")
             Reloaded::TrainerControl::LeaderBuilds.tag(trainer) if defined?(Reloaded::TrainerControl::LeaderBuilds)
-            Reloaded::TrainerControl.build_team(trainer, args[0], args[1], args[2] || 0)
+            # (Hoenn Essentials registering a contact, or swapping its own
+            # team in: built after its swap instead, HoennEssentials.rb)
+            he = defined?(Reloaded::TrainerControl::HoennEssentials) ? Reloaded::TrainerControl::HoennEssentials : nil
+            Reloaded::TrainerControl.build_team(trainer, args[0], args[1], args[2] || 0) unless he && he.skip_build?(args)
             trainer
           end
         end

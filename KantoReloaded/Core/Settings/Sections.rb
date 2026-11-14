@@ -40,6 +40,7 @@ module Reloaded
       [:double_abilities, "Double Abilities", [:double_abilities]],
       [:trainer_control, "Trainer Control", [:trainer_control, :trainer_control_levels, :trainer_control_teams, :trainer_control_rewards]],
       [:weather_system,  "Weather System",  [:weather_system]],
+      [:wild_link,       "Wild Link",       [:wild_link]],
       [:data_patches,    "Data Patches",    [:data_patches]],
       [:profiler,        "Timing Profiler", [:profiler, :profiler_time, :profiler_report]]
     ].freeze
