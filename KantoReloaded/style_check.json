@@ -504,6 +504,26 @@
       "file": "Core/UI/TrainerCardStyle.rb",
       "text": "Mart buy item",
       "why": "A sound effect's file name (PIF's own), not a label"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/Weather/Alerts.rb",
+      "text": "A Storm Rolled In"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/Weather/Alerts.rb",
+      "text": "Fog Rolled In"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/Weather/FieldMoves.rb",
+      "text": "Snow: Ice types' Defense up"
+    },
+    {
+      "rule": "title_case",
+      "file": "Core/Weather/FieldMoves.rb",
+      "text": "Tailwind for one side"
     }
   ]
 }

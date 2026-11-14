@@ -44,7 +44,7 @@ A tab for each Pokémon in the battle (yours first, with a green dot; the foes' 
 
 ## The Field Strip
 
-Chips over the battle menu's left while you choose, one for each effect on the field in its type's colour, with the turns it has left (green on your side, red on the foe's, gold for the whole field; endless weather or terrain: an ∞ in the Theme's colour). The foe's side's chips end in a red FOE tag. Two lines at most, then +N MORE (Battle Info's Field tab has them all). **Field Strip** (Kanto Reloaded > Battle Menu, On) switches it. Battle Scene's command rows move it: just above the Slim Bar, or into the Corner Panel's left panel; it stops short of Battle Scene's hint chips.
+Chips over the battle menu's left while you choose, one for each effect on the field in its type's colour, with the turns it has left (green on your side, red on the foe's, gold for the whole field; endless weather or terrain: an ∞ in the Theme's colour). The foe's side's chips end in a red FOE tag. The Weather System's fog comes first: FOG with the accuracy it leaves (x0.9 to x0.6) in the gold. Two lines at most, then +N MORE (Battle Info's Field tab has them all). **Field Strip** (Kanto Reloaded > Battle Menu, On) switches it. Battle Scene's command rows move it: just above the Slim Bar, or into the Corner Panel's left panel; it stops short of Battle Scene's hint chips.
 
 ## Controls
 

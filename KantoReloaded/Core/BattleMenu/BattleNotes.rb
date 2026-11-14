@@ -97,6 +97,8 @@ module Reloaded
       def field_items(battle)
         out = []
         f = battle.field
+        # the Weather System's fog leads (the whole field's)
+        out.concat(Reloaded::Weather::Battle.field_items(battle)) if defined?(Reloaded::Weather::Battle)
         if f.weather && f.weather != :None
           out << [weather_name(f.weather), f.weatherDuration.to_i > 0 ? f.weatherDuration.to_i : nil, :field, WEATHER_TYPE[f.weather]]
         end

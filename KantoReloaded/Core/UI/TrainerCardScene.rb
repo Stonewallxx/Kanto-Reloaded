@@ -45,8 +45,10 @@ module Reloaded
     W = 512
     H = 384
     ART_X0, ART_Y0, ART_X1, ART_Y1 = Reloaded::TrainerCard::ART
-    TABS = [:front, :records, :stats, :style, :unlocks].freeze
-    TAB_NAMES = { :front => "Front", :records => "Records", :stats => "Stats", :style => "Style", :unlocks => "Unlocks" }.freeze
+    # (Weather: the Weather System's records, while it's On for the save)
+    TABS = [:front, :records, :stats, :weather, :style, :unlocks].freeze
+    TAB_NAMES = { :front => "Front", :records => "Records", :stats => "Stats", :weather => "Weather", :style => "Style",
+                  :unlocks => "Unlocks" }.freeze
     # The lanyard card (Front, Records and Stats) and the trainer's place
     CARD = [40, 56, 232, 356].freeze
     TRAINER_AT = [300, 88].freeze
@@ -141,7 +143,7 @@ module Reloaded
       elsif Input.trigger?(Input::JUMPDOWN) || (Input.trigger?(Input::RIGHT) && arrows_turn?)
         return go_tab(@tab + 1)
       end
-      case TABS[@tab]
+      case tab_list[@tab]
       when :style then return style_input
       when :unlocks then return unlocks_input
       end
@@ -151,11 +153,11 @@ module Reloaded
 
     # Left and Right turn the tabs where nothing else uses them (his pick)
     def arrows_turn?
-      return [:front, :records, :stats].include?(TABS[@tab])
+      return [:front, :records, :stats, :weather].include?(tab_list[@tab])
     end
 
     def go_tab(i)
-      i %= TABS.length
+      i %= tab_list.length
       return nil if i == @tab
       return nil unless leave_style
       @tab = i
@@ -181,7 +183,7 @@ module Reloaded
       words = [_INTL("Saves this card as a picture in Kanto Reloaded's Trainer Cards folder."),
                _INTL("Copies {1} for a friend's Secret Base.", $Trainer.id)]
       # The Records side: Trainer Control's Battle Records first
-      records = TABS[@tab] == :records && defined?(Reloaded::BattleRecordsScreen)
+      records = tab_list[@tab] == :records && defined?(Reloaded::BattleRecordsScreen)
       if records
         labels.unshift(_INTL("Battle Records"))
         words.unshift(_INTL("Every trainer you've battled: Your record with them, their last team, your bond and the MVPs."))
@@ -267,7 +269,7 @@ module Reloaded
       top.clear
       @cursor_rect = nil
       @strength = (@art_facts || [nil, 0.0])[1]
-      send(:"draw_#{TABS[@tab]}", base, top, c)
+      send(:"draw_#{tab_list[@tab]}", base, top, c)
       paint_hints(base, c)
       place_cursor
     end
@@ -609,7 +611,7 @@ module Reloaded
     def tabs(base, top, c)
       x1 = ART_X1 - 6
       y = ART_Y0 + 6
-      names = TABS.map { |t| _INTL(TAB_NAMES[t]).upcase }
+      names = tab_list.map { |t| _INTL(TAB_NAMES[t]).upcase }
       ws = names.map { |t| PF.width(PF::TINY, t) + 12 }
       style = Reloaded::Prompts.style
       l = Reloaded::Prompts.input(:L)
@@ -911,6 +913,54 @@ module Reloaded
       return @faces[type] = nil
     end
 
+    # The tabs this card shows (Weather only while the Weather System is On)
+    def tab_list
+      return TABS if defined?(Reloaded::Weather::Records) && Reloaded::Weather.on?
+      return TABS - [:weather]
+    end
+
+    #--------------------------------------------------------------------------
+    # Weather (the Weather System's records, his pick: Design 1, Weather Tab)
+    #--------------------------------------------------------------------------
+    # Each weather's wins, the trainer, your favourite weather and the next
+    # weather title
+    def draw_weather(base, top, c)
+      rec = Reloaded::Weather::Records
+      ds = Reloaded::Weather::Display
+      tabs(base, top, c)
+      x0, x1, y0, _y1 = card_back(base, top, c, _INTL("Weather"))
+      rec::KINDS.each_with_index do |(kind, word, *_r), i|
+        y = y0 + 54 + i * 30
+        ic = picture(ds.icon(kind, 5))
+        top.stretch_blt(Rect.new(x0 + 12, y + 7, 16, 16), ic, Rect.new(0, 0, 32, 32)) if ic
+        stx(top, x0 + 36, y, 110, 30, _INTL("{1} WINS", _INTL(word).upcase), pif(c, "Dark"), PF::TINY)
+        stx(top, x0 + 12, y, x1 - x0 - 26, 30, num(rec.wins(kind)), pif(c, "Dark"), PF::ROW, 1)
+      end
+      trainer(base, 300, 82)
+      glass(base, c, 258, 236, 484, 348, 10)
+      stx(top, 258, 241, 226, 12, _INTL("FAVORITE WEATHER"), pif(c, "Dark"), PF::TINY, 2)
+      fav = rec.favorite
+      if fav
+        kind, word, n = fav
+        ic = picture(ds.icon(kind, 5))
+        top.blt(300, 254, ic, Rect.new(0, 0, 32, 32)) if ic
+        stx(top, 338, 252, 140, 22, _INTL(word), pif(c, "Blue"), PF::TITLE)
+        stx(top, 338, 272, 140, 16, n == 1 ? _INTL("1 Win") : _INTL("{1} Wins", num(n)), pif(c, "Dark"), PF::TEXT)
+      else
+        stx(top, 258, 262, 226, 22, _INTL("None Yet"), pif(c, "Dark"), PF::TITLE, 2)
+      end
+      divider(base, c, 270, 472, 294)
+      stx(top, 258, 298, 226, 12, _INTL("NEXT TITLE"), pif(c, "Dark"), PF::TINY, 2)
+      nxt = rec.next_title
+      if nxt
+        title, now, of = nxt
+        stx(top, 258, 310, 226, 20, _INTL("{1}: {2} of {3}", _INTL(title), now, of), pif(c, "Dark"), PF::TEXT, 2)
+        PP.bar(base, c, 292, 334, 158, [now.to_f / of, 1.0].min, pif(c, "Blue")[0], 5)
+      else
+        stx(top, 258, 314, 226, 22, _INTL("All Earned"), pif(c, "Green"), PF::TITLE, 2)
+      end
+    end
+
     def draw_stats(base, top, c)
       tabs(base, top, c)
       x0, x1, y0, _y1 = card_back(base, top, c, _INTL("Stats"))
@@ -974,7 +1024,7 @@ module Reloaded
     #--------------------------------------------------------------------------
     def hint_pairs
       return @popup_hints if @popup_hints
-      case TABS[@tab]
+      case tab_list[@tab]
       when :style then return style_hints
       when :unlocks then return unlocks_hints
       end

@@ -351,6 +351,7 @@ module Reloaded
     end
 
     def turns_label(n)
+      return n.upcase if n.is_a?(String)
       return n == 1 ? _INTL("1 TURN") : _INTL("{1} TURNS", n)
     end
 
@@ -689,11 +690,14 @@ module Reloaded
       end
     end
 
+    # (a row's fifth part: its longer words here, the Weather System's fog)
     def field_row(c, x, y, w, row, side)
-      words, n, _s, t = row
+      words, n, _s, t, long = row
+      words = long if long
       small_type(top, t, x, y + 3) if t
       tw = n ? P.width(PF::TINY, turns_label(n)) + 16 : 27
-      P.text(top, x + 20, y, w - 22 - tw, 22, PF.fit(PF::TEXT, words, w - 24 - tw), t ? type_ink(c, t) : c[:txt])
+      lx = t ? 20 : 2
+      P.text(top, x + lx, y, w - lx - 2 - tw, 22, PF.fit(PF::TEXT, words, w - lx - 4 - tw), t ? type_ink(c, t) : c[:txt])
       if n
         pill(top, c, x + w, y + 4, turns_label(n), Reloaded::FieldStrip.turns_tone(side), true)
       else

@@ -33,6 +33,13 @@
 #   Reloaded::Toast.card(bitmap, :later => [0.4, lit], :se => "Exclaim")
 #   Reloaded::Toast.card(bitmap, :later => [[0.4, pop], [0.5, lit]], :me => "BW_lvup")
 #
+# :icon_size 32 draws the icon at its full 32 pixels (a picture's first
+# square frame), the words from x 44 (the Weather System's alerts, with a
+# :sub line):
+#
+#   Reloaded::Toast.show("Rain Started", :icon => "Graphics/Pictures/Weather/mapRain_medium",
+#                        :icon_size => 32, :sub => "Route 24, Moderate")
+#
 # queue shows a toast once the one up now has gone (at once when there's
 # none): two after the same battle, one after the other.
 #==============================================================================
@@ -64,7 +71,7 @@ module Reloaded
         return Process.clock_gettime(Process::CLOCK_MONOTONIC)
       end
 
-      def show(text, icon: nil, pill: nil, paint: nil, hold: false, sub: nil, coin: nil, se: nil, me: nil)
+      def show(text, icon: nil, pill: nil, paint: nil, hold: false, sub: nil, coin: nil, se: nil, me: nil, icon_size: nil)
         dispose
         c = Reloaded::Palette.map_menu   # Theme Mode, as the map menus
         text = text.to_s
@@ -74,8 +81,9 @@ module Reloaded
                 elsif pill then P.width(PF::TINY, pill[0].to_s) + 12
                 else 0
                 end
-        lx = coin ? 40 : (icon ? 34 : 12)
-        h = sub ? H2 : H
+        big = icon && icon_size.to_i >= 32
+        lx = coin ? 40 : (big ? 44 : (icon ? 34 : 12))
+        h = sub || big ? H2 : H
         w = lx + [tw + (end_w > 0 ? 10 + end_w : 0), sw].max + (coin ? 14 : 10)
         @viewport = Viewport.new(0, 0, Graphics.width, Graphics.height)
         @viewport.z = 100_300
@@ -87,6 +95,8 @@ module Reloaded
         P.ui.rbox(o, 0, 0, w - 1, h - 1, 7, c[:panel], c[:line])
         if coin
           draw_coin(o, c, 20, h / 2, 13, coin.to_s)
+        elsif big
+          draw_full_icon(o, icon, 6, (h - 32) / 2)
         elsif icon
           draw_icon(o, icon, 18, h / 2)
         end
@@ -199,6 +209,16 @@ module Reloaded
         P.text(o, cx - r, cy - 7, 2 * r, 14, text, Color.new(70, 46, 8), PF::TINY, 2)
       end
       public :draw_coin                  # (Kanto Reloaded Debug's Result Notices draw it too)
+
+      # A picture's first square frame at its full 32 pixels
+      def draw_full_icon(o, icon, x, y)
+        bm = icon.is_a?(Bitmap) ? icon : Bitmap.new(defined?(pbResolveBitmap) ? (pbResolveBitmap(icon.to_s) || icon.to_s) : icon.to_s)
+        f = [[bm.height, bm.width].min, 1].max
+        o.stretch_blt(Rect.new(x, y, 32, 32), bm, Rect.new(0, 0, f, f))
+        bm.dispose unless icon.is_a?(Bitmap)
+      rescue StandardError
+        nil
+      end
 
       # An item's Bag icon at 24 pixels, or a picture fitted in 24 by 24
       def draw_icon(o, icon, cx, cy)
