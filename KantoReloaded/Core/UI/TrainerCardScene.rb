@@ -600,25 +600,35 @@ module Reloaded
     end
 
     # The lanyard: two red straps from the top and the clip
-    def lanyard(base, cx, top_y, clip_y)
-      base.fill_rect(cx - 20, top_y, 4, clip_y - top_y + 4, PP::POKE_RED)
-      base.fill_rect(cx + 16, top_y, 4, clip_y - top_y + 4, PP::POKE_RED)
+    # The straps, behind the card down to its top (draw the card after, then
+    # lanyard_clip)
+    def lanyard(base, cx, top_y, card_y)
+      base.fill_rect(cx - 20, top_y, 4, card_y - top_y + 6, PP::POKE_RED)
+      base.fill_rect(cx + 16, top_y, 4, card_y - top_y + 6, PP::POKE_RED)
+    end
+
+    # The clip, over the card's top edge: it holds the card (his note,
+    # 2026-11-14: the straps didn't reach it)
+    def lanyard_clip(base, cx, card_y)
+      clip_y = card_y - 6
       P.ui.rbox(base, cx - 12, clip_y, cx + 12, clip_y + 13, 4, Color.new(205, 212, 225), Color.new(150, 160, 178))
       P.ui.rbox(base, cx - 6, clip_y + 4, cx + 6, clip_y + 8, 2, Color.new(150, 160, 178))
     end
 
-    # The tabs, top right on the art; LB and RB beside them
+    # The tabs in the strip above the art, centred, LB and RB beside them
+    # (his ask, 2026-11-14: they ran into the lanyard on the art)
+    TAB_Y = 2
     def tabs(base, top, c)
-      x1 = ART_X1 - 6
-      y = ART_Y0 + 6
+      y = TAB_Y
       names = tab_list.map { |t| _INTL(TAB_NAMES[t]).upcase }
       ws = names.map { |t| PF.width(PF::TINY, t) + 12 }
       style = Reloaded::Prompts.style
       l = Reloaded::Prompts.input(:L)
       r = Reloaded::Prompts.input(:R)
       rw = r ? Reloaded::ButtonIcons.width(r, style, 14) : 0
-      x = x1 - rw - 4 - ws.sum - 3 * (names.length - 1)
       lw = l ? Reloaded::ButtonIcons.width(l, style, 14) : 0
+      total = (l ? lw + 4 : 0) + ws.sum + 3 * (names.length - 1) + (r ? rw + 4 : 0)
+      x = (W - total) / 2 + (l ? lw + 4 : 0)
       Reloaded::ButtonIcons.draw(top, x - 4 - lw, y + 1, l, c, style, 14) if l
       @tab_hits = []
       names.each_with_index do |t, i|
@@ -792,8 +802,9 @@ module Reloaded
     def draw_front(base, top, c)
       tabs(base, top, c)
       x0, y0, x1, y1 = CARD
-      lanyard(base, 136, ART_Y0, 42)
+      lanyard(base, 136, ART_Y0, y0)
       glass(base, c, x0, y0, x1, y1, 10)
+      lanyard_clip(base, 136, y0)
       photo(base, c, x0 + 30, y0 + 8, x1 - 30, y0 + 70)
       stx(top, x0, y0 + 72, x1 - x0, 26, $Trainer.name, pif(c, "Dark"), PF::TITLE, 2)
       title_id(top, c, x0, x1 - x0, y0 + 98, UL.name(:titles, title_now).upcase, " · ID #{$Trainer.id}")
@@ -818,8 +829,9 @@ module Reloaded
     #--------------------------------------------------------------------------
     def card_back(base, top, c, title)
       x0, y0, x1, y1 = CARD
-      lanyard(base, 136, ART_Y0, 42)
+      lanyard(base, 136, ART_Y0, y0)
       glass(base, c, x0, y0, x1, y1, 10)
+      lanyard_clip(base, 136, y0)
       stx(top, x0, y0 + 6, x1 - x0, 26, title, pif(c, "Dark"), PF::TITLE, 2)
       title_id(top, c, x0, x1 - x0, y0 + 32, $Trainer.name.upcase, " · ID #{$Trainer.id}")
       divider(base, c, x0 + 12, x1 - 12, y0 + 48)

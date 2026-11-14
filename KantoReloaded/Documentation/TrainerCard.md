@@ -1,6 +1,6 @@
 # Trainer Card
 
-Kanto Reloaded's Trainer Card: PIF's background art with no frame, the card's facts on glass plates, and tabs for Records, Stats, Weather (with the Weather System On), Style and Unlocks. This is Roadmap topic trainer-card. The code is in `Core/TrainerCard/TrainerCard.rb` (the switch and the card's data), `Core/TrainerCard/Counters.rb` (the counts), `Core/TrainerCard/Unlocks.rb` (what can be unlocked and how), `Core/UI/TrainerCardScene.rb` (the screen) and `Core/UI/TrainerCardStyle.rb` (Style and Unlocks).
+Kanto Reloaded's Trainer Card: PIF's background art with no frame, the card's facts on glass plates, and tabs for Records, Stats, Weather (with the Weather System On), Style and Unlocks, in the strip above the art. This is Roadmap topic trainer-card. The code is in `Core/TrainerCard/TrainerCard.rb` (the switch and the card's data), `Core/TrainerCard/Counters.rb` (the counts), `Core/TrainerCard/Unlocks.rb` (what can be unlocked and how), `Core/UI/TrainerCardScene.rb` (the screen) and `Core/UI/TrainerCardStyle.rb` (Style and Unlocks).
 
 ## Where It Shows
 

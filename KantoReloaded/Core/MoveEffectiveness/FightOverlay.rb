@@ -50,7 +50,14 @@ module Reloaded
       end
 
       # x4, x2, x0 in the text font; x1/2 and x1/4 as an "x" and a small
-      # stacked fraction (the words don't fit the 33 px)
+      # diagonal fraction, ½ (his ask, 2026-11-14: not stacked, and as bold
+      # as the x: pixel digits with 2 px strokes; the words don't fit the
+      # 33 px)
+      FRAC_W = 15
+      DIGITS = { "1" => [".##.", "###.", ".##.", ".##.", ".##.", ".##.", "####"],
+                 "2" => ["####.", "...##", "...##", ".###.", "##...", "##...", "#####"],
+                 "4" => ["##.##", "##.##", "##.##", "#####", "...##", "...##", "...##"],
+                 "8" => [".###.", "##.##", "##.##", ".###.", "##.##", "##.##", ".###."] }.freeze
       def words(b, x, y, val, ink)
         den = fraction(val)
         unless den
@@ -60,13 +67,13 @@ module Reloaded
         xw = P.width(PF::TEXT, "x")
         P.text(b, x, y - 1, xw + 1, PILL_H + 2, "x", ink, PF::TEXT)
         fx = x + xw + 1
-        P.text(b, fx, y, 7, 9, "1", ink, PF::TINY, 2)
-        b.fill_rect(fx, y + 9, 7, 1, ink)
-        P.text(b, fx, y + 9, 7, 10, den, ink, PF::TINY, 2)
+        Reloaded::PartyPaint.pixels(b, DIGITS["1"], fx, y + 2, ink)
+        6.times { |i| b.fill_rect(fx + 4 + i, y + 13 - i * 2, 2, 2, ink) }   # the slash, bottom left to top right
+        Reloaded::PartyPaint.pixels(b, DIGITS[den] || DIGITS["2"], fx + 9, y + 9, ink)
       end
 
       def words_width(val)
-        return fraction(val) ? P.width(PF::TEXT, "x") + 8 : P.width(PF::TEXT, Reloaded::Matchup.text(val))
+        return fraction(val) ? P.width(PF::TEXT, "x") + 1 + FRAC_W : P.width(PF::TEXT, Reloaded::Matchup.text(val))
       end
 
       # "2" for x1/2, "4" for x1/4 (nil: not a fraction)

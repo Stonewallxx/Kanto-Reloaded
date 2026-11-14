@@ -7,9 +7,12 @@
 #   the title bar  the season's chip on the left (its mark and name, not a
 #                  button); NOW / NEXT on the right, X beside them
 #   the map        the Town Map at 1:1, each place's weather as a 16 px icon
-#                  on its tile, your spot marked, the Kanto Reloaded cursor
-#                  on the place you're looking at (Johto and the Sevii
-#                  Islands once you've been, as the game's Town Map)
+#                  on its middle tile and, on its other tiles, dots in the
+#                  weather's colour (Forecast Tiles: Dots, Icons or None; his
+#                  pick 2026-11-14), your spot marked, the Kanto Reloaded
+#                  cursor stepping from tile to tile as on the Town Map;
+#                  a cave's or building's tile says No Weather (Johto and the
+#                  Sevii Islands once you've been, as the game's Town Map)
 #   the plate      lit in the weather's colour: its 32 px icon, the place,
 #                  the weather and its strength's word, the red line, a
 #                  10-step strength bar; Climate, Trend and Next (Now) or
@@ -18,7 +21,7 @@
 #                  Big Icons once seen in battle, shadows until then); when
 #                  it changes
 #
-# Buttons: the arrows move between places, X Now / Next (the cursor sound),
+# Buttons: the arrows move between the Town Map's tiles, X Now / Next (the cursor sound),
 # Y back to your place, B closes. The mouse: a place or a tab clicked picks
 # it, a right click closes.
 #==============================================================================
@@ -64,10 +67,12 @@ module Reloaded
       @mons = {}
       Reloaded::Weather.ensure_started
       @places = visible_places
-      @home = home_place
-      @sel = @home || @places.keys.first
+      @tiles = visible_tiles
+      @home = home_tile
+      @cur = @home
+      @sel = place_at(@cur)
       @sx = @sy = 0
-      center_on(@sel)
+      center_on(@cur)
     end
 
     def main
@@ -133,70 +138,89 @@ module Reloaded
       return visited?(762) || visited?(526)  # One Island's road, Knot Island
     end
 
-    # Your place, or the nearest one to your spot on the Town Map
-    def home_place
-      key = $game_map ? Reloaded::Weather::Places.of_map($game_map.map_id) : nil
-      return key if key && @places[key]
-      spot = player_spot
-      return nil unless spot
-      return @places.min_by { |_k, (x, y)| (x - spot[0]) ** 2 + (y - spot[1]) ** 2 }&.first
+    # { [x, y] => name } for every tile the Town Map names that you can see
+    # (his pick, 2026-11-14: the cursor steps from tile to tile, as on the
+    # Town Map, caves and buildings too)
+    def visible_tiles
+      out = {}
+      Reloaded::Weather::Places::Source.town_locations.each do |l|
+        xy = [l[0].to_i, l[1].to_i]
+        next if out[xy] || !tile_visible?(*xy)
+        out[xy] = l[2].to_s
+      end
+      return out
     end
 
-    # Your spot on the Town Map (the map's own, else the last town you were in)
+    def tile_visible?(x, y)
+      return false if x * TILE < JOHTO_X && !johto?
+      return false if y * TILE >= SEVII_Y && !sevii?
+      return true
+    end
+
+    # The place on a tile (one with weather), or nil (a cave, a building)
+    def place_at(xy)
+      return nil unless xy
+      key = Reloaded::Weather::Places.at_tile(*xy)
+      return key && @places[key] ? key : nil
+    end
+
+    # Your place's tile, or the nearest named tile to your spot
+    def home_tile
+      spot = player_spot
+      return @tiles.keys.first unless spot
+      return spot if @tiles[spot]
+      return @tiles.keys.min_by { |x, y| (x - spot[0]) ** 2 + (y - spot[1]) ** 2 }
+    end
+
+    # Your spot on the Town Map: your place's, else the Town Map's own tile
+    # for this map, else the last town you were in (as the game's Town Map)
     def player_spot
       return @player_spot if defined?(@player_spot)
-      @player_spot = nil
-      meta = $game_map ? (::GameData::MapMetadata.try_get($game_map.map_id) rescue nil) : nil
-      pos = meta && meta.respond_to?(:town_map_position) ? meta.town_map_position : nil
-      @player_spot = [pos[1].to_i, pos[2].to_i] if pos && pos[0].to_i == 0
+      pl = Reloaded::Weather::Places
+      @player_spot = $game_map ? pl.spot_for_map($game_map.map_id) : nil
       if !@player_spot && defined?($Trainer) && $Trainer.respond_to?(:last_visited_town_map_location)
         last = $Trainer.last_visited_town_map_location
-        m = last ? (::GameData::MapMetadata.try_get(last) rescue nil) : nil
-        pos = m && m.respond_to?(:town_map_position) ? m.town_map_position : nil
-        @player_spot = [pos[1].to_i, pos[2].to_i] if pos
+        @player_spot = last ? pl.spot_for_map(last) : nil
       end
       return @player_spot
     rescue StandardError
-      return nil
+      return @player_spot = nil
     end
 
-    # The nearest place that way (a wide cone, straight ahead counting most)
+    # The nearest named tile that way (a wide cone, straight ahead counting
+    # most)
     def neighbour(dx, dy)
-      from = @places[@sel]
-      return nil unless from
+      return nil unless @cur
       best = nil
       score = nil
-      @places.each do |k, (x, y)|
-        next if k == @sel
-        ax = x - from[0]
-        ay = y - from[1]
+      @tiles.each_key do |x, y|
+        ax = x - @cur[0]
+        ay = y - @cur[1]
         along = ax * dx + ay * dy
         next unless along > 0
         off = (ax * dy - ay * dx).abs
         next if off > along * 2
-        s = along + off * 2
-        if score.nil? || s < score
-          best = k
-          score = s
+        sc = along + off * 2
+        if score.nil? || sc < score
+          best = [x, y]
+          score = sc
         end
       end
       return best
     end
 
-    def center_on(key)
-      spot = @places[key]
-      return unless spot
-      @sx = spot[0] * TILE + TILE / 2 - MW / 2
-      @sy = spot[1] * TILE + TILE / 2 - MH / 2
+    def center_on(xy)
+      return unless xy
+      @sx = xy[0] * TILE + TILE / 2 - MW / 2
+      @sy = xy[1] * TILE + TILE / 2 - MH / 2
       clamp_view
     end
 
-    # Keeps the place in view (a margin of a tile and a half)
-    def follow(key)
-      spot = @places[key]
-      return unless spot
-      px = spot[0] * TILE
-      py = spot[1] * TILE
+    # Keeps the tile in view (a margin of a tile and a half)
+    def follow(xy)
+      return unless xy
+      px = xy[0] * TILE
+      py = xy[1] * TILE
       m = 24
       @sx = px - m if px - m < @sx
       @sx = px + TILE + m - MW if px + TILE + m > @sx + MW
@@ -237,15 +261,16 @@ module Reloaded
     end
 
     def step(dx, dy)
-      k = neighbour(dx, dy)
-      return unless k
-      select(k)
+      xy = neighbour(dx, dy)
+      return unless xy
+      select(xy)
     end
 
-    def select(k)
-      return if k == @sel
-      @sel = k
-      follow(k)
+    def select(xy)
+      return if xy == @cur
+      @cur = xy
+      @sel = place_at(xy)
+      follow(xy)
       pbPlayCursorSE
       refresh
     end
@@ -259,7 +284,8 @@ module Reloaded
 
     def recenter
       return nil unless @home
-      @sel = @home
+      @cur = @home
+      @sel = place_at(@home)
       center_on(@home)
       pbPlayCursorSE
       refresh
@@ -274,8 +300,8 @@ module Reloaded
       return [true, result] if handled
       if (t = pt.hit(@tab_hits || []))
         flip_tab if t != @tab
-      elsif (k = pt.hit(@place_hits || []))
-        select(k)
+      elsif (xy = pt.hit(@tile_hits || []))
+        select(xy)
       end
       return [true, nil]
     end
@@ -361,8 +387,12 @@ module Reloaded
       Reloaded::ButtonIcons.draw(top, x0 - 4 - Reloaded::ButtonIcons.width(key, style, 18), 6, key, c, style, 18)
     end
 
-    # The Town Map in its box, the weather on each place's tile and your
-    # spot, all on the panels' layer (the cursor goes over them)
+    # The Town Map in its box, your spot, and each place's weather: its icon
+    # on its middle tile, and on its other tiles what Forecast Tiles says
+    # (his pick, 2026-11-14: Dots in the weather's colour, the Icons, or
+    # None), all on the panels' layer (the cursor goes over them)
+    DOT_RING = [".####.", "######", "######", "######", "######", ".####."].freeze
+    DOT_FILL = [".##.", "####", "####", ".##."].freeze
     def town_map(base, top, c)
       ds = Reloaded::Weather::Display
       base.fill_rect(MX, MY, MW, MH, Color.new(60, 166, 190))
@@ -372,16 +402,33 @@ module Reloaded
         vh = [MH, m.height - @sy].min
         base.blt(MX, MY, m, Rect.new(@sx, @sy, vw, vh))
       end
-      @place_hits = []
-      @places.each do |k, (tx, ty)|
+      inside = proc { |px, py| px >= MX && py >= MY && px + TILE <= MX + MW && py + TILE <= MY + MH }
+      @tile_hits = []
+      @tiles.each_key do |tx, ty|
         px = MX + tx * TILE - @sx
         py = MY + ty * TILE - @sy
-        next if px < MX || py < MY || px + TILE > MX + MW || py + TILE > MY + MH
-        @place_hits << [k, px, py, px + TILE - 1, py + TILE - 1]
+        @tile_hits << [[tx, ty], px, py, px + TILE - 1, py + TILE - 1] if inside.call(px, py)
+      end
+      extras = (Reloaded::Settings.get(Reloaded::Weather::FORECAST_TILES) rescue 0).to_i
+      pl = Reloaded::Weather::Places
+      @places.each do |k, (sx, sy)|
         type, n = ds.shown(k, which)
         next if type == :None
         ic = pic(ds.icon(type, n))
-        base.stretch_blt(Rect.new(px, py, TILE, TILE), ic, Rect.new(0, 0, ic.height, ic.height)) if ic
+        col = ds.colour(type)
+        (pl[k].tiles || [[sx, sy]]).each do |tx, ty|
+          next unless tile_visible?(tx, ty)
+          px = MX + tx * TILE - @sx
+          py = MY + ty * TILE - @sy
+          next unless inside.call(px, py)
+          if [tx, ty] == [sx, sy] || extras == 1
+            base.stretch_blt(Rect.new(px, py, TILE, TILE), ic, Rect.new(0, 0, ic.height, ic.height)) if ic
+          elsif extras == 0
+            # in the middle of the Town Map's road (pixels 5-12 of a tile)
+            PP.pixels(base, DOT_RING, px + 6, py + 6, Color.new(col.red / 3, col.green / 3, col.blue / 3))
+            PP.pixels(base, DOT_FILL, px + 7, py + 7, col)
+          end
+        end
       end
       spot = player_spot
       if spot
@@ -392,10 +439,9 @@ module Reloaded
           base.blt(hx - 6, hy - 6, head, Rect.new(0, 0, head.width, head.height))
         end
       end
-      sel = @places[@sel]
-      if sel
-        cx = MX + sel[0] * TILE - @sx
-        cy = MY + sel[1] * TILE - @sy
+      if @cur
+        cx = MX + @cur[0] * TILE - @sx
+        cy = MY + @cur[1] * TILE - @sy
         @cursor_rect = [cx - 4, cy - 4, TILE + 8, TILE + 8]
       else
         @cursor_rect = nil
@@ -451,9 +497,9 @@ module Reloaded
 
     def place_plate(base, top, c)
       ds = Reloaded::Weather::Display
-      pl = Reloaded::Weather::Places[@sel]
+      pl = @sel ? Reloaded::Weather::Places[@sel] : nil
       @visit_sprites.each { |s| s.visible = false }
-      return unless pl
+      return no_weather_plate(base, top, c) unless pl
       now = ds.shown(@sel, "now")
       nxt = ds.shown(@sel, "next")
       type, n = @tab == :now ? now : nxt
@@ -487,6 +533,29 @@ module Reloaded
       base.fill_rect(sx, BOTTOM - 26, w, 1, c[:line])
       when_words = @tab == :now ? _INTL("Changes in {1}", soon) : _INTL("Starts in {1}", soon)
       P.small(top, sx, BOTTOM - 22, w, 18, when_words, c[:dim], 2)
+    end
+
+    # A tile with no weather (a cave, a building, a place with no map here):
+    # its name, No Weather, why (his pick, 2026-11-14)
+    CAVES = /cave|mt\.|mount |victory road|seafoam|falls|tunnel|well\b/i
+    BUILDINGS = /tower|plant|factory|league|spa|ship|lab|gym|house|center|centre/i
+    def no_weather_plate(base, top, c)
+      name = (@tiles[@cur] || "").to_s
+      return if name.empty?
+      x0 = PX0
+      x1 = PX1
+      y0 = PY0
+      line_y = y0 + 50
+      plate(base, c, Color.new(150, 160, 175), x0, y0, x1, BOTTOM, line_y)
+      P.text(top, x0 + 14, y0 + 4, x1 - x0 - 28, 22, PF.fit(PF::ROW, name, x1 - x0 - 28), c[:strong], PF::ROW)
+      kind = name =~ CAVES ? _INTL("Cave") : (name =~ BUILDINGS ? _INTL("Building") : nil)
+      w = P.text(top, x0 + 14, y0 + 27, 120, 18, _INTL("No Weather"), c[:dim], PF::TEXT)
+      P.small(top, x0 + 20 + w, y0 + 28, x1 - x0 - 34 - w, 18, "· #{kind}", c[:txt]) if kind
+      row(top, c, x0 + 12, line_y + 12, x1 - x0 - 24, _INTL("Weather"), _INTL("None"), c[:dim])
+      words = kind ? _INTL("A {1} keeps the weather out.", kind.downcase) : _INTL("There's no weather here.")
+      P.small_wrap(top, words, x1 - x0 - 24).first(3).each_with_index do |ln, i|
+        P.small(top, x0 + 12, line_y + 36 + i * 18, x1 - x0 - 24, 18, ln, c[:txt])
+      end
     end
 
     def small_type(b, type, x, y)

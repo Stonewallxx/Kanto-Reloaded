@@ -2,7 +2,7 @@
 
 Weather that moves across the region and lasts, in place of each map rolling its own when you arrive. This is Roadmap topic weather-system. It's part of Kanto Reloaded, with its own switch per save.
 
-The code is in `Core/Weather/Weather.rb` (the switch, the cycle, the weather on the map), `Places.rb` (where weather can be), `Fronts.rb` (how it moves), `Link.rb` (the game's own weather code and other mods), `Battle.rb` (the weather in battle), `Encounters.rb` (the weather's Pokémon), `Display.rb` (names, colours, icons), `Screens.rb` (where the Forecast opens, the Fly map), `Alerts.rb`, `Sounds.rb`, `FieldMoves.rb`, `Records.rb`, `Rainbow.rb`, `Strikes.rb`, `Multiplayer.rb` and `Core/UI/WeatherForecastScreen.rb` (the Forecast). The weather icons are in `Graphics/Pictures/Weather`: old Kanto Reloaded's set (the game's own map icons), the game's Wind and Ash from the same set, and a Rainbow.
+The code is in `Core/Weather/Weather.rb` (the switch, the cycle, the weather on the map), `Places.rb` (where weather can be), `Fronts.rb` (how it moves), `Link.rb` (the game's own weather code and other mods), `Battle.rb` (the weather in battle), `Encounters.rb` (the weather's Pokémon), `Display.rb` (names, colors, icons), `Screens.rb` (where the Forecast opens, the Fly map), `Alerts.rb`, `Sounds.rb`, `FieldMoves.rb`, `Records.rb`, `Rainbow.rb`, `Strikes.rb`, `Multiplayer.rb` and `Core/UI/WeatherForecastScreen.rb` (the Forecast). The weather icons are in `Graphics/Pictures/Weather`: old Kanto Reloaded's set (the game's own map icons), the game's Wind and Ash from the same set, and a Rainbow.
 
 ## Settings
 
@@ -12,10 +12,13 @@ In *KIF Settings*, the *Weather System* section under *Kanto Reloaded*, kept by 
 - **Weather Changes:** How often the weather changes across the region. Slow (every 12 hours of the game's clock), Normal (6) or Fast (3). An hour of the game's clock is a minute of play; the clock stops in menus and while the game is closed.
 - **Weather Alerts:** On. A short notice when the weather changes where you are, and when Heavy Rain, a Blizzard or Strong Winds is coming. Kept for every save.
 - **Weather Sounds:** On. Rain, storms and thunder you can hear outdoors. Kept for every save.
+- **Forecast Tiles:** Dots. What the Weather Forecast's map shows on a place's other tiles: Dots in the weather's color, the weather's Icons, or None. Its middle tile always has the icon. Kept for every save.
 
 ## Places
 
 Every outdoor map belongs to a place by its name: two maps called Route 2 share one place's weather, and the Safari Zone's areas are one place. Left out: maps with no name, the debug and message maps, and Underwater.
+
+A place sits on the Town Map where the Town Map itself shows it: on the tiles with its name (the middle one when there are several). A place the Town Map doesn't show (the Hoenn maps, Pinkan Island, the S.S. Anne) still has weather but no icon on the Forecast or the Fly map.
 
 Each place has its own kinds of weather, by what kind of place it is:
 
@@ -48,7 +51,7 @@ The weather now and the weather next are kept in your save, so loading never cha
 
 ## On the Map
 
-Outdoors, you see your place's weather. The sun doesn't show in the evening or at night; it's back in the morning. Weather a story event sets stays while you're on that map.
+Outdoors, you see your place's weather. Fog shows as the game draws it, drifting over the map (its picture was missing from KIF Beta, so fog never showed before; Kanto Reloaded carries it in `Graphics/Fogs`). The sun doesn't show in the evening or at night; it's back in the morning. Weather a story event sets stays while you're on that map.
 
 ## In Battle
 
@@ -95,14 +98,14 @@ Your Pokémon change the weather where you are, from their menu in the party (a 
 | Mist | Fog |
 | Defog, Haze | Clears the fog or the ash |
 
-First a card shows what it will do: the weather and where, until the weather next changes, its strength, the types more common, what it does in battle, the weather it replaces and the cost. Use or Cancel. Each use costs the move 1 PP (a Pokémon Center refills it) and plays the Pokémon's cry. The weather starts at strength 5 and holds until the weather next changes across the region; then it joins the others and can grow, fade or drift away. After dark, Sunny Day's card says the sun has set, and no PP is used.
+First a card shows what it will do: the weather and where, until the weather next changes, its strength, the types more common, what it does in battle, the weather it replaces and the cost. Use or Cancel; Use closes the party and the move is used on the map, so you see the weather change. Each use costs the move 1 PP (a Pokémon Center refills it) and plays the Pokémon's cry. The weather starts at strength 5 and holds until the weather next changes across the region; then it joins the others and can grow, fade or drift away. After dark, Sunny Day's card says the sun has set, and no PP is used.
 
 With the Weather System Off, these moves are as in the game (Hoenn only).
 
 ## Rainbows, Lightning and Weather Records
 
-- **Rainbows:** When rain or a storm clears by day, the place gets a rainbow for 3 hours of the game's clock (3 minutes of play): a see-through rainbow arcs across the sky on its maps, fading in, and the Forecast shows it. Under it the rain's Weather Visitors come twice as often as in light rain. Seen as it appears, a notice says so (with *Weather Alerts* On). It goes at dusk, when weather comes back, or when its time is up.
-- **Lightning Strikes:** Now and then in a storm (a few minutes of play apart, on average), lightning strikes a tile near you: the bolt, a white flash, a snap of thunder. A sparkle stays on the tile; step on it for what the strike left: a hidden item (a Thunder Stone now and then, else a Cell Battery or a Magnet) or an Electric Visitor at the place's levels. It goes when you leave the map.
+- **Rainbows:** When rain or a storm clears by day, the place gets a rainbow for 3 hours of the game's clock (3 minutes of play): a see-through rainbow stands in the world on its maps, about 8 tiles wide and a little north of where you are as it shows, fading in. It stays put in the world as you walk, onto the maps next to it too, over the ground and under you and the treetops. Once you're far enough away that its map unloads (or you go through a door), it's gone for good; the place keeps its rainbow until its time is up. The Forecast shows it. Under it the rain's Weather Visitors come twice as often as in light rain. Seen as it appears, a notice says so (with *Weather Alerts* On). It goes at dusk, when weather comes back, or when its time is up.
+- **Lightning Strikes:** Now and then in a storm (a few minutes of play apart, on average), lightning strikes a tile near you: the bolt, a white flash, a snap of thunder. A sparkle stays on the tile; step on it for what the strike left: an Electric Visitor at the place's levels, or now and then (5% of strikes) a hidden item (a Thunder Stone now and then, else a Cell Battery or a Magnet). It goes when you leave the map.
 - **Weather Records:** Battles won in each weather (the weather as the battle started; heavy rain counts as rain, a blizzard as snow, strong winds as wind) are counted for the save. The *Trainer Card*'s *Weather* tab, after *Stats*, shows each weather's wins, your favourite weather and the next weather title. Ten wins in a weather earn its title for the card: Rain Dancer, Storm Chaser, Sun Seeker, Windrider, Fog Walker, Snow Drifter, Dune Runner and Ash Walker. The tab shows while the Weather System is On.
 
 ## Alerts and Sounds
@@ -114,15 +117,15 @@ With the Weather System Off, these moves are as in the game (Hoenn only).
 
 Opens from the *Overworld Menu* (Forecast, on Main after Fly), the *Pause Menu* (the Forecast tile), the *Fly map* and *Town Map* (Y), and the PokéNav's Weather app (Hoenn Essentials', or the game's own).
 
-- **The map:** The Town Map at full size, each place's weather as an icon on its tile, your spot marked, the cursor on the place you're looking at. Johto and the Sevii Islands show once you've been there, as on the game's Town Map.
-- **The place:** Lit in its weather's colour: the weather's icon, the place, the weather and its strength (Light, Moderate or Heavy), a 10-step strength bar, its climate, the trend (Rising, Fading or Steady) and what's next (Now), or what it replaces and when it starts (Next), the season, the types more common, and its two Weather Visitors: their pictures once you've seen them in battle, shadows until then. At the bottom, when the weather changes (minutes of play).
+- **The map:** The Town Map at full size: each place's weather as an icon on its middle tile and dots in the weather's color on its other tiles (*Forecast Tiles*), your spot marked. The cursor steps from tile to tile as on the Town Map; on a cave or a building it says No Weather. Johto and the Sevii Islands show once you've been there, as on the game's Town Map.
+- **The place:** Lit in its weather's color: the weather's icon, the place, the weather and its strength (Light, Moderate or Heavy), a 10-step strength bar, its climate, the trend (Rising, Fading or Steady) and what's next (Now), or what it replaces and when it starts (Next), the season, the types more common, and its two Weather Visitors: their pictures once you've seen them in battle, shadows until then. At the bottom, when the weather changes (minutes of play).
 - **The title bar:** The season (Spring, Summer, Autumn or Winter) on the left; NOW and NEXT on the right.
 
-The arrows move between places, X switches Now and Next, Y goes back to your place, B closes. With the mouse, click a place or a tab; a right click closes.
+The arrows move between the Town Map's tiles, X switches Now and Next, Y goes back to your place, B closes. With the mouse, click a place or a tab; a right click closes.
 
 ## The Fly Map and the Town Map
 
-The game's own map screen, with the weather on it: every place's weather icon on its tile (moving with the map), and a card beside the cursor in the weather's colour (the place, the weather and its strength, the bar, what's next or when it starts, the types more common). "Weather: Now" on the title bar; X switches Now and Next, Y opens the Forecast. The card and keys follow Theme Mode. The place's point of interest (a lab, a shop) isn't shown while the weather is.
+The game's own map screen, with the weather on it: every place's weather icon on its tile (moving with the map), and a card beside the cursor in the weather's color (the place, the weather and its strength, the bar, what's next or when it starts, the types more common). "Weather: Now" on the title bar; X switches Now and Next, Y opens the Forecast. The card and keys follow Theme Mode. The place's point of interest (a lab, a shop) isn't shown while the weather is.
 
 ## Multiplayer
 

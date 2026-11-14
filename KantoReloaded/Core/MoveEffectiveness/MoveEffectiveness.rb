@@ -13,7 +13,7 @@
 #                  x1/2 Red, x1/4 Yellow, x0 grey (each changeable; always
 #                  Dark's tones: neither screen changes with Theme Mode)
 #   multiplier     a Colour Pill on the picked move (EBDX: beside its PP;
-#                  PIF: at its right end; x1/2 and x1/4 as a small stacked
+#                  PIF: at its right end; x1/2 and x1/4 as a small diagonal
 #                  fraction); none for neutral moves
 #   move dots      a dot in its colour on each move not picked, on the
 #                  right; none for neutral moves

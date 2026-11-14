@@ -9,6 +9,14 @@
 # mountains snowy, volcanic places ashy, some routes their own) and its
 # neighbours (the game's map connections, then the Town Map's spots).
 #
+# A place's spot is where the Town Map itself puts it: the Town Map's tiles
+# carry their place's name (town_map.dat, 278 of them), the place takes the
+# middle tile of those with its name. A place the Town Map doesn't show
+# (Hoenn's maps, Pinkan Island, the S.S. Anne...) has no spot: it has
+# weather, but no icon on the Forecast or the Fly map. (The maps' own
+# MapPosition put some of those on Kanto's tiles, and Route 16 on the
+# wrong side: PIF's Town Map never reads it either.)
+#
 # Left out: maps with no name, the debug and message maps, the dive maps
 # (Underwater), maps renamed .old. A map whose own weather always happens
 # (Route 25's rain, Mt. Ember's sun, the Ice Mountains' and one of Mt.
@@ -33,10 +41,11 @@ module Reloaded
       LEAN_RAIN = 30                 # a map's own chance of rain, as a lean
       LEFT_OUT = /\A(debug|common|messages|soaring|johto|hall of origin)\b|debug island|\.old\z/i
       SAFARI = /\AArea \d+\z/i
-      # Spots the Town Map gets wrong (the old prep: Route 16 on the wrong side)
-      SPOT_FIX = { "Route 16" => [0, 35, 10] }.freeze
+      # Places whose Town Map tiles go by another name
+      TILE_NAMES = { "indigo plateau" => "pokémon league", "mt. moon square" => "mt. moon", "mt. moon summit" => "mt. moon",
+                     "mt. silver summit" => "mt. silver" }.freeze
 
-      Place = Struct.new(:key, :name, :maps, :pool, :spot, :lean, :climate)
+      Place = Struct.new(:key, :name, :maps, :pool, :spot, :lean, :climate, :tiles)
 
       class << self
         attr_reader :places, :fixed
@@ -83,7 +92,9 @@ module Reloaded
           @places = {}
           @fixed = {}
           @by_map = {}
-          source.outdoor_maps.each do |id, name, weather, spot|
+          town = source.town_tiles
+          @town = town
+          source.outdoor_maps.each do |id, name, weather, _spot|
             name = name.to_s.strip
             next if name.empty? || name =~ LEFT_OUT || source.dive_map?(id)
             if weather && weather[1].to_i >= 100
@@ -95,9 +106,13 @@ module Reloaded
             pl = (@places[key] ||= Place.new(key, label, [], nil, nil, false, nil))
             pl.maps << id
             pl.lean = true if weather && weather[0].to_s == "Rain"
-            pl.spot ||= SPOT_FIX[label] || spot
           end
           @places.each_value do |pl|
+            tiles = town[pl.key] || town[TILE_NAMES[pl.key]]
+            if tiles && !tiles.empty?
+              pl.tiles = tiles
+              pl.spot = [0] + tiles[(tiles.length - 1) / 2]
+            end
             pl.pool, pl.climate = pool_for(pl.name, pl.lean)
             pl.maps.each { |m| @by_map[m] = pl.key }
           end
@@ -135,6 +150,25 @@ module Reloaded
           end
           w[:Rain] += LEAN_RAIN if lean
           return [w.select { |_t, n| n > 0 }, climate]
+        end
+
+        # A place on this Town Map tile, or nil
+        def at_tile(x, y)
+          build unless built?
+          @places.each_value { |pl| return pl.key if pl.tiles && pl.tiles.include?([x, y]) }
+          return nil
+        end
+
+        # Where a map is on the Town Map: its place's spot, else the Town
+        # Map's own tile for it (a town's), else nil: [x, y]
+        def spot_for_map(map_id)
+          build unless built?
+          key = of_map(map_id)
+          return @places[key].spot[1, 2] if key && @places[key].spot
+          Array(Source.town_locations).each { |l| return [l[0], l[1]] if l[4] == map_id }
+          return nil
+        rescue StandardError
+          return nil
         end
 
         private
@@ -195,6 +229,21 @@ module Reloaded
             []
           end
           return @dives.include?(id)
+        end
+
+        # The Town Map's tiles: [x, y, name, point of interest, map, ...]
+        def town_locations
+          data = defined?(pbLoadTownMapData) ? pbLoadTownMapData : nil
+          return data && data[0] ? Array(data[0][2]) : []
+        rescue StandardError
+          return []
+        end
+
+        # { a place's name, small => [[x, y], ...] } from the Town Map's tiles
+        def town_tiles
+          out = Hash.new { |h, k| h[k] = [] }
+          town_locations.each { |l| out[l[2].to_s.strip.downcase] << [l[0].to_i, l[1].to_i] if l[2] }
+          return out
         end
 
         # [[map, map], ...] from the game's map connections

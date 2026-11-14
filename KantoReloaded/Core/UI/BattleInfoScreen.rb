@@ -84,7 +84,11 @@ module Reloaded
     #--------------------------------------------------------------------------
     def handle_input
       pt = Reloaded::Pointer
-      if pt.left? && (i = pt.hit(@tab_hits || []))
+      if tab == :field && (pt.moved? || pt.left?) && (k = field_hit) && k != @field_sel
+        @field_sel = k
+        pbPlayCursorSE
+        refresh
+      elsif pt.left? && (i = pt.hit(@tab_hits || []))
         go(i - @tab) if i != @tab
       elsif pt.left? && hint_click[0]
         return @closing ? :close : nil
@@ -107,10 +111,20 @@ module Reloaded
           scroll(dir)
         elsif tab == :matchup
           next_mon(dir)
+        elsif tab == :field
+          field_move(dir)
         end
       elsif pointer_hover
         nil
       end
+      return nil
+    end
+
+    # The Field tab's row under the mouse
+    def field_hit
+      pos = Reloaded::Pointer.pos
+      return nil unless pos && @field_rects
+      @field_rects.each_with_index { |(x, y, w, h), i| return i if pos[0] >= x && pos[0] < x + w && pos[1] >= y && pos[1] < y + h }
       return nil
     end
 
@@ -152,7 +166,10 @@ module Reloaded
         pairs << [:ud, _INTL("Your Pokémon")] if @battlers.count { |b| RD.own?(b) } > 1
         return pairs + [[button(:B), _INTL("Back"), :back_hint]]
       when :log then return [[:lr, _INTL("Tabs")], [:ud, _INTL("Scroll")], [button(:B), _INTL("Back"), :back_hint]]
-      when :field then return [[:lr, _INTL("Tabs")], [button(:B), _INTL("Back"), :back_hint]]
+      when :field
+        pairs = [[:lr, _INTL("Tabs")]]
+        pairs << [:ud, _INTL("Choose")] if (@field_rects || []).length > 1
+        return pairs + [[button(:B), _INTL("Back"), :back_hint]]
       end
       return [[:lr, _INTL("Tabs")], [button(:C), _INTL("Abilities"), :open_abilities], [button(:X), _INTL("Moves"), :open_moves],
               [button(:B), _INTL("Back"), :back_hint]]
@@ -168,6 +185,7 @@ module Reloaded
       @top_sprite.bitmap.clear
       PP.paint_background(base, c)
       PP.paint_title(top, c, _INTL("Battle Info"))
+      @cursor_rect = nil
       paint_tabs(c)
       y1 = H - P::HINT_H - 6
       case tab
@@ -179,6 +197,7 @@ module Reloaded
         mon_page(c, bt, 8, PAGE_Y, W - 8, y1) if bt
       end
       paint_hints(base, c)
+      place_cursor
     end
 
     def base; @sprite.bitmap; end
@@ -660,12 +679,24 @@ module Reloaded
     # (his pick, 2026-10-29: Two Columns, so a busy field fits): the whole
     # field in two columns, then your side and the foe's side by side. Turns
     # green on your side, red on the foe's, gold for the whole field; an
-    # endless one's pill in the Theme's accent with the infinity mark
-    def field_page(c, x0, y0, x1, y1)
-      plain_plate(base, c, x0, y0, x1, y1)
+    # endless one's pill in the Theme's accent with the infinity mark.
+    # (his pick, 2026-11-14: Description Box, a line taller for long ones):
+    # Up and Down (or the mouse) move the cursor down the effects; the box
+    # under them says what the highlighted one does, where and how long.
+    FIELD_BOX_H = 88
+
+    def field_list
       items = RD.field_items(@battle)
+      return items.select { |i| i[2] == :field } + items.select { |i| i[2] == 0 } + items.select { |i| i[2] == 1 }
+    end
+
+    def field_page(c, x0, y0, x1, y1)
+      ry1 = y1 - FIELD_BOX_H - 6
+      plain_plate(base, c, x0, y0, x1, ry1)
+      items = field_list
       cw = (x1 - x0 - 36) / 2
       y = y0 + 8
+      @field_rects = []
       heading(top, c, x0 + 12, x1 - 12, y, _INTL("Whole Field"))
       y += 14
       list = items.select { |i| i[2] == :field }
@@ -673,7 +704,12 @@ module Reloaded
         P.text(top, x0 + 14, y, 300, 22, _INTL("No Weather or Terrain"), c[:dim])
         y += 22
       end
-      list.each_with_index { |row, k| field_row(c, x0 + 14 + (k % 2) * (cw + 12), y + (k / 2) * 22, cw, row, :field) }
+      list.each_with_index do |row, k|
+        rx = x0 + 14 + (k % 2) * (cw + 12)
+        ry = y + (k / 2) * 22
+        field_row(c, rx, ry, cw, row, :field)
+        @field_rects << [rx - 4, ry - 1, cw + 8, 24]
+      end
       y += ((list.length + 1) / 2) * 22 + 6
       [[0, _INTL("Your Side")], [1, _INTL("Foe's Side")]].each_with_index do |(side, label), col|
         sx = x0 + 12 + col * (cw + 12)
@@ -684,16 +720,47 @@ module Reloaded
           next
         end
         rows.each_with_index do |row, k|
-          break if y + 14 + k * 22 + 22 > y1 - 4
+          next if y + 14 + k * 22 + 22 > ry1 - 4
           field_row(c, sx + 2, y + 14 + k * 22, cw - 2, row, side)
+          @field_rects << [sx - 2, y + 13 + k * 22, cw + 6, 24]
         end
       end
+      @field_sel = [[@field_sel.to_i, @field_rects.length - 1].min, 0].max
+      @cursor_rect = @field_rects[@field_sel]
+      field_box(c, x0, y1 - FIELD_BOX_H, x1, y1, items[@field_sel])
     end
 
-    # (a row's fifth part: its longer words here, the Weather System's fog)
+    # The description box: the highlighted effect, where it is and how long,
+    # what it does (three lines at most)
+    def field_box(c, x0, y0, x1, y1, row)
+      PP.chamfer_grad(base, x0, y0, x1, y1, 8, c[:panel2], mix(c[:panel2], c[:dark], 0.3), c[:line])
+      unless row
+        P.small(top, x0 + 10, y0 + 8, x1 - x0 - 20, 18, _INTL("Nothing on the field right now."), c[:dim])
+        return
+      end
+      words, n, side, t = row
+      small_type(top, t, x0 + 10, y0 + 7) if t
+      tx = x0 + (t ? 30 : 10)
+      w = P.text(top, tx, y0 + 4, x1 - tx - 10, 20, words, t ? type_ink(c, t) : c[:strong], PF::TEXT)
+      where = side == :field ? _INTL("WHOLE FIELD") : (side == 0 ? _INTL("YOUR SIDE") : _INTL("FOE'S SIDE"))
+      long = n.nil? ? _INTL("UNTIL IT ENDS") : (n.is_a?(String) ? _INTL("ACCURACY {1}", n.upcase) : turns_label(n))
+      P.text(top, tx + w + 8, y0 + 7, x1 - tx - w - 18, 14, "#{where} · #{long}", c[:dim], PF::TINY)
+      lines = P.small_wrap(top, RD.field_words(row), x1 - x0 - 20)
+      lines.first(3).each_with_index { |ln, i| P.small(top, x0 + 10, y0 + 26 + i * 18, x1 - x0 - 20, 18, ln, c[:txt]) }
+    end
+
+    def field_move(dir)
+      n = (@field_rects || []).length
+      return if n < 2
+      to = (@field_sel.to_i + dir) % n
+      return if to == @field_sel
+      @field_sel = to
+      pbPlayCursorSE
+      refresh
+    end
+
     def field_row(c, x, y, w, row, side)
-      words, n, _s, t, long = row
-      words = long if long
+      words, n, _s, t = row
       small_type(top, t, x, y + 3) if t
       tw = n ? P.width(PF::TINY, turns_label(n)) + 16 : 27
       lx = t ? 20 : 2

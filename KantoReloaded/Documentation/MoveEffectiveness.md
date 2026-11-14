@@ -18,7 +18,7 @@ On both battle screens: PIF's own (EBDX's battles Off in KIF Settings, Graphics)
 | Target Pills | Double Battles: the name of each Pokémon the picked move can hit, above it, outlined in that Pokémon's color. | The same. |
 | Ally Warning | A move that would hurt your partner (Discharge, Earthquake, Surf...): a red "!" at its left end while it's picked, and your partner's pill in red. | A red "!" in its button's top right, and your partner's pill in red. |
 
-A move that does the usual damage keeps the usual cursor and has no pill or dot. The multiplier reads x4, x2, x1/2, x1/4 or x0 (x1/2 and x1/4 as a small fraction). Your partner's pill is gray when it can't be hurt (a Volt Absorb or Telepathy partner, a Flying one against Earthquake).
+A move that does the usual damage keeps the usual cursor and has no pill or dot. The multiplier reads x4, x2, x1/2, x1/4 or x0 (x1/2 and x1/4 as a small diagonal fraction, ½ and ¼). Your partner's pill is gray when it can't be hurt (a Volt Absorb or Telepathy partner, a Flying one against Earthquake).
 
 The color is the best result among the foes the move can reach. A move that hits one Pokémon counts only the foes, even though it could be aimed at your partner; your partner counts only for moves that hit several.
 

@@ -16,7 +16,8 @@
 #   Defog, Haze  clear the fog, or the ash
 #
 # From a Pokémon's menu in the party (Kanto Reloaded's Party Screen or the
-# game's), outdoors in a place of the Weather System's. First the Preview
+# game's), outdoors in a place of the Weather System's; Use closes the party
+# and the move is used on the map. First the Preview
 # Card (Design 1: the weather it makes and where, until when, its strength,
 # then While It Lasts: More Common, In Battle, what it Replaces, and the cost),
 # Use / Cancel. Each use costs the move 1 PP (a Pokémon Center refills it)
@@ -87,6 +88,7 @@ module Reloaded
             h.around(FEATURE, hm, :triggerConfirmUseMove, :id => :weather_moves_confirm) do |original, *args|
               id, pkmn = args
               next original.call(*args) unless ours?(id)
+              next true if deferred?(pkmn, id)                  # Use was picked on the Party Screen's card
               host = CardHost.new
               begin
                 card(host, pkmn, id)
@@ -97,6 +99,7 @@ module Reloaded
             h.around(FEATURE, hm, :triggerUseMove, :id => :weather_moves_use) do |original, *args|
               id, pkmn = args
               next original.call(*args) unless ours?(id)
+              @deferred = nil
               pbMessage(_INTL("{1} used {2}!", pkmn.name, move_name(id))) if defined?(pbMessage) && !(pbHiddenMoveAnimation(pkmn) rescue false)
               use!(pkmn, id)
             end
@@ -169,20 +172,26 @@ module Reloaded
         #----------------------------------------------------------------------
         # Using one
         #----------------------------------------------------------------------
-        # Kanto Reloaded's Party Screen: true when handled (always, here)
+        # Kanto Reloaded's Party Screen: true when handled there (a Cancel, or
+        # why it can't); Use hands back to the game's own field-move code
+        # (false), which closes the party and uses it on the map, so you see
+        # the weather change (his ask, 2026-11-14)
         def from_party(scene, pkmn, id)
           return false unless ours?(id)
+          @deferred = nil
           r = usable(pkmn, id)
           if r.is_a?(String)
             pbPlayBuzzerSE if defined?(pbPlayBuzzerSE)
             scene.respond_to?(:pbDisplay) ? scene.pbDisplay(r) : (pbMessage(r) if defined?(pbMessage))
             return true
           end
-          if card(scene, pkmn, id)
-            use!(pkmn, id)
-            scene.pbRefresh if scene.respond_to?(:pbRefresh)
-          end
-          return true
+          return true unless card(scene, pkmn, id)
+          @deferred = [pkmn.object_id, id.to_s.upcase.to_sym]
+          return false
+        end
+
+        def deferred?(pkmn, id)
+          return @deferred && @deferred[0] == pkmn.object_id && @deferred[1] == id.to_s.upcase.to_sym ? true : false
         end
 
         # The weather changes: PP, the cry, the place's weather now (and next,

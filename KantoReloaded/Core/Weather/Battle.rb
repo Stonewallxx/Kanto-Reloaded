@@ -127,12 +127,12 @@ module Reloaded
         end
 
         # Battle Menu's Field Strip and Battle Info's Field tab: the fog first
-        # ([words, the accuracy in the turns' place, :field, no type, Battle
-        # Info's longer words])
+        # ([words, the accuracy in the turns' place, :field, no type, no
+        # longer words, its key: Battle Info's description box explains it])
         def field_items(battle)
           w = info(battle)
           return [] unless w && w[:fog]
-          return [[_INTL("Fog"), accuracy_label(w[:fog]), :field, nil, _INTL("Fog: Less Accurate")]]
+          return [[_INTL("Fog"), accuracy_label(w[:fog]), :field, nil, nil, :Fog]]
         end
 
         # The weather's strength on the map now: ours, or a script's (its power)

@@ -6,10 +6,17 @@
 # storm) clears by day, the place gets a rainbow for 3 hours of the game's
 # clock (3 minutes of play): the Forecast shows it, Weather Visitors of the
 # rain come there twice as often as in light rain, and on its maps a
-# see-through pixel rainbow arcs across the top of the screen (2 x 2 blocks,
-# 7 bands, fading toward the horizon), fading in over a moment. Seen as it
-# appears, the toast says so: "A Rainbow Appeared" (with Weather Alerts On).
-# It goes at dusk, when weather comes back, or when its time is up.
+# see-through pixel rainbow stands in the world (his pick 2026-11-14, Sky
+# Arc on the Map: 8 tiles wide, 2 x 2 blocks, 7 bands, its ends fading),
+# a little north of where you are as it shows. It stays put in the world
+# as you walk, onto the maps connected to its map too, as Ghostly
+# Possession's lights do (his ask, 2026-11-14): drawn on the map's own
+# layer, over the ground and under the characters and the treetops, sized
+# with Map Zoom. Once its map is unloaded (you've gone far enough, or
+# through a door) it's gone for good: the place keeps its rainbow (the
+# Forecast, the Visitors) but no new arc rises. It fades in over a moment.
+# Seen as it appears, the toast says so: "A Rainbow Appeared" (with Weather
+# Alerts On). It goes at dusk, when weather comes back, or when its time is up.
 #==============================================================================
 
 module Reloaded
@@ -17,11 +24,10 @@ module Reloaded
     module Rainbow
       HOURS = 3
       BANDS = [[232, 64, 64], [248, 152, 48], [248, 216, 64], [88, 192, 96], [72, 136, 232], [120, 96, 220], [176, 96, 216]].freeze
-      CX = 256                   # the arc: its centre (below the screen), outer radius, band width
-      CY = 560
-      RADIUS = 520
-      BAND = 6
-      HORIZON = 300              # it fades out toward here
+      RADIUS = 128               # the arc: 8 tiles wide, bands of 4 (his pick, 2026-11-14: Sky Arc, on the Map)
+      BAND = 4
+      BASE_FADE = 46             # its ends fade toward its base over this many pixels
+      LIFT = 40                  # its base this far above the top of the tile it's anchored to
       ALPHA = 150
       FADE_FRAMES = 72           # 1.2 seconds in
       RAINY = [:Rain, :Storm].freeze
@@ -88,25 +94,60 @@ module Reloaded
         end
 
         #----------------------------------------------------------------------
-        # The arc on the screen
+        # The arc on the map
         #----------------------------------------------------------------------
-        # Every few frames on the map: shown on a rainbow's place outdoors
+        # Every few frames on the map: a rainbow's place outdoors shows its arc
+        # (once: its 4th part marks it gone for good); one up stays while its
+        # map is loaded and the rainbow lasts
         def update_view
+          if shown?
+            @want = at?(@key) && loaded?(@anchor[0])
+            return
+          end
           key = Alerts.place_here
-          want = key && at?(key) && outdoors?
-          @want = want ? true : false
-          make if @want && !(@sprite && !@sprite.disposed?)
+          return unless key && at?(key) && outdoors? && !spent?(key)
+          make(key)
         rescue StandardError => e
           Reloaded::Log.warning_once("Weather: the rainbow couldn't show (#{e.class})", :weather)
         end
 
-        # Every frame while it's up: fading in or out
+        # Every frame while it's up: where its spot is on screen now (from
+        # whichever connected map you're on), fading in or out; its map
+        # unloaded, it's gone for good
         def frame
-          return unless @sprite && !@sprite.disposed?
+          return unless shown?
+          unless loaded?(@anchor[0])
+            spend
+            dispose
+            return
+          end
+          place
           step = 255.0 / FADE_FRAMES
           @alpha = @want ? [@alpha.to_f + step, 255.0].min : [@alpha.to_f - step, 0.0].max
           @sprite.opacity = @alpha.round
           dispose if !@want && @alpha <= 0
+        rescue StandardError => e
+          Reloaded::Log.warning_once("Weather: the rainbow couldn't move with the map (#{e.class})", :weather)
+          dispose
+        end
+
+        # The game has this map loaded (yours, or one connected and near)
+        def loaded?(map_id)
+          return true if $game_map && $game_map.map_id == map_id
+          maps = defined?($MapFactory) && $MapFactory && $MapFactory.respond_to?(:maps) ? $MapFactory.maps : nil
+          return Array(maps).compact.any? { |m| m.map_id == map_id }
+        rescue StandardError
+          return false
+        end
+
+        def spent?(key)
+          e = table ? table[key] : nil
+          return e.is_a?(Array) && e[3] == true
+        end
+
+        def spend
+          e = @key && table ? table[@key] : nil
+          e[3] = true if e.is_a?(Array)
         end
 
         def outdoors?
@@ -114,48 +155,91 @@ module Reloaded
           return meta && meta.outdoor_map ? true : false
         end
 
-        def make
-          @viewport = Viewport.new(0, 0, Graphics.width, Graphics.height)
-          @viewport.z = 150
-          @sprite = Sprite.new(@viewport)
+        def scale
+          return 1.0 unless defined?(::KIF::MapZoom) && ::KIF::MapZoom.respond_to?(:scale)
+          s = ::KIF::MapZoom.scale.to_f
+          return s > 0 ? s : 1.0
+        rescue StandardError
+          return 1.0
+        end
+
+        # On the map's own layer (over the ground, under the characters and
+        # the treetops), anchored a little north of where you stand
+        def make(key)
+          @key = key
+          @anchor = [$game_map.map_id, $game_player.x, $game_player.y]
+          vp = defined?(::Spriteset_Map) && ::Spriteset_Map.respond_to?(:viewport) ? ::Spriteset_Map.viewport : nil
+          @own_viewport = nil
+          unless vp && !vp.disposed?
+            vp = @own_viewport = Viewport.new(0, 0, Graphics.width, Graphics.height)
+            vp.z = 1
+          end
+          @sprite = Sprite.new(vp)
           @sprite.bitmap = arc_bitmap
-          @sprite.opacity = 0
+          @sprite.ox = @sprite.bitmap.width / 2
+          @sprite.oy = @sprite.bitmap.height
+          @sprite.z = 1
           @alpha = 0.0
+          @sprite.opacity = 0
+          @want = true
+          place
+        end
+
+        # Its base on screen: the anchor tile's middle, LIFT pixels above its top
+        def place
+          k = scale
+          sx, sy = anchor_xy
+          @sprite.x = sx
+          @sprite.y = sy - ((32 + LIFT) * k).round
+          @sprite.zoom_x = @sprite.zoom_y = k
+        end
+
+        # The anchor tile on screen: [its middle, its bottom], from the map
+        # you're on (the anchor's map, or one connected to it: the game's
+        # connection offsets), as Ghostly Possession places its lights (a
+        # Normal-size screen spot, Map Zoom's scale times it)
+        def anchor_xy
+          m = $game_map
+          ax = @anchor[1]
+          ay = @anchor[2]
+          if m.map_id != @anchor[0] && defined?($MapFactory) && $MapFactory
+            ax, ay = $MapFactory.getRelativePos(m.map_id, 0, 0, @anchor[0], ax, ay)
+          end
+          k = scale
+          sx = (((ax * 128 - m.display_x) / 4.0).round + 16) * k
+          sy = (((ay * 128 - m.display_y) / 4.0).round + 32) * k
+          return [sx.round, sy.round]
         end
 
         def dispose
           @sprite.dispose if @sprite && !@sprite.disposed?
-          @viewport.dispose if @viewport && !@viewport.disposed?
-          @sprite = @viewport = nil
+          @own_viewport.dispose if @own_viewport && !@own_viewport.disposed?
+          @sprite = @own_viewport = nil
         end
 
         def shown?
           return @sprite && !@sprite.disposed? ? true : false
         end
 
-        # The rainbow, once (2 x 2 blocks, the game's pixel scale)
+        # The rainbow, once: 2 x 2 blocks (the game's pixel scale), its ends
+        # fading toward its base
         def arc_bitmap
           return @arc if @arc && !@arc.disposed?
-          b = Bitmap.new(512, 384)
+          w = RADIUS * 2 + 4
+          h = RADIUS + 4
+          b = Bitmap.new(w, h)
           inner = RADIUS - BAND * BANDS.length
-          (0...HORIZON).step(2) do |y|
-            fade = [[(HORIZON - y) / 80.0, 1.0].min, 0.0].max
+          cx = w / 2
+          (0...h).step(2) do |y|
+            fade = [[(h - y) / BASE_FADE.to_f, 1.0].min, 0.0].max
             a = (ALPHA * fade).to_i
             next if a <= 0
-            dy = y + 1 - CY
-            next if dy.abs >= RADIUS
-            half_out = Math.sqrt(RADIUS * RADIUS - dy * dy)
-            half_in = dy.abs < inner ? Math.sqrt(inner * inner - dy * dy) : 0
-            [[CX - half_out, CX - half_in], [CX + half_in, CX + half_out]].each do |from, to|
-              x = (from.floor / 2) * 2
-              while x < to
-                d = Math.hypot(x + 1 - CX, dy)
-                if d >= inner && d < RADIUS
-                  c = BANDS[[((RADIUS - d) / BAND).to_i, 6].min]
-                  b.fill_rect(x, y, 2, 2, Color.new(c[0], c[1], c[2], a))
-                end
-                x += 2
-              end
+            dy = y + 1 - h
+            (0...w).step(2) do |x|
+              d = Math.hypot(x + 1 - cx, dy)
+              next unless d >= inner && d < RADIUS
+              c = BANDS[[((RADIUS - d) / BAND).to_i, 6].min]
+              b.fill_rect(x, y, 2, 2, Color.new(c[0], c[1], c[2], a))
             end
           end
           @arc = b

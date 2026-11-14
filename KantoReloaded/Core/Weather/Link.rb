@@ -109,9 +109,15 @@ module Reloaded
         end
 
         # { map id => [shown type, strength] } for every map with our weather
-        # (others answer [:None, 0])
+        # (others answer [:None, 0]). PIF's tilemap asks every frame, and twice
+        # for each tile it redraws as you walk: the answer is kept, and the
+        # game's clock (for sun after dark) read at most once a second
+        RECHECK = 60
         def table
           v = Reloaded::Weather.version
+          f = (::Graphics.frame_count rescue 0)
+          return @table if @table && @table_version == v && @table_frame && (f - @table_frame).abs < RECHECK
+          @table_frame = f
           if @table.nil? || @table_version != v || @table_hour != hour
             t = Hash.new(NONE)
             if Reloaded::Weather.on?

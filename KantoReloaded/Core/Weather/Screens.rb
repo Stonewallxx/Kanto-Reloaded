@@ -272,13 +272,13 @@ module Reloaded
             end
           end
 
-          # The place under the cursor: the Town Map's own spot (its map), else
-          # a place at that tile
+          # The place under the cursor: the one whose Town Map tiles hold it
+          # (any of them), else the town the Town Map's tile is for
           def place_at(location)
             return nil unless location
-            key = location[4] ? Places.of_map(location[4]) : nil
+            key = Places.at_tile(location[0].to_i, location[1].to_i)
             return key if key
-            Places.keys.find { |k| (s = Places[k].spot) && s[1].to_i == location[0] && s[2].to_i == location[1] }
+            return location[4] ? Places.of_map(location[4]) : nil
           end
 
           def hover(location)

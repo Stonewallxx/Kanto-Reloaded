@@ -39,6 +39,7 @@ module Reloaded
     CYCLE_HOURS = [12, 6, 3].freeze      # Slow, Normal, Fast
     CATCH_UP = 4                         # most cycles caught up at once (the Time Changer, a long sleep)
     CHECK_EVERY = 40                     # frames between clock checks on the map
+    FORECAST_TILES = :"weather.forecast_tiles"   # a place's other tiles on the Forecast: 0 Dots, 1 Icons, 2 None
     GROWN = { :Rain => :HeavyRain, :Snow => :Blizzard, :Wind => :StrongWinds }.freeze
     NAMES = { :Rain => "Rain", :Storm => "Storm", :Sunny => "Sunny", :Fog => "Fog", :Snow => "Snow", :Wind => "Wind",
               :Ash => "Ash", :Sandstorm => "Sandstorm", :HeavyRain => "Heavy Rain", :Blizzard => "Blizzard",
@@ -336,6 +337,12 @@ module Reloaded
         s.register(:"weather.sounds", :page => PAGE, :priority => 40, :type => :toggle, :default => true,
           :name => "Weather Sounds", :needs => key(:enabled),
           :description => "Rain, storms and thunder you can hear outdoors.")
+        s.register(FORECAST_TILES, :page => PAGE, :priority => 50, :type => :enum, :default => 0,
+          :values => ["Dots", "Icons", "None"], :name => "Forecast Tiles", :needs => key(:enabled),
+          :descriptions => ["Dots in the weather's color on a place's other tiles.",
+                            "The weather's icon on every tile of a place.",
+                            "Only the icon on each place's middle tile."],
+          :description => "What the Weather Forecast's map shows on a place's other tiles. Its middle tile always has the weather's icon.")
       end
 
       def install

@@ -92,33 +92,35 @@ module Reloaded
         return "x#{s}"
       end
 
-      # [[words, turns or nil, :field / 0 yours / 1 the foe's, type], ...]:
-      # the whole field's first, then each side's
+      # [[words, turns or nil, :field / 0 yours / 1 the foe's, type, longer
+      # words or nil, its key (FIELD_WORDS)], ...]: the whole field's first,
+      # then each side's
       def field_items(battle)
         out = []
         f = battle.field
         # the Weather System's fog leads (the whole field's)
         out.concat(Reloaded::Weather::Battle.field_items(battle)) if defined?(Reloaded::Weather::Battle)
         if f.weather && f.weather != :None
-          out << [weather_name(f.weather), f.weatherDuration.to_i > 0 ? f.weatherDuration.to_i : nil, :field, WEATHER_TYPE[f.weather]]
+          out << [weather_name(f.weather), f.weatherDuration.to_i > 0 ? f.weatherDuration.to_i : nil, :field, WEATHER_TYPE[f.weather], nil, f.weather]
         end
         if f.terrain && f.terrain != :None
-          out << [terrain_name(f.terrain), f.terrainDuration.to_i > 0 ? f.terrainDuration.to_i : nil, :field, TERRAIN_TYPE[f.terrain]]
+          out << [terrain_name(f.terrain), f.terrainDuration.to_i > 0 ? f.terrainDuration.to_i : nil, :field, TERRAIN_TYPE[f.terrain], nil,
+                  :"#{f.terrain}Terrain"]
         end
         FIELD_TIMED.each do |k, words, t|
           n = eff(f.effects, k).to_i
-          out << [_INTL(words), held?(battle, k, :field) ? nil : n, :field, t] if n > 0
+          out << [_INTL(words), held?(battle, k, :field) ? nil : n, :field, t, nil, k] if n > 0
         end
         [0, 1].each do |side|
           e = battle.sides[side].effects
           SIDE_TIMED.each do |k, words, t|
             n = eff(e, k).to_i
-            out << [_INTL(words), held?(battle, k, side) ? nil : n, side, t] if n > 0
+            out << [_INTL(words), held?(battle, k, side) ? nil : n, side, t, nil, k] if n > 0
           end
           HAZARDS.each do |k, words, t|
             v = eff(e, k)
             next unless v && v != 0
-            out << [v.is_a?(Integer) && v > 1 ? "#{_INTL(words)} x#{v}" : _INTL(words), nil, side, t]
+            out << [v.is_a?(Integer) && v > 1 ? "#{_INTL(words)} x#{v}" : _INTL(words), nil, side, t, nil, k]
           end
         end
         battle.positions.each_with_index do |pos, i|
@@ -126,15 +128,66 @@ module Reloaded
           fs = eff(pos.effects, :FutureSightCounter).to_i
           if fs > 0
             mv = eff(pos.effects, :FutureSightMove)
-            out << [move_name(mv) || _INTL("Future Sight"), fs, i & 1, move_type(mv) || :PSYCHIC]
+            out << [move_name(mv) || _INTL("Future Sight"), fs, i & 1, move_type(mv) || :PSYCHIC, nil, :FutureSight]
           end
           w = eff(pos.effects, :Wish).to_i
-          out << [_INTL("Wish"), w, i & 1, :NORMAL] if w > 0
+          out << [_INTL("Wish"), w, i & 1, :NORMAL, nil, :Wish] if w > 0
         end
         return out
       rescue StandardError => e
         Reloaded::Log.exception("Battle Menu: reading the field", e, :battle_menu)
         return out || []
+      end
+
+      # What a field effect does (Battle Info's Field tab, his pick 2026-11-14:
+      # Description Box), by its key
+      FIELD_WORDS = {
+        :Rain => "Water moves are 1.5x as strong and Fire moves half. Thunder and Hurricane always hit; Solar Beam is weaker.",
+        :HeavyRain => "Fire moves fail, and Water moves are 1.5x as strong. Only a weather-changing ability can end it.",
+        :Sun => "Fire moves are 1.5x as strong and Water moves half. Solar Beam needs no charging; Thunder and Hurricane miss more.",
+        :HarshSun => "Water moves fail, and Fire moves are 1.5x as strong. Only a weather-changing ability can end it.",
+        :Sandstorm => "Hurts every Pokémon but Rock, Ground and Steel types at the end of each turn. Rock types' Sp. Def is 1.5x.",
+        :Hail => "Hurts every Pokémon but Ice types at the end of each turn. Blizzard always hits.",
+        :Snow => "Ice types' Defense is 1.5x, and Blizzard always hits. It doesn't hurt anyone.",
+        :StrongWinds => "Moves that would be super effective on a Flying type hit it normally. Only a weather-changing ability can end it.",
+        :ShadowSky => "Shadow moves are stronger, and every Pokémon that isn't a Shadow Pokémon is hurt each turn.",
+        :Fog => "Every move is less accurate for both sides ({1}): The Weather System's outdoor fog. Moves that never miss still never miss.",
+        :ElectricTerrain => "Electric moves are 1.3x as strong for Pokémon on the ground, and they can't fall asleep.",
+        :GrassyTerrain => "Grass moves are 1.3x as strong for Pokémon on the ground, which heal a little each turn. Earthquake is weaker.",
+        :MistyTerrain => "Dragon moves do half damage to Pokémon on the ground, and they can't get a status condition.",
+        :PsychicTerrain => "Psychic moves are 1.3x as strong for Pokémon on the ground, and moves with priority can't hit them.",
+        :TrickRoom => "Slower Pokémon move first (moves with priority still go first).",
+        :Gravity => "Nothing can fly: Ground moves hit Flying types and floating Pokémon, and every move is more accurate.",
+        :WonderRoom => "Every Pokémon's Defense and Sp. Def are swapped.",
+        :MagicRoom => "Held items have no effect.",
+        :MudSportField => "Electric moves are weaker.",
+        :WaterSportField => "Fire moves are weaker.",
+        :FairyLock => "No Pokémon can flee or switch out next turn.",
+        :Reflect => "Physical moves do half damage to this side (a third less in a double battle).",
+        :LightScreen => "Special moves do half damage to this side (a third less in a double battle).",
+        :AuroraVeil => "Physical and special moves do half damage to this side (a third less in a double battle).",
+        :Tailwind => "This side's Pokémon have double Speed.",
+        :Safeguard => "This side's Pokémon can't get a status condition or become confused.",
+        :Mist => "The other side can't lower this side's stats.",
+        :LuckyChant => "Moves can't land critical hits on this side.",
+        :Rainbow => "Moves' added effects are twice as likely for this side.",
+        :SeaOfFire => "Hurts this side's Pokémon (but Fire types) at the end of each turn.",
+        :Swamp => "This side's Pokémon have a quarter of their Speed.",
+        :StealthRock => "Hurts each Pokémon that comes in on this side, more for those weak to Rock.",
+        :Spikes => "Hurts each Pokémon on the ground that comes in on this side, more with each layer (up to three).",
+        :ToxicSpikes => "Poisons each Pokémon on the ground that comes in on this side (badly with two layers). A Poison type takes them away.",
+        :StickyWeb => "Lowers the Speed of each Pokémon on the ground that comes in on this side.",
+        :FutureSight => "Hits the Pokémon in this spot when its turns run out.",
+        :Wish => "Heals the Pokémon in this spot by half its HP at the end of the turn it comes true."
+      }.freeze
+
+      # A field effect's words (Hail is Snow with KIF's Modern Hail on Snow)
+      def field_words(row)
+        key = row[5]
+        key = :Snow if key == :Hail && defined?(::KIF::Mechanics) && (::KIF::Mechanics.hail rescue 0) == 2
+        words = FIELD_WORDS[key]
+        return "" unless words
+        return _INTL(words, row[1].to_s)
       end
 
       # A gym's rule holds it all battle (Trainer Control's Gym Rules): endless

@@ -7,8 +7,9 @@
 # tile near you: the game's own bolt (Graphics/Weather/lightning) lands on
 # it, the screen flashes white, the short snap of thunder (SE Thunder3, his
 # pick). A twinkling sparkle stays on that tile; step on it for what the
-# strike left: a hidden item (a Thunder Stone now and then, else a Cell
-# Battery or a Magnet) or an Electric Visitor at the place's levels. No toast.
+# strike left: an Electric Visitor at the place's levels, or now and then
+# (5%, his call 2026-11-14) a hidden item (a Thunder Stone now and then,
+# else a Cell Battery or a Magnet). No toast.
 # The sparkle goes when you leave the map. Placed on the map as the
 # game places its characters, so Map Zoom moves it with them.
 #==============================================================================
@@ -19,6 +20,7 @@ module Reloaded
       CHANCE = 4                     # in 1000, each check (40 frames) in a storm: one every 3 minutes or so
       OFFSETS = [[2, -1], [-2, -1], [2, 1], [-2, 1], [1, -2], [-1, -2], [3, 0], [-3, 0]].freeze
       ITEMS = [[:THUNDERSTONE, 2], [:CELLBATTERY, 4], [:MAGNET, 4]].freeze
+      ITEM_CHANCE = 5                # % of strikes that leave an item (his call, 2026-11-14); the rest an Electric Visitor
       BOLT = "Graphics/Weather/lightning"
       TIP = [200, 399]               # the bolt's tip in its picture
       BOLT_STEPS = [255, 255, 180, 110, 50].freeze     # its fade, a step each 6 frames
@@ -65,7 +67,7 @@ module Reloaded
         def strike!(at = nil)
           xy = at || target
           return false unless xy
-          @spot = { :map => $game_map.map_id, :x => xy[0], :y => xy[1], :reward => rand(2) == 0 ? :item : :visitor }
+          @spot = { :map => $game_map.map_id, :x => xy[0], :y => xy[1], :reward => rand(100) < ITEM_CHANCE ? :item : :visitor }
           pbSEPlay(SE, 90) if defined?(pbSEPlay)
           $game_screen.start_flash(Color.new(255, 255, 255, FLASH), 18) if $game_screen.respond_to?(:start_flash)
           make_sprites
