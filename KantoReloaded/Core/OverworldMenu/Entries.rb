@@ -592,8 +592,11 @@ module Reloaded
           return [] if tables.empty?
           now = defined?(pbGetTimeNow) ? pbGetTimeNow : Time.now
           out = []
+          ways = { "Grass" => :land, "Surfing" => :surf, "Fishing" => :fishing, "Rock Smash" => :rock_smash }
           AREA_TABS.each do |tab, parts|
             next if tab == "Bug Contest" && !(defined?(pbInBugContest?) && pbInBugContest?)
+            # only what this map's tiles let happen (no grass, no Grass tab)
+            next if ways[tab] && defined?(Reloaded::WildLink::Area) && !Reloaded::WildLink::Area.possible?(ways[tab])
             sections = []
             parts.each do |base, words|
               type = enc.respond_to?(:find_valid_encounter_type_for_time) ? enc.find_valid_encounter_type_for_time(base, now) : base

@@ -271,6 +271,16 @@ module Reloaded
           around("PokeBattle_Battle", :pbCaptureCalc, :qol_guaranteed_catch) do |original, *args|
             QOL.on?(:guaranteed_catch) ? 4 : original.call(*args)
           end
+          # The Safari Zone's battle isn't a PokeBattle_Battle (his test,
+          # 2026-11-14: its Pokémon still broke free and fled), and Hoenn's
+          # walk-up Safari throws with a pbCaptureCalc of its own (on Object:
+          # a battle's calls reach PokeBattle_BattleCommon's first)
+          around("PokeBattle_SafariZone", :pbCaptureCalc, :qol_guaranteed_catch_safari) do |original, *args|
+            QOL.on?(:guaranteed_catch) ? 4 : original.call(*args)
+          end
+          around(Object, :pbCaptureCalc, :qol_guaranteed_catch_hoenn_safari) do |original, *args|
+            QOL.on?(:guaranteed_catch) ? 4 : original.call(*args)
+          end
         end
 
         public
@@ -357,19 +367,22 @@ module Reloaded
         # Fishing
         #----------------------------------------------------------------------
         def install_fishing
-          around(Object, :pbFishing, :qol_auto_hook) do |original, *args|
-            if QOL.on?(:auto_hook) && defined?(::SWITCH_FISHING_AUTOHOOK) && $game_switches
-              was = $game_switches[::SWITCH_FISHING_AUTOHOOK]
-              $game_switches[::SWITCH_FISHING_AUTOHOOK] = true
-              begin
-                original.call(*args)
-              ensure
-                $game_switches[::SWITCH_FISHING_AUTOHOOK] = was
-              end
-            else
-              original.call(*args)
+          # PIF's own auto-hook (its switch) while the toggle's On: the cast
+          # (no "Landed a Pokémon!") and the reel-in itself, so a cast that
+          # isn't PIF's (Wild Link's spot) waits for you too (his test,
+          # 2026-11-14: a bite at the spot still got away)
+          hooked = lambda do |original, args|
+            next original.call(*args) unless QOL.on?(:auto_hook) && defined?(::SWITCH_FISHING_AUTOHOOK) && $game_switches
+            was = $game_switches[::SWITCH_FISHING_AUTOHOOK]
+            $game_switches[::SWITCH_FISHING_AUTOHOOK] = true
+            begin
+              next original.call(*args)
+            ensure
+              $game_switches[::SWITCH_FISHING_AUTOHOOK] = was
             end
           end
+          around(Object, :pbFishing, :qol_auto_hook) { |original, *args| hooked.call(original, args) }
+          around(Object, :pbWaitForInput, :qol_auto_hook_reel) { |original, *args| hooked.call(original, args) }
         end
 
         #----------------------------------------------------------------------

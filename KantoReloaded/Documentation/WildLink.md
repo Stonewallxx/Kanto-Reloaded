@@ -14,7 +14,7 @@ The list is there from the start. **Search** unlocks once you have the Poké Rad
 
 ## The Screen
 
-- **The List:** A tab for each way the Pokémon here are met (Land, Cave, Surf, Fishing, Rock Smash), with Seen and Caught. Each row has the Pokémon (a shadow and ??? until you've seen it), a ball once caught, its levels and how often it appears. Each rod's Pokémon are under the rod's name.
+- **The List:** A tab for each way the Pokémon here are met (Land, Cave, Surf, Fishing, Rock Smash), with Seen and Caught. Each row has the Pokémon (a shadow and ??? until you've seen it), a ball once caught, its levels and how often it appears. Each rod's Pokémon are under the rod's name. Only the ways you can meet them from where you are get a tab: grass you can't walk to doesn't count (Pallet Town's is walled off), nor water you can't reach, nor grass across the water until you can surf. Area Encounters lists them the same way.
 - **The Weather:** With the Weather System, the weather here shows as a chip in the corner, the Pokémon it brings out more are marked with their raised share, and the place's Weather Visitors are listed as Weather Signals while the weather lasts.
 - **The Rare Signal:** The route's Poké Radar Pokémon, last in the Land tab. It stays locked until you've seen every land Pokémon there; then you can search for it even before you've seen it.
 - **The Panel:** The picked Pokémon in its type's colour: its Search Level with a bar to the next step, your chain, and its Current Bonuses, each with a meter toward its best. X shows the Search Level steps instead. The line at the bottom says what Search can do (or why not: no Poké Radar yet, no rod, not seen yet).
@@ -26,8 +26,8 @@ Up and Down pick a Pokémon, Left and Right change the tab, A searches, X switch
 Your target appears 3 to 7 steps away, on screen, somewhere you can reach. It's one of the game's own walking Pokémon and behaves the way that species does: some charge you, some are shy, some run away. Walk into it to battle.
 
 - **Land and Cave:** On the grass, or the cave's floor.
-- **Surf:** On the water, while you surf.
-- **Fishing:** A spot on the water nearby is marked with ripples, bubbles or a fish's shadow (one at random). Face it and fish with the rod the Pokémon is listed under.
+- **Surf:** On the water, while you surf. It stays on the water.
+- **Fishing:** A spot on the water nearby is marked with ripples, bubbles or a fish's shadow (one at random). Face it and fish with the rod the Pokémon is listed under: it bites every time (reel it in as usual; miss and it stays there for another cast).
 - **Rock Smash:** A breakable rock appears nearby, wobbling now and then. Smash it and the Pokémon comes out.
 
 Other wild Pokémon still appear while you search, and your Repel doesn't run down.

@@ -28,6 +28,12 @@
 module Reloaded
   module WildLink
     module Area
+      # What a way needs to happen at all (his test, 2026-11-14: Pallet Town's
+      # table lists the starters' lines, but its grass is walled off): grass
+      # you can walk to for Land, water beside it for Surf, water to fish from
+      # it for Fishing, a rock to smash beside it for Rock Smash; a cave's own
+      # encounters happen on any tile
+      NEEDS = { :land => :land, :surf => :surf, :fishing => :fish, :rock_smash => :rock }.freeze
       TABS = [[:land, "Land", [[:Land, nil], [:Land1, nil], [:Land2, nil], [:Land3, nil], [:TallGrass, nil]]],
               [:cave, "Cave", [[:Cave, nil]]],
               [:surf, "Surf", [[:Water, nil]]],
@@ -45,6 +51,7 @@ module Reloaded
         weather = weather_here
         out = []
         TABS.each do |id, label, parts|
+          next unless possible?(id)
           rows = []
           parts.each do |base, heading|
             type = enc.respond_to?(:find_valid_encounter_type_for_time) ? enc.find_valid_encounter_type_for_time(base, now) : base
@@ -97,6 +104,104 @@ module Reloaded
         return got.is_a?(Array) && got[0] ? got[0] : species
       rescue StandardError
         return species
+      end
+
+      #------------------------------------------------------------------------
+      # What this map's tiles let happen
+      #------------------------------------------------------------------------
+      def possible?(way)
+        need = NEEDS[way]
+        return true unless need && $game_map
+        return here[need] ? true : false
+      end
+
+      ALL = { :land => true, :surf => true, :fish => true, :rock => true }.freeze
+      STEPS = [[2, 0, 1], [4, -1, 0], [6, 1, 0], [8, 0, -1]].freeze
+
+      # { :land, :surf, :fish, :rock } for where you are: the tiles you can
+      # reach from here, walking as the map lets you step (and across water
+      # when you can surf), events aside since they move. Kept until you
+      # change maps or stand outside what was reached
+      def here
+        return ALL unless $game_player && $game_map.respond_to?(:terrain_tag) && $game_map.respond_to?(:valid?)
+        w = ($game_map.width rescue 0).to_i
+        h = ($game_map.height rescue 0).to_i
+        return ALL if w <= 0 || h <= 0
+        swim = can_swim?
+        spot = [$game_player.x, $game_player.y]
+        key = [$game_map.map_id, swim]
+        return @here if @here && @here_key == key && @here_seen && @here_seen[spot]
+        seen = reach(spot, swim)
+        got = { :land => false, :surf => false, :fish => false, :rock => false }
+        seen.each_key do |x, y|
+          t = tag(x, y)
+          got[:land] = true if t && t.land_wild_encounters
+          STEPS.each do |_d, dx, dy|
+            n = tag(x + dx, y + dy)
+            next unless n
+            got[:surf] = true if n.can_surf
+            got[:fish] = true if n.respond_to?(:can_fish) && n.can_fish
+          end
+        end
+        events = $game_map.respond_to?(:events) ? $game_map.events.values : []
+        rocks = events.select { |e| (e.name rescue "").to_s =~ /smashrock/i && !(e.name rescue "").to_s.include?("Wild Link") }
+        got[:rock] = rocks.any? { |e| STEPS.any? { |_d, dx, dy| seen[[e.x + dx, e.y + dy]] } }
+        @here_key = key
+        @here_seen = seen
+        @here = got
+        return got
+      rescue StandardError => e
+        Reloaded::Log.exception("Wild Link couldn't read this map's tiles", e, :wild_link)
+        return ALL
+      end
+
+      # Every tile you can get to from spot (a flood, as the map lets you step)
+      def reach(spot, swim)
+        seen = { spot => true }
+        queue = [spot]
+        until queue.empty?
+          x, y = queue.shift
+          STEPS.each do |d, dx, dy|
+            n = [x + dx, y + dy]
+            next if seen[n] || !$game_map.valid?(n[0], n[1])
+            next unless side?(x, y, d, swim) && side?(n[0], n[1], 10 - d, swim)
+            seen[n] = true
+            queue << n
+          end
+        end
+        return seen
+      end
+
+      # Whether you can leave or enter x,y on its d side: PIF's own rule for
+      # you, with water open when you can surf
+      def side?(x, y, d, swim)
+        if swim
+          t = tag(x, y)
+          return true if t && t.can_surf && !(t.respond_to?(:waterfall) && t.waterfall)
+        end
+        return $game_map.playerPassable?(x, y, d, $game_player) if $game_map.respond_to?(:playerPassable?)
+        return $game_map.passable?(x, y, d, $game_player)
+      rescue StandardError
+        return false
+      end
+
+      def tag(x, y)
+        return nil unless $game_map.valid?(x, y)
+        return $game_map.terrain_tag(x, y)
+      rescue StandardError
+        return nil
+      end
+
+      # Surfing now, or able to (PIF's own test: the badge and a Pokémon that
+      # knows Surf, or the Surfboard)
+      def can_swim?
+        return true if $PokemonGlobal && $PokemonGlobal.respond_to?(:surfing) && $PokemonGlobal.surfing
+        board = defined?($PokemonBag) && $PokemonBag && $PokemonBag.respond_to?(:pbQuantity) && $PokemonBag.pbQuantity(:SURFBOARD) > 0
+        return true if board
+        return false unless defined?(pbCheckHiddenMoveBadge) && defined?(Settings::BADGE_FOR_SURF) && $Trainer.respond_to?(:get_pokemon_with_move)
+        return pbCheckHiddenMoveBadge(Settings::BADGE_FOR_SURF, false) && $Trainer.get_pokemon_with_move(:SURF) ? true : false
+      rescue StandardError
+        return false
       end
 
       #------------------------------------------------------------------------

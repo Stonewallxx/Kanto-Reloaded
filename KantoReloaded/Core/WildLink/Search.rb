@@ -38,6 +38,19 @@ module Reloaded
       @target = nil
       @battle = false
 
+      # A Surf target only swims (his test, 2026-11-14: one walked out onto
+      # the grass; PIF's water rule misses a shore tile with something drawn
+      # over its water): a step anywhere but water is refused, even fleeing
+      module StayInWater
+        def passable?(x, y, d, strict = false)
+          nx = x + (d == 6 ? 1 : d == 4 ? -1 : 0)
+          ny = y + (d == 2 ? 1 : d == 8 ? -1 : 0)
+          t = Reloaded::WildLink::Search.tag(nx, ny)
+          return false unless t && t.can_surf && !(t.respond_to?(:bridge) && t.bridge)
+          return super
+        end
+      end
+
       class << self
         # { "event", "map", "species", "way", "row" } while a target is out
         attr_reader :target
@@ -97,6 +110,7 @@ module Reloaded
           event = make_event(species, level, spot, terrain)
           return say(_INTL("Nothing answered nearby.")) && false unless event
           event.instance_variable_set(:@kr_wl_target, true)
+          event.extend(StayInWater) if terrain == :Water
           pk = event.respond_to?(:pokemon) ? event.pokemon : nil
           got = Bonuses.apply(pk, sl, chain) { event.respond_to?(:make_shiny) ? event.make_shiny : (pk.shiny = true) }
           @target = { "event" => event.id, "map" => map, "species" => species, "way" => way, "row" => row, "got" => got }
@@ -155,10 +169,22 @@ module Reloaded
           return false
         end
 
+        # The tile as it is, bridges counted (his test, 2026-11-14: PIF's
+        # terrain_tag skips a bridge while you aren't on one, so a pier or a
+        # bridge over water read as water and a Surf target stood on it)
+        def tag(x, y)
+          return $game_map.terrain_tag(x, y, true)
+        rescue ArgumentError
+          return $game_map.terrain_tag(x, y)
+        end
+
         def spawnable?(x, y, terrain)
           ok = defined?(can_spawn_pokemon_there) ? can_spawn_pokemon_there(x, y, terrain) : true
           return false unless ok
-          return ($game_map.terrain_tag(x, y).land_wild_encounters rescue false) if terrain == :Land
+          t = tag(x, y)
+          return false if t.respond_to?(:bridge) && t.bridge
+          return t.can_surf ? true : false if terrain == :Water
+          return t.land_wild_encounters ? true : false if terrain == :Land
           return true
         rescue StandardError
           return false

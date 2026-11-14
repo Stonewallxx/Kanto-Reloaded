@@ -37,6 +37,15 @@ module Reloaded
           if defined?(::Events) && ::Events.respond_to?(:onMapUpdate)
             ::Events.onMapUpdate += proc { |_s, _e| Reloaded::WildLink::Fields.update }
           end
+          # the spot bites every time with its rod (his test, 2026-11-14: PIF's
+          # Old Rod bites 55% of the time and a miss ends the cast)
+          if Object.private_method_defined?(:pbFishing) || Object.method_defined?(:pbFishing)
+            Reloaded::Hooks.around(FEATURE, ::Object, :pbFishing, :id => :wild_link_fishing_bite) do |original, has, rod_type = 1, *rest|
+              rod = { 1 => :OldRod, 2 => :GoodRod, 3 => :SuperRod }[rod_type.to_i]
+              next original.call(has, rod_type, *rest) unless Reloaded::WildLink::Fields.fishing_here?(rod)
+              Reloaded::WildLink::Fields.sure_bite
+            end
+          end
           if Object.private_method_defined?(:pbEncounter) || Object.method_defined?(:pbEncounter)
             Reloaded::Hooks.around(FEATURE, ::Object, :pbEncounter, :id => :wild_link_fishing) do |original, enc_type, *rest|
               next original.call(enc_type, *rest) unless Reloaded::WildLink::Fields.fishing_here?(enc_type)
@@ -133,7 +142,11 @@ module Reloaded
         end
 
         def fishable?(x, y)
-          return ($game_map.terrain_tag(x, y).can_fish rescue false) ? true : false
+          t = Search.tag(x, y)
+          return false if t.respond_to?(:bridge) && t.bridge
+          return t.can_fish ? true : false
+        rescue StandardError
+          return false
         end
 
         # A floor tile you can walk to, 3 to 7 steps away, on screen
@@ -186,6 +199,45 @@ module Reloaded
           return false unless t["map"] == $game_map.map_id && facing == t["spot"]
           return t["rod"].nil? || t["rod"].to_sym == enc_type.to_s.to_sym
         rescue StandardError
+          return false
+        end
+
+        # Fishing at the spot: PIF's own cast (its rod pose, the dots, A too
+        # soon and it's gone), then a bite every time, its reel-in as the game
+        # has it (miss it and the target stays: cast again); no item
+        def sure_bite
+          oldpattern = $game_player.fullPattern
+          pbFishingBegin
+          msg = pbCreateMessageWindow
+          got = false
+          begin
+            time = 3 + rand(4)
+            if pbWaitMessage(msg, time)
+              pbFishingEnd
+              $game_player.setDefaultCharName(nil, oldpattern)
+              pbMessageDisplay(msg, _INTL("Not even a nibble..."))
+              return false
+            end
+            if defined?($scene) && $scene.respond_to?(:spriteset) && $scene.spriteset && defined?(::Settings::EXCLAMATION_ANIMATION_ID)
+              $scene.spriteset.addUserAnimation(::Settings::EXCLAMATION_ANIMATION_ID, $game_player.x, $game_player.y, true, 3)
+            end
+            frames = Graphics.frame_rate - rand(Graphics.frame_rate / 2)
+            dots = ".   " * time
+            unless pbWaitForInput(msg, dots + _INTL("\r\nOh! A bite!"), frames)
+              pbFishingEnd
+              $game_player.setDefaultCharName(nil, oldpattern)
+              pbMessageDisplay(msg, _INTL("The Pokémon got away..."))
+              return false
+            end
+            pbFishingEnd
+            $game_player.setDefaultCharName(nil, oldpattern)
+            got = true
+          ensure
+            pbDisposeMessageWindow(msg)
+          end
+          return got
+        rescue StandardError => e
+          Reloaded::Log.exception("Wild Link's fishing spot couldn't bite", e, :wild_link)
           return false
         end
 
