@@ -26,7 +26,7 @@ Up and Down pick a Pokémon, Left and Right change the tab, A searches, X switch
 Your target appears 3 to 7 steps away, on screen, somewhere you can reach. It's one of the game's own walking Pokémon and behaves the way that species does: some charge you, some are shy, some run away. Walk into it to battle.
 
 - **Land and Cave:** On the grass, or the cave's floor.
-- **Surf:** On the water, while you surf. It stays on the water.
+- **Surf:** On the water, while you surf. It stays in open water, off piers and docks.
 - **Fishing:** A spot on the water nearby is marked with ripples, bubbles or a fish's shadow (one at random). Face it and fish with the rod the Pokémon is listed under: it bites every time (reel it in as usual; miss and it stays there for another cast).
 - **Rock Smash:** A breakable rock appears nearby, wobbling now and then. Smash it and the Pokémon comes out.
 

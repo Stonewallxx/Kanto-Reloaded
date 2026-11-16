@@ -144,7 +144,8 @@ module Reloaded
         def fishable?(x, y)
           t = Search.tag(x, y)
           return false if t.respond_to?(:bridge) && t.bridge
-          return t.can_fish ? true : false
+          return false unless t.can_fish
+          return !Search.covered?(x, y)             # not under a pier
         rescue StandardError
           return false
         end

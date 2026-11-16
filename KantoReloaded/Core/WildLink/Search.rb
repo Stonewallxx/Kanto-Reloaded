@@ -38,15 +38,14 @@ module Reloaded
       @target = nil
       @battle = false
 
-      # A Surf target only swims (his test, 2026-11-14: one walked out onto
-      # the grass; PIF's water rule misses a shore tile with something drawn
-      # over its water): a step anywhere but water is refused, even fleeing
+      # A Surf target only swims (his tests, 2026-11-14: one walked out onto
+      # the grass, then over piers; PIF's water rule reads the water under a
+      # pier): a step anywhere but open water is refused, even fleeing
       module StayInWater
         def passable?(x, y, d, strict = false)
           nx = x + (d == 6 ? 1 : d == 4 ? -1 : 0)
           ny = y + (d == 2 ? 1 : d == 8 ? -1 : 0)
-          t = Reloaded::WildLink::Search.tag(nx, ny)
-          return false unless t && t.can_surf && !(t.respond_to?(:bridge) && t.bridge)
+          return false unless Reloaded::WildLink::Search.swimmable?(nx, ny)
           return super
         end
       end
@@ -178,12 +177,41 @@ module Reloaded
           return $game_map.terrain_tag(x, y)
         end
 
+        # Open water, as you see it: water the game's tags say (bridges
+        # counted) with nothing to stand on drawn over it. A pier, a dock or a
+        # walkway is a floor tile with no terrain tag drawn above the water
+        # (Route 12's pier: 90 tiles, Pallet Town's dock, Cinnabar's harbour),
+        # so PIF's terrain_tag reads the water under it
+        def swimmable?(x, y)
+          return false unless $game_map.valid?(x, y)
+          t = tag(x, y)
+          return false unless t && t.can_surf && !(t.respond_to?(:bridge) && t.bridge)
+          return !covered?(x, y)
+        rescue StandardError
+          return false
+        end
+
+        # Something to stand on drawn over x,y's water (a pier's floor)
+        def covered?(x, y)
+          return false unless defined?(::GameData::TerrainTag) && $game_map.respond_to?(:data) && $game_map.respond_to?(:priorities)
+          [2, 1, 0].each do |layer|
+            id = $game_map.data[x, y, layer]
+            next if id.nil? || id < 48                         # nothing drawn on this layer
+            tt = ::GameData::TerrainTag.try_get($game_map.terrain_tags[id])
+            return false if tt.can_surf || tt.can_fish         # the water itself, on top
+            next if tt.ignore_passability
+            next if $game_map.priorities[id].to_i > 0          # drawn overhead (a branch, a roof's edge)
+            return true                                        # a floor over the water: a pier
+          end
+          return false
+        end
+
         def spawnable?(x, y, terrain)
           ok = defined?(can_spawn_pokemon_there) ? can_spawn_pokemon_there(x, y, terrain) : true
           return false unless ok
+          return swimmable?(x, y) if terrain == :Water
           t = tag(x, y)
           return false if t.respond_to?(:bridge) && t.bridge
-          return t.can_surf ? true : false if terrain == :Water
           return t.land_wild_encounters ? true : false if terrain == :Land
           return true
         rescue StandardError
