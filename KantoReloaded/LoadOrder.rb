@@ -139,6 +139,9 @@ module Reloaded
       "Core/PartyScreen/PartyScreen.rb",
       "Core/UI/PartyPaint.rb",
       "Core/UI/PartyScene.rb",
+      # The Reloaded Summary: the Summary pages on the plates
+      "Core/Summary/Summary.rb",
+      "Core/UI/SummaryScene.rb",
       # The PokeVial: its charges, settings and refills, and its dialogs
       "Core/PokeVial/PokeVial.rb",
       "Core/UI/PokeVialScreen.rb",
@@ -331,6 +334,9 @@ module Reloaded
       "Core/UI/WildLinkScreen.rb",
       "Core/UI/WildLinkContinue.rb",
       "Core/UI/WildLinkHud.rb",
+      # The Shiny Log: every shiny met
+      "Core/ShinyLog/ShinyLog.rb",
+      "Core/UI/ShinyLogScreen.rb",
       # Fixes to the game's own code
       "Core/Fixes/Fixes.rb",
       "Core/Fixes/CommandTextColours.rb",
@@ -354,7 +360,7 @@ module Reloaded
     # to KIF Settings. Dev boots last, when it's there. PauseMenu boots
     # before Profiler and BugReport, so their hooks on the pause menu's
     # scene sit over its screen and still see it open.
-    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :EggManager, :Difficulty, :Randomizer, :NewGameSetup, :Publish, :HiddenPower, :CriticalEVGain, :IVBoundaries, :DoubleAbilities, :TrainerCard, :Matchup, :BattleMenu, :BattleScene, :MoveEffectiveness, :QuickThrow, :TrainerControl, :Weather, :WildLink, :TitleVersions, :TitleLogo, :LivingTitle, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
+    SYSTEMS = [:Lifecycle, :SaveStore, :Assets, :Settings, :Controls, :WindowFrames, :PauseMenu, :OverworldMenu, :Toast, :DataPatches, :Profiler, :Saves, :SaveCheck, :BugReport, :LoadScreen, :UpdateChecks, :QualityOfLife, :PartyScreen, :Summary, :PokeVial, :HealingMoves, :SpeedUp, :TMVault, :Bag, :BagScreen, :UseSeveral, :PC, :EggManager, :Difficulty, :Randomizer, :NewGameSetup, :Publish, :HiddenPower, :CriticalEVGain, :IVBoundaries, :DoubleAbilities, :TrainerCard, :Matchup, :BattleMenu, :BattleScene, :MoveEffectiveness, :QuickThrow, :TrainerControl, :Weather, :WildLink, :ShinyLog, :TitleVersions, :TitleLogo, :LivingTitle, :Fixes, :FeatureSwitches, :KIFBridge, :KIFDropdowns, :AutosaveRows, :Dev].freeze
 
     def self.files
       return FILES

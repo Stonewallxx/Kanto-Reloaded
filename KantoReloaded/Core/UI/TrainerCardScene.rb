@@ -182,18 +182,24 @@ module Reloaded
       labels = [_INTL("Save as Image"), _INTL("Copy Trainer ID")]
       words = [_INTL("Saves this card as a picture in Kanto Reloaded's Trainer Cards folder."),
                _INTL("Copies {1} for a friend's Secret Base.", $Trainer.id)]
-      # The Records side: Trainer Control's Battle Records first
+      # The Records side: Trainer Control's Battle Records first; the Stats
+      # side: the Shiny Log first (his pick, 2026-11-16)
       records = tab_list[@tab] == :records && defined?(Reloaded::BattleRecordsScreen)
       if records
         labels.unshift(_INTL("Battle Records"))
         words.unshift(_INTL("Every trainer you've battled: Your record with them, their last team, your bond and the MVPs."))
       end
+      shinies = tab_list[@tab] == :stats && shiny_log?
+      if shinies
+        labels.unshift(_INTL("Shiny Log"))
+        words.unshift(_INTL("Every shiny you've met, caught or not, and how each one ended."))
+      end
       pick = with_hints([[:ud, _INTL("Choose")], [button(:C), _INTL("Pick")], [button(:B), _INTL("Back")]]) do
         DL.menu(self, _INTL("Trainer Card"), labels, words, 0)
       end
-      pick -= 1 if pick && records
+      pick -= 1 if pick && (records || shinies)
       case pick
-      when -1 then hidden { Reloaded::TrainerControl.open_records }
+      when -1 then shinies ? hidden { Reloaded::ShinyLog.open } : hidden { Reloaded::TrainerControl.open_records }
       when 0 then save_image
       when 1 then copy_id
       end
@@ -973,11 +979,18 @@ module Reloaded
       end
     end
 
+    # The Shiny Log is there to open (Reloaded::ShinyLog)
+    def shiny_log?
+      return defined?(Reloaded::ShinyLog) && Reloaded::ShinyLog.on? && defined?(Reloaded::ShinyLogScreen) ? true : false
+    end
+
     def draw_stats(base, top, c)
       tabs(base, top, c)
       x0, x1, y0, _y1 = card_back(base, top, c, _INTL("Stats"))
+      @shiny_hit = nil
       CT::STATS.each_with_index do |(id, name, icon), i|
         y = y0 + 54 + i * 30
+        @shiny_hit = [x0 + 4, y, x1 - 4, y + 29] if id == :shinies   # a click opens the Shiny Log
         item(top, icon, x0 + 10, y + 3, 24)
         stx(top, x0 + 38, y, 110, 30, _INTL(name).upcase, pif(c, "Dark"), PF::TINY)
         stx(top, x0 + 12, y, x1 - x0 - 26, 30, num(CT.stat(id)), pif(c, "Dark"), PF::ROW, 1)

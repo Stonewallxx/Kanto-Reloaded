@@ -494,6 +494,13 @@ module Reloaded
         refresh
         return nil
       end
+      # Shinies Found on the Stats side: the Shiny Log (his pick, 2026-11-16)
+      if tab_list[@tab] == :stats && @shiny_hit && pt.inside?(*@shiny_hit) && shiny_log?
+        pbPlayDecisionSE
+        hidden { Reloaded::ShinyLog.open }
+        refresh
+        return nil
+      end
       return :none
     end
 
